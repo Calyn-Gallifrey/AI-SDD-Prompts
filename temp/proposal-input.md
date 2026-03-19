@@ -1,119 +1,107 @@
 # 功能提案入口
 
-## 1. 業務任務信息
-功能名稱：agreement-info-query
-功能類型：query
-所屬模塊：transaction
-變更目標：新增 agreement information 查詢接口
-技術面：API / ORM / mapstruct / current user / test
-變更範圍：新增查詢接口、新增查詢入參與返回對象、新增 mapper 查詢
-禁止變更：不改資料表結構、不改既有 API path、不改既有 helper
+## 1. 业务任务信息
+功能名称：agreement-info-query  
+功能类型：query  
+所属模块：transaction  
+变更目标：在 transaction 现有模块中新增 agreement information 查询接口，用于按指定条件查询 agreement information 列表或明细。  
+技术面：API / ORM / mapstruct / current user / test  
+变更范围：
+- 新增 agreement-info-query 查询接口
+- 新增查询入参对象
+- 新增返回对象
+- 新增 mapper / xml 查询逻辑
+- 新增 service / controller
+- 补充必要单元测试
 
-## 2. AI 知識底座路徑
-AI知識底座根目錄：`.project-ai/`
-索引文件：`.project-ai/context/index.md`
-上下文目錄：`.project-ai/context/`
-規則目錄：`.project-ai/rules/`
-模板目錄：`.project-ai/templates/`
+禁止变更：
+- 不改资料表结构
+- 不改既有 API path
+- 不改既有 helper
+- 不改 transaction 现有核心提交流程
 
-## 3. 現狀掃描範圍
-代碼倉根目錄：`<repo-root>/`
-優先掃描：
+## 2. AI 知识底座路径
+AI知识底座根目录：`.project-ai/`  
+索引文件：`.project-ai/context/index.md`  
+上下文目录：`.project-ai/context/`  
+规则目录：`.project-ai/rules/`  
+模板目录：`.project-ai/templates/`
+
+## 3. 现状扫描范围
+代码仓根目录：`<repo-root>/`
+
+优先扫描目录：
 - `<repo-root>/src/main/java/.../transaction/`
 - `<repo-root>/src/main/resources/mapper/transaction/`
 - `<repo-root>/src/test/java/.../transaction/`
 
-擴展掃描：
+扩展扫描目录（如有需要）：
 - `<repo-root>/src/main/java/.../agreement/`
 - `<repo-root>/src/main/resources/mapper/agreement/`
 
-需優先檢查的存量類型：
+需优先检查的存量类型：
 - Controller
 - Service
 - BO / DTO / VO / Entity
 - Mapper / XML
 - Helper / Converter
 - Enum / 常量
-- 單元測試
+- 单元测试
 
-## 4. 設計文檔選擇規則
-設計文檔根目錄：`.project-design-docs/`
-如已知，直接指定設計文檔：
-- `.project-design-docs/sprint5/xxx.md`
+## 4. 设计文档选择规则
+设计文档根目录：`.project-design-docs/`
 
-若未指定，按以下優先級選擇：
-1. 與功能名稱最接近的設計文檔
-2. 同模塊（transaction）下最近一次 query 類設計文檔
-3. 同 sprint 下最相近功能文檔
-4. 若無可參考文檔，標註“本次基於存量代碼與規則推導設計”
+如已知，请直接指定设计文档路径：
+- `.project-design-docs/sprint5/agreement-info-query-design.md`
 
-## 5. 本次功能資產輸出位置
-功能資產根目錄：`.project-features/`
-本次輸出目錄：`.project-features/sprint5/agreement-info-query/`
+若未指定，按以下优先级选择：
+1. 与功能名称最接近的设计文档
+2. 同模块下相同功能类型的最近设计文档
+3. 同 sprint 下最相近功能文档
+4. 若无可参考文档，标注“本次基于存量代码与规则推导设计”
+
+## 5. 历史功能资产引用（仅 enhancement / refactor 必填）
+本次任务是否基于历史功能继续演进：否
+
+## 6. 本次功能资产输出位置
+功能资产根目录：`.project-features/`  
+本次输出目录：`.project-features/sprint5/agreement-info-query/`
 
 需生成文件：
 - `spec.md`
 - `design.md`
 - `tasks.md`
 
-## 6. 歸檔位置與歸檔標準
-本次歸檔文件：`.project-features/sprint5/agreement-info-query/archive.md`
-
-歸檔標準：
-僅在以下條件全部滿足後才允許歸檔：
-1. spec 已確認
-2. design 已確認
-3. tasks 已確認
-4. 代碼實施已完成
-5. 編譯 / 測試結果已輸出
-6. 人工最終審核已通過
-
-歸檔內容至少包括：
-- 本次任務基本信息
-- 最終採用的 spec / design / tasks 路徑
-- 最終實施結果摘要
-- 變更文件清單
-- 關鍵決策與取捨
-- 未解決問題 / 後續風險
-- 是否新增 / 修正了 rules / index / templates
-- 下一次增強需求應優先閱讀哪些文件
-
-
-## 7. 历史资产引用
-本次任务基于以下历史功能资产继续演进：
-- 历史功能目录：`.project-features/sprint5/agreement-info-query/`
-- 优先读取：`archive.md`
-- 补充读取：`spec.md`、`design.md`
-- 当前代码仍需以 Git 现状为准
-- 必要時再補讀 `.project-design-docs/` 對應文檔
-
-引用原則：
-- 先讀 `archive.md` 了解上次最終方案、決策、風險與推薦閱讀路徑
-- 再讀 `spec.md` 理解原始目標、邊界與驗收標準
-- 再讀 `design.md` 理解實現方式與分層設計
-- `tasks.md` 僅在需要復用實施順序或檢查清單時閱讀
-- 若 archive 與 Git 現狀代碼衝突，以 Git 現狀為實物基線，並在新 spec 中標明差異
-
-## 8. 本次归档要求
-本次任务完成并通过最终人工审核后，需在以下路径生成归档文件：
+## 7. 本次归档要求
+本次任务完成并通过最终人工审核后，需生成归档文件：
 - `.project-features/sprint5/agreement-info-query/archive.md`
 
-归档文件需包含：
+归档前置条件：
+1. `spec.md` 已确认
+2. `design.md` 已确认
+3. `tasks.md` 已确认
+4. 代码实施已完成
+5. 编译 / 测试结果已输出
+6. 人工最终审核已通过
+
+归档内容至少包括：
 - 本次任务基本信息
 - 最终采用的 spec / design / tasks 路径
 - 最终实施结果摘要
 - 变更文件清单
 - 关键决策与取舍
 - 未解决问题 / 后续风险
-- 是否新增 / 修正规则、索引或模板
+- 是否新增 / 修正了 rules / index / templates
+- 下一次增强需求应优先阅读哪些文件
 
-## 9. 執行要求
-1. 先讀索引文件，再按索引裝配 context / rules / templates
-2. 再掃描指定代碼範圍
-3. 再讀匹配的設計文檔
+
+## 8. 执行要求
+1. 先读索引文件，再按索引装配 context / rules / templates
+2. 再扫描指定代码范围
+3. 再读取匹配的设计文档
 4. 先生成 `spec.md`
-5. spec 確認後，再生成 `design.md`
-6. design 確認後，再生成 `tasks.md`
-7. tasks 確認後，按 `spec + design + tasks` 實施代碼
-8. 人工審核通過後，再執行歸檔
-9. 如本次產生通用規範增量，需同步更新 `.project-ai/context/index.md` 或對應 rules
+5. `spec.md` 确认后，再生成 `design.md`
+6. `design.md` 确认后，再生成 `tasks.md`
+7. `tasks.md` 确认后，按 `spec.md + design.md + tasks.md` 实施代码
+8. 人工审核通过后，再执行归档
+9. 如本次产生通用规则增量，需同步更新 `.project-ai/context/index.md` 或对应 rules / templates  
