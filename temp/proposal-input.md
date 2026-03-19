@@ -78,14 +78,14 @@ AI知識底座根目錄：`.project-ai/`
 - 是否新增 / 修正了 rules / index / templates
 - 下一次增強需求應優先閱讀哪些文件
 
-## 7. 歷史歸檔引用規則（供未來提案使用）
-若本次功能後續有 enhancement（增強需求）或重構需求，下一次提案應優先引用：
-1. `.project-features/sprint5/agreement-info-query/archive.md`
-2. `.project-features/sprint5/agreement-info-query/spec.md`
-3. `.project-features/sprint5/agreement-info-query/design.md`
-4. `.project-features/sprint5/agreement-info-query/tasks.md`
-5. 當前 Git 現狀代碼
-6. 必要時再補讀 `.project-design-docs/` 對應文檔
+
+## 7. 历史资产引用
+本次任务基于以下历史功能资产继续演进：
+- 历史功能目录：`.project-features/sprint5/agreement-info-query/`
+- 优先读取：`archive.md`
+- 补充读取：`spec.md`、`design.md`
+- 当前代码仍需以 Git 现状为准
+- 必要時再補讀 `.project-design-docs/` 對應文檔
 
 引用原則：
 - 先讀 `archive.md` 了解上次最終方案、決策、風險與推薦閱讀路徑
@@ -94,7 +94,20 @@ AI知識底座根目錄：`.project-ai/`
 - `tasks.md` 僅在需要復用實施順序或檢查清單時閱讀
 - 若 archive 與 Git 現狀代碼衝突，以 Git 現狀為實物基線，並在新 spec 中標明差異
 
-## 8. 執行要求
+## 8. 本次归档要求
+本次任务完成并通过最终人工审核后，需在以下路径生成归档文件：
+- `.project-features/sprint5/agreement-info-query/archive.md`
+
+归档文件需包含：
+- 本次任务基本信息
+- 最终采用的 spec / design / tasks 路径
+- 最终实施结果摘要
+- 变更文件清单
+- 关键决策与取舍
+- 未解决问题 / 后续风险
+- 是否新增 / 修正规则、索引或模板
+
+## 9. 執行要求
 1. 先讀索引文件，再按索引裝配 context / rules / templates
 2. 再掃描指定代碼範圍
 3. 再讀匹配的設計文檔
