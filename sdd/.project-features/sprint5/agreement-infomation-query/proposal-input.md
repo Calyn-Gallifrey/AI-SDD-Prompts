@@ -1,82 +1,144 @@
 # 功能提案入口
 
-## 1. 业务任务信息
-功能名称：agreement-information-query
-功能类型：query
-所属模块：transaction
-变更目标：在 transaction 现有模块中新增 agreement information 查询接口，用于按指定条件查询 agreement information 列表或明细。
-技术面：API / ORM / mapstruct / current user / test
-变更范围：
-- 新增 agreement-information-query 查询接口
-- 新增查询入参对象
-- 新增返回对象
-- 新增 mapper / xml 查询逻辑
-- 新增 service / controller
-- 补充必要单元测试
+## 1. 任务基本信息
+- 功能名称：agreement-information-query
+- 功能类型：query
+- 所属模块：transaction
+- 所在 sprint：sprint5
+- 当前任务状态：新任务
 
-禁止变更：
+## 2. 任务目标
+### 2.1 变更目标
+在 transaction 现有模块中新增 agreement information 查询能力，支持按指定条件查询 agreement information 列表或明细结果。
+
+### 2.2 业务价值 / 触发原因
+- 当前系统缺少 agreement information 独立查询能力
+- 需在不破坏 transaction 既有核心流程的前提下补充查询能力
+- 本次任务优先以增量方式接入现有 transaction 模块，后续如 agreement 域持续扩展，再评估是否独立拆分模块
+
+## 3. 任务识别维度
+### 3.1 技术能力面
+本次任务涉及以下能力面：
+- 契约与接口（Contract & Interface）
+- 持久化与查询（Persistence & Query）
+- 对象模型与边界（Object Model & Boundary）
+- 转换与映射（Transformation & Mapping）
+- 身份 / 权限 / 审计（Identity / Auth / Audit）
+- 测试与质量门禁（Testing & Quality Gates）
+- 兼容 / 迁移 / 演进（Compatibility / Migration / Evolution）
+
+### 3.2 变更范围
+明确本次任务涉及以下变化：
+
+- 新增内容：
+    - 新增 agreement-information-query 查询接口
+    - 新增查询入参对象
+    - 新增返回对象
+    - 新增 mapper / xml 查询逻辑
+    - 新增 service / controller
+    - 补充必要单元测试
+
+- 修改内容：
+    - 如需复用既有 transaction 查询基础设施，仅允许做最小必要修改
+
+- 复用内容：
+    - 复用 transaction 现有模块分层方式
+    - 复用既有 API 风格、对象命名风格、Mapper / XML 风格
+    - 复用既有 current user / 审计处理方式
+
+- 可能影响的区域：
+    - transaction 模块下的 query 类能力
+    - mapper / xml 查询层
+    - 相关测试用例
+
+### 3.3 禁止变更 / 不可变边界
+明确以下内容不能改：
+
 - 不改资料表结构
 - 不改既有 API path
 - 不改既有 helper
 - 不改 transaction 现有核心提交流程
+- 不改既有对外接口契约
+- 不做 agreement 独立模块化重构
 
-## 2. AI 知识底座路径
-AI知识底座根目录：`.project-ai/`
-索引文件：`.project-ai/context/index.md`
-上下文目录：`.project-ai/context/`
-规则目录：`.project-ai/rules/`
-模板目录：`.project-ai/templates/`
+## 4. AI 知识底座路径
+- AI 知识底座根目录：`.project-ai/`
+- 索引文件：`.project-ai/context/index.md`
+- 上下文目录：`.project-ai/context/`
+- 规则目录：`.project-ai/rules/`
+- 模板目录：`.project-ai/templates/`
 
-## 3. 现状扫描范围
-代码仓根目录：`<repo-root>/`
+说明：
+- AI 必须先读取 `index.md`，再根据任务识别维度装配 context / rules / templates
+- 不得跳过 index 直接生成 spec / design / tasks
 
-优先扫描目录：
+## 5. 当前代码现状扫描范围
+### 5.1 代码仓根目录
+- `<repo-root>/`
+
+### 5.2 优先扫描目录
 - `<repo-root>/src/main/java/.../transaction/`
 - `<repo-root>/src/main/resources/mapper/transaction/`
 - `<repo-root>/src/test/java/.../transaction/`
 
-扩展扫描目录（如有需要）：
+### 5.3 扩展扫描目录（如有需要）
 - `<repo-root>/src/main/java/.../agreement/`
 - `<repo-root>/src/main/resources/mapper/agreement/`
 
-需优先检查的存量类型：
-- Controller
-- Service
+### 5.4 需优先检查的存量类型
+- Controller / Entry
+- Service / Orchestration
 - BO / DTO / VO / Entity
-- Mapper / XML
-- Helper / Converter
-- Enum / 常量
-- 单元测试
+- Mapper / XML / Repository
+- Helper / Converter / Adapter
+- Enum / Constant
+- Test
+- 配置 / 路由 / 脚本（如适用）
 
-## 4. 设计文档选择规则
-设计文档根目录：`.project-design-docs/`
+说明：
+- 当前 Git 代码始终为实物基线
+- 若未扫描当前代码现状，不允许直接生成 design / tasks
 
-如已知，请直接指定设计文档路径：
+## 6. 设计文档选择规则
+### 6.1 设计文档根目录
+- `.project-design-docs/`
+
+### 6.2 已知设计文档（如有）
 - `.project-design-docs/sprint5/agreement-information-query-design.md`
 
-若未指定，按以下优先级选择：
+### 6.3 若未显式指定，按以下优先级选择
 1. 与功能名称最接近的设计文档
 2. 同模块下相同功能类型的最近设计文档
 3. 同 sprint 下最相近功能文档
-4. 若无可参考文档，标注“本次基于存量代码与规则推导设计”
+4. 若无可参考文档，明确标注“本次基于存量代码与规则推导设计”
 
-## 5. 历史功能资产引用（仅 enhancement / refactor 必填）
-本次任务是否基于历史功能继续演进：否
+说明：
+- `.project-design-docs` 是设计参考库，不替代功能级 spec / tasks
+- 若引用设计文档，后续 spec / design 中必须记录引用路径
 
-## 6. 本次功能资产输出位置
-功能资产根目录：`.project-features/`
-本次输出目录：`.project-features/sprint5/agreement-information-query/`
+## 7. 历史功能资产引用（仅 enhancement / refactor 必填）
+### 7.1 本次是否基于历史功能继续演进
+- 否
 
-需生成文件：
+## 8. 本次功能资产输出位置
+### 8.1 功能资产根目录
+- `.project-features/`
+
+### 8.2 本次输出目录
+- `.project-features/sprint5/agreement-information-query/`
+
+### 8.3 需生成文件
 - `spec.md`
 - `design.md`
 - `tasks.md`
 
-## 7. 本次归档要求
-本次任务完成并通过最终人工审核后，需生成归档文件：
+## 9. 本次归档要求
+### 9.1 归档文件路径
 - `.project-features/sprint5/agreement-information-query/archive.md`
 
-归档前置条件：
+### 9.2 归档前置条件
+仅在以下条件全部满足后才允许归档：
+
 1. `spec.md` 已确认
 2. `design.md` 已确认
 3. `tasks.md` 已确认
@@ -84,44 +146,35 @@ AI知识底座根目录：`.project-ai/`
 5. 编译 / 测试结果已输出
 6. 人工最终审核已通过
 
-归档标准要求：
-1. 归档内容必须基于“最终确认版本”，不得记录中途废弃方案作为最终结论
-2. 归档内容必须与当前最终 Git 代码结果一致；若存在差异，必须在归档中明确标注
-3. 归档必须能让下一次 enhancement / refactor 在不回看完整对话的情况下，快速理解本次任务的：
-    - 目标
-    - 边界
-    - 最终方案
-    - 关键决策
-    - 风险
-    - 推荐阅读顺序
-4. 归档不得只写结论，必须保留必要的决策依据与取舍说明
-5. 归档不得堆砌执行过程流水账，只保留对后续复用有价值的信息
-6. 若本次任务形成新的通用规则、索引增量或模板修正，必须在归档中明确记录
-7. 若本次任务未完全完成，必须在归档中明确标注“未完成项 / 遗留风险 / 后续建议”，不得伪装为完整闭环
-8. 归档完成后，应可作为下一次增强提案的优先输入资产
+### 9.3 归档标准要求
+归档文件必须满足：
 
-## 8. 执行要求
-1. 先读索引文件，再按索引装配 context / rules / templates
-2. 再扫描指定代码范围
-3. 再读取匹配的设计文档
+1. 基于最终确认版本，不记录中途废弃方案作为最终结论
+2. 与当前最终 Git 代码结果一致；若存在差异，必须明确标注
+3. 能支持下一次 enhancement / refactor 在不回看完整对话的情况下继续工作
+4. 保留必要的决策依据与取舍，不得只写结论
+5. 不堆砌执行流水账，只保留后续复用所需信息
+6. 如本次产生规则 / 索引 / 模板增量，必须在归档中记录
+7. 如任务未完全完成，必须明确写出未完成项、遗留风险与后续建议
+
+## 10. 执行要求
+1. 先读取 `index.md`，再按索引装配 context / rules / templates
+2. 再扫描当前 Git 代码现状
+3. 再读取匹配的设计文档（如有）
 4. 先生成 `spec.md`
 5. `spec.md` 确认后，再生成 `design.md`
 6. `design.md` 确认后，再生成 `tasks.md`
 7. `tasks.md` 确认后，按 `spec.md + design.md + tasks.md` 实施代码
-8. 代码实施完成后，需输出：
+8. 实施完成后，必须输出：
     - 变更文件清单
     - 变更摘要
     - 编译结果
     - 测试结果
     - 已知问题 / 风险点
-9. 人工审核实施结果；如未通过，需基于当前任务上下文继续修正，不得直接跳过审查进入归档
-10. 仅在以下条件全部满足后，才允许执行归档：
-    - `spec.md` 已确认
-    - `design.md` 已确认
-    - `tasks.md` 已确认
-    - 代码实施已完成
-    - 编译 / 测试结果已输出
-    - 人工最终审核已通过
-11. 执行归档时，需按归档标准生成 `archive.md`，不得仅生成空壳文件或简略结论
-12. 如本次任务产生通用规则增量，需同步更新 `.project-ai/context/index.md` 或对应 rules / templates
-13. 若本次任务后续可能继续 enhancement / refactor，需在 `archive.md` 中明确写出下一次任务的推荐阅读顺序
+9. 人工审核实施结果；如未通过，必须在当前任务上下文中修正
+10. 审核通过后，按归档标准生成 `archive.md`
+11. 若本次任务产生通用规则增量，需同步更新 `.project-ai/context/index.md` 或对应 rules / templates
+
+## 11. 备注
+- 本次任务优先采用“在 transaction 现有模块内增量新增 query 能力”的策略
+- 若后续 agreement 相关能力持续扩张，再独立评估 agreement 子域抽离方案
