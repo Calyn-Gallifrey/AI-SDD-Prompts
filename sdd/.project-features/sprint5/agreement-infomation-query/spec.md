@@ -13,40 +13,28 @@
 - 当前状态：待确认
 - spec 文件路径：`./spec.md`
 
----
-
 ## 2. 任务来源 / Proposal 输入摘要
 ### 2.1 原始提案摘要
 - 功能目标：在 transaction 现有模块中新增 agreement information 查询能力，支持按指定条件查询 agreement information 列表或明细结果
-- 技术面：
-    - 契约与接口（Contract & Interface）
-    - 持久化与查询（Persistence & Query）
-    - 对象模型与边界（Object Model & Boundary）
-    - 转换与映射（Transformation & Mapping）
-    - 身份 / 权限 / 审计（Identity / Auth / Audit）
-    - 测试与质量门禁（Testing & Quality Gates）
-    - 兼容 / 迁移 / 演进（Compatibility / Migration / Evolution）
 - 变更范围：
-    - 新增 agreement information 查询接口
-    - 新增查询入参对象
-    - 新增返回对象
-    - 新增 mapper / xml 查询逻辑
-    - 新增 service / controller
-    - 补充必要单元测试
+  - 新增 agreement information 查询接口
+  - 新增查询入参对象
+  - 新增返回对象
+  - 新增 mapper / xml 查询逻辑
+  - 新增 service / controller
+  - 补充必要单元测试
 - 禁止变更：
-    - 不改资料表结构
-    - 不改既有 API path
-    - 不改既有 helper
-    - 不改 transaction 现有核心提交流程
-    - 不改既有对外接口契约
-    - 不做 agreement 独立模块化重构
+  - 不改资料表结构
+  - 不改既有 API path
+  - 不改既有 helper
+  - 不改 transaction 现有核心提交流程
+  - 不改既有对外接口契约
+  - 不做 agreement 独立模块化重构
 - 输出位置：`.project-features/sprint5/agreement-information-query/`
 
 ### 2.2 Proposal 文件引用
 - 当前提案文件路径：`./proposal-input.md`
 - 是否基于历史功能继续演进：否
-
----
 
 ## 3. Context Assembly（上下文装配）
 ### 3.1 Base Context
@@ -66,8 +54,6 @@
 - 本次任务是 transaction 模块内的增量查询能力建设
 - 本次任务必须优先沿用 transaction 现有模块结构和 query 类功能风格
 - agreement information 当前作为 transaction 模块中的一个查询能力处理，而非独立子域
-
----
 
 ## 4. Rules Assembly（规则装配）
 ### 4.1 结构与落位
@@ -114,13 +100,9 @@
 - 保持 transaction 核心流程兼容
 - 为后续 enhancement / refactor 预留归档资产
 
----
-
 ## 5. 历史功能资产引用（enhancement / refactor 必填）
 本次任务为新任务，不基于历史功能资产继续演进。  
 本节不适用。
-
----
 
 ## 6. 双基线定义
 ### 6.1 知识基线
@@ -133,7 +115,7 @@
 结论：
 - agreement-information-query 必须作为 transaction 模块内的增量查询能力落地
 - 本次任务必须遵守“最小侵入、最小改动、复用现有结构”的原则
-- 不允许借本次任务顺手推动大规模模块重构
+- 不允许借本次任务顺手推进大规模模块重构
 
 ### 6.2 当前 Git 代码基线
 扫描范围：
@@ -151,15 +133,11 @@
 - 当前无明确知识基线与实物基线冲突信息
 - 若后续扫描发现差异，以当前 Git 代码为准，并在 design 中明确标注调整策略
 
----
-
 ## 7. 功能目标
 - 在 transaction 模块中新增 agreement information 查询能力
 - 提供标准化查询接口，支持列表或明细结果返回
 - 沿用现有 transaction 模块的分层、对象命名与查询实现风格
 - 保持现有核心流程与对外契约稳定
-
----
 
 ## 8. 存量现状
 ### 8.1 业务存量
@@ -172,8 +150,6 @@
 - 已存在 query 类 controller / service / mapper / xml 实现样板
 - 已存在 current user / 审计字段处理方式
 - 已存在测试目录与测试风格
-
----
 
 ## 9. 本次变更范围
 ### 9.1 新增内容
@@ -198,8 +174,6 @@
 - 既有 helper / path / 核心流程重构
 - 对外接口契约变更
 
----
-
 ## 10. Non-goals / 不可变边界
 - 不改资料表结构
 - 不改既有 API path
@@ -208,8 +182,6 @@
 - 不改既有对外接口契约
 - 不借本次任务推进 agreement 子域拆分
 
----
-
 ## 11. Domain Mapping / 字段来源与领域映射
 
 | 字段 / 领域对象 | 来源（表 / 接口 / 存量类） | 目标对象 | 备注 |
@@ -217,12 +189,6 @@
 | agreement 基础信息 | agreement 相关表 / 存量查询结果 | AgreementInformationQueryVO | 需以实际表结构和 mapper 结果为准 |
 | 查询条件 | 请求入参 | AgreementInformationQueryBO / DTO | 由 controller / service 接收并下传 |
 | 审计 / 操作者相关信息 | current user / 审计字段 | service / query 上下文 | 仅按既有规则补充，不新增新机制 |
-
-说明：
-- 具体字段映射需在 design 中进一步展开
-- 若某字段来自多来源，需在 design 中明确优先级
-
----
 
 ## 12. 验收标准（AC）
 ### 12.1 正常路径
@@ -238,50 +204,56 @@
 - 参数非法时有明确校验结果
 - 查询过程异常时有明确错误语义和日志记录
 
-### 12.4 兼容性要求
-- 不破坏既有 transaction 核心流程
-- 不改变既有 API path
-- 不影响既有 helper 使用方式
+### 12.4 兼容场景
+- 不影响 transaction 现有核心提交流程
+- 不影响既有 query 类能力
+- 不破坏既有 API path 和既有 helper 依赖
 
-### 12.5 不可被影响的既有能力
-- transaction 提交流程
-- 既有 query 类接口能力
-- 既有对外接口契约
+## 13. 风险识别
+### 13.1 技术风险
+- 当前若 agreement information 查询需跨多表或复杂条件，Mapper / XML 复杂度可能上升
+- 若存量 query 样板并不能完全覆盖 agreement 场景，需谨慎扩展
 
----
+### 13.2 兼容风险
+- 若误改 transaction 核心 helper、既有 path 或核心提交流程，会带来不必要连带影响
+- 若查询复用了不合适的存量对象，可能导致字段语义混乱
 
-## 13. 风险与回滚
-### 13.1 主要风险
-- 查询 SQL 复杂度可能随条件增加而膨胀
-- agreement 相关能力后续增多时，当前模块落位可能不再最优
-- 若存量 transaction 结构存在特殊约束，可能限制本次实现方式
+### 13.3 交付风险
+- 若当前仓库中实际代码结构与预想不一致，design 阶段需及时修正落位方案
+- 若测试覆盖不足，容易在 query 边界场景出问题
 
-### 13.2 风险缓释方式
-- 本次优先采用最小增量方案
-- 优先复用现有 query 模式
-- 在归档中明确后续可重构方向
+### 13.4 风险重点（供 design 引用）
+- 严禁突破“不改表 / 不改 path / 不改 helper / 不改核心流程”的边界
+- 需显式设计 mapper / xml 查询与对象转换，避免实现时临时拼接
+- 需补齐最小必要测试，避免把 query 做成只能跑通 happy path 的半成品
 
-### 13.3 回滚方式
-- 回滚文件：本次新增的 controller / service / mapper / xml / object / test
-- 回滚范围：仅限 agreement-information-query 本次增量内容
-- 回滚前提：不涉及数据结构变更，因此可按代码层面回退
+## 14. 回滚策略
+若实施失败或验收不通过：
+- 回退本次新增 controller / service / mapper / xml / object / test 文件
+- 恢复到无 agreement-information-query 能力的 transaction 模块状态
+- 不触碰既有核心流程与对外接口，保证回滚成本最小
 
----
+## 15. 需传递给 Design 的约束
+Design 阶段必须回答：
 
-## 14. 需传递给 Design 的关键约束与前提
-Design 必须承接以下前提，不得自行偏离：
-- 必须沿用 transaction 模块既有结构
-- 必须保持“不改表 / 不改 path / 不改 helper / 不改核心流程”
-- 必须明确 BO / DTO / VO / Entity 的分工与落位
-- 必须明确 mapper / xml 查询实现方式
-- 必须明确 current user / 审计字段如何处理
-- 必须显式考虑测试设计
-- 必须显式说明若后续 agreement 子域扩张，当前设计的可演进边界
+- 类与包如何落位
+- 请求链路如何设计
+- 数据访问如何设计
+- 外部依赖如何接入（若后续发现存在）
+- 异常如何处理
+- 测试如何覆盖
+- performance / mapper 复杂度风险如何控制
 
----
+Design 阶段不得违反：
 
-## 15. 审核记录
-- spec 审核状态：待审核
-- 审核结论：
+- 本 spec 的范围定义
+- 本 spec 的边界约束
+- 本 spec 的验收标准
+
+## 16. 审核记录
+- 审核状态：待审核
+- 审核意见：
 - 审核人：
 - 审核时间：
+- 修订记录：
+  - v1：基于 proposal 生成初版 spec

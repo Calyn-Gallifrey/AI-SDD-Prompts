@@ -12,15 +12,44 @@
 - design 文件路径：`./design.md`
 - 当前状态：待确认
 
----
-
-## 2. 设计目标与范围
-### 2.1 设计目标
+## 2. Spec 输入摘要
+### 2.1 功能目标
 - 在 transaction 模块内新增 agreement information 查询能力
-- 保持 transaction 模块既有设计风格一致
-- 在不改表、不改 path、不改 helper 的边界下完成实现
+- 提供标准化查询接口
+- 保持 transaction 模块既有设计风格与核心流程稳定
 
-### 2.2 设计范围
+### 2.2 变更范围
+- 新增 agreement-information-query 接口
+- 新增 BO / DTO / VO
+- 新增 service / controller
+- 新增 mapper / xml 查询逻辑
+- 新增必要单元测试
+
+### 2.3 不可变边界
+- 不改资料表结构
+- 不改既有 API path
+- 不改既有 helper
+- 不改 transaction 核心提交流程
+- 不改既有对外接口契约
+
+### 2.4 验收标准
+- 可通过新增接口发起 agreement information 查询
+- 返回结构符合既定 VO 规范
+- 查询逻辑正常，且不影响既有 transaction 能力
+- 编译与测试结果完整可审查
+
+### 2.5 风险重点
+- mapper / xml 复杂度可能上升
+- 不允许为图快误改 transaction 核心 helper / path / 流程
+- 需显式补齐对象转换与最小必要测试
+
+## 3. 设计目标与范围
+### 3.1 设计目标
+- 在 transaction 模块中以最小侵入方式落地 agreement information 查询能力
+- 明确 controller / service / mapper / xml / object / test 的结构与落位
+- 为 tasks 提供可直接承接的实现设计，不留关键空白
+
+### 3.2 设计范围
 本次 design 负责：
 - query 接口落位设计
 - 对象设计
@@ -28,42 +57,14 @@
 - 数据流转设计
 - current user / 审计处理
 - 测试设计考量
+- 性能与复杂度考量
 
-### 2.3 非设计范围
+### 3.3 非设计范围
 本次 design 不负责：
 - agreement 子域独立模块化
 - transaction 核心流程改造
 - 数据表结构变更
 - 大规模历史代码重构
-
----
-
-## 3. Spec 输入摘要
-### 3.1 关键目标
-- 新增 agreement information 查询能力
-- 提供标准化查询接口
-- 保持 transaction 模块内增量实现
-
-### 3.2 关键边界
-- 不改表
-- 不改既有 API path
-- 不改既有 helper
-- 不改 transaction 核心流程
-
-### 3.3 关键验收标准
-- 可正常查询 agreement information
-- 返回结构符合 VO 规范
-- 不影响既有 transaction 能力
-- 测试与编译结果完整输出
-
-### 3.4 必须承接的约束
-- 沿用 transaction 模块结构
-- 显式设计对象分工
-- 显式说明 mapper / xml 查询实现
-- 显式考虑 current user / 审计字段
-- 显式考虑测试设计
-
----
 
 ## 4. 既有设计文档引用
 ### 4.1 设计文档来源
@@ -78,8 +79,6 @@
 - 若文档与当前 Git 代码冲突，以当前 Git 代码为准
 - 若文档未覆盖测试或 current user 处理，需在本设计中补全
 
----
-
 ## 5. 结构设计
 ### 5.1 总体结构
 本次功能采用 transaction 模块内标准 query 分层：
@@ -92,28 +91,26 @@
 
 ### 5.2 分层设计
 - 接口层（Controller / Entry）：
-    - `AgreementInformationQueryController`
+  - `AgreementInformationQueryController`
 - 应用层（Service / Orchestration）：
-    - `AgreementInformationQueryService`
-    - `AgreementInformationQueryServiceImpl`
+  - `AgreementInformationQueryService`
+  - `AgreementInformationQueryServiceImpl`
 - 持久化层（Mapper / Repository / XML）：
-    - `AgreementInformationQueryMapper`
-    - `AgreementInformationQueryMapper.xml`
+  - `AgreementInformationQueryMapper`
+  - `AgreementInformationQueryMapper.xml`
 - 转换层（Converter / Mapper）：
-    - 如需单独 converter，则新增
-    - 如转换简单，可在 service 内按规则处理
+  - 如需单独 converter，则新增
+  - 如转换简单，可在 service 内按规则处理
 - 支撑层（Helper / Constant / Enum / Adapter）：
-    - 仅复用存量，不新增或修改既有 helper
+  - 仅复用存量，不新增或修改既有 helper
 - 测试层：
-    - Controller Test
-    - Service Test
+  - Controller Test
+  - Service Test
 
 ### 5.3 结构选型理由
 - 该结构与 transaction 模块既有 query 类功能风格一致
 - 能满足最小增量落地要求
 - 风险最低，便于后续 enhancement / refactor
-
----
 
 ## 6. 模块划分
 
@@ -125,12 +122,6 @@
 | XML | `.../resources/mapper/transaction/.../` | SQL 查询实现 |
 | Model | `.../transaction/.../model/` 或既定对象目录 | BO / DTO / VO / Entity |
 | Test | `.../src/test/java/.../transaction/` | 单元测试 |
-
-说明：
-- 继续沿用 transaction 模块
-- 不新建 agreement 独立模块
-
----
 
 ## 7. 类 / 包 / 落位设计
 
@@ -147,8 +138,6 @@
 | AgreementInformationQueryEntity | 模型层 | `.../model/entity/` | 视需要新增 | 若需承接表结构映射 |
 | AgreementInformationQueryControllerTest | 测试层 | `.../test/.../controller/` | 新增 | controller 测试 |
 | AgreementInformationQueryServiceTest | 测试层 | `.../test/.../service/` | 新增 | service 测试 |
-
----
 
 ## 8. 数据流转设计
 ### 8.1 输入来源
@@ -168,8 +157,6 @@
 - 字段来源：mapper 查询结果 / DTO / Entity
 - 字段映射：由 converter 或 service 内规则控制
 
----
-
 ## 9. 请求流程 / Sequence Flow
 1. Controller 接收 agreement-information-query 请求
 2. 将请求转换为 BO / DTO，并传入 Service
@@ -183,8 +170,6 @@
 - 空结果分支：返回空结果语义
 - 异常分支：返回明确错误语义并输出必要日志
 
----
-
 ## 10. 外部依赖与调用方式
 
 | 外部依赖 / 存量依赖 | 调用位置 | 调用方式 | 说明 |
@@ -195,8 +180,6 @@
 说明：
 - 本次默认不新增 OM / EPI 外部依赖
 - 若实施中发现需要依赖存量 adapter / ACL，需沿用既有规则并在 design 中补充
-
----
 
 ## 11. 转换逻辑设计
 ### 11.1 输入转换
@@ -212,8 +195,6 @@
 - 简单字段转换可手工处理
 - 字典 / enum / code 映射按现有规则执行
 
----
-
 ## 12. 校验、异常与错误处理设计
 - 参数校验：在入口或 service 层按现有规则处理
 - 业务规则校验：仅校验本次查询相关约束
@@ -223,61 +204,52 @@
 - 系统异常：保留必要日志并返回统一错误信息
 - 错误码 / 错误语义处理：沿用现有项目约定
 
----
-
 ## 13. 身份、权限与审计处理
 - 操作者信息获取位置：沿用既有 current user 获取规则
 - 权限 / 数据范围控制方式：按 transaction 模块既有规则执行
 - 审计字段处理方式：如查询链路需要，沿用现有审计字段处理方式
 - 不新增新的权限机制或审计机制
 
----
-
 ## 14. 可观测性设计
 - 关键日志：
-    - 查询入口日志
-    - 查询条件与关键参数日志（注意脱敏）
-    - 查询异常日志
-- 错误日志：
-    - 持久化层异常
-    - 转换异常
-- 追踪字段：
-    - request trace id / user id（按现有规则）
-- 排障时应优先检查：
-    - mapper xml 查询条件
-    - DTO / VO 转换逻辑
-    - 当前 Git 代码与设计文档是否漂移
-
----
+  - 查询入口日志
+  - 查询条件与关键参数日志（注意脱敏）
+  - 查询异常日志
+- trace / requestId：沿用现有项目机制
+- 不为本次任务新增独立观测框架
 
 ## 15. 测试设计考量
 ### 15.1 需覆盖的核心点
 - 正常路径
 - 空结果场景
-- 参数边界
-- 异常场景
-- 转换逻辑
-- current user / 审计逻辑（如涉及）
+- 参数非法场景
+- 查询异常场景
+- current user / 审计处理场景（如有）
+- mapper 查询与转换逻辑
 
 ### 15.2 推荐测试类型
-- service 单测
-- controller 单测
-- converter / static / strategy 测试（按需）
-- integration / repository 测试（按需）
+- `AgreementInformationQueryServiceTest`
+- `AgreementInformationQueryControllerTest`
+- 如存在 converter 或 util 逻辑，按需补充对应测试
 
----
+## 16. 性能与容量考量
+- 是否高频接口：待业务确认，默认按普通查询接口处理
+- 预估数据量：取决于 agreement 数据量与筛选条件
+- 分页策略：若为列表查询，需沿用现有分页模式
+- SQL 风险点：多条件组合与可能的多表关联
+- 外部依赖耗时风险：本次默认不涉及新增外部依赖
+- 优化原则：在不引入额外复杂性的前提下控制 mapper / xml 复杂度
 
-## 16. 需传递给 Tasks 的执行约束
-Tasks 必须承接以下约束：
-- 必须先落位对象与 package
-- 必须后置补齐测试
+## 17. 需传递给 Tasks 的执行约束
+Tasks 阶段必须承接以下约束：
+
+- 先落位对象与包，再推进 service / mapper / controller
+- mapper / xml 必须显式实现，不允许临时拼接查询逻辑
 - 不得修改既有 helper / path / 核心流程
-- 必须在实施后输出变更清单、摘要、编译 / 测试结果
-- 必须保留归档所需的关键决策信息
+- 必须补齐 service / controller 测试
+- 实施结束后必须输出变更文件清单、摘要、编译结果、测试结果、风险点
 
----
-
-## 17. 审核记录
+## 18. 审核记录
 - design 审核状态：待审核
 - 审核结论：
 - 审核人：

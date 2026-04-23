@@ -8,17 +8,20 @@
 - 当前任务状态：新任务
 
 ## 2. 任务目标
-### 2.1 变更目标
-在 transaction 现有模块中新增 agreement information 查询能力，支持按指定条件查询 agreement information 列表或明细结果。
+### 2.1 一句话目标
+在 transaction 现有模块中新增 agreement information 查询能力，支持按指定条件查询 agreement information 列表或明细。
 
 ### 2.2 业务价值 / 触发原因
-- 当前系统缺少 agreement information 独立查询能力
-- 需在不破坏 transaction 既有核心流程的前提下补充查询能力
-- 本次任务优先以增量方式接入现有 transaction 模块，后续如 agreement 域持续扩展，再评估是否独立拆分模块
+当前 transaction 模块缺少面向 agreement information 的独立查询能力，导致相关数据获取依赖存量逻辑拼接或人工定位，复用性差、可维护性差。本次任务目标是在不破坏 transaction 现有核心流程的前提下，补齐标准查询能力。
+
+### 2.3 预期结果
+完成后，transaction 模块中应具备独立的 agreement-information-query 查询接口、查询 service、查询 mapper/xml 及对应对象模型，并补齐必要测试与归档资产。
 
 ## 3. 任务识别维度
-### 3.1 技术能力面
-本次任务涉及以下能力面：
+### 3.1 变更类型
+- 新增
+
+### 3.2 技术能力面
 - 契约与接口（Contract & Interface）
 - 持久化与查询（Persistence & Query）
 - 对象模型与边界（Object Model & Boundary）
@@ -27,33 +30,15 @@
 - 测试与质量门禁（Testing & Quality Gates）
 - 兼容 / 迁移 / 演进（Compatibility / Migration / Evolution）
 
-### 3.2 变更范围
-明确本次任务涉及以下变化：
+### 3.3 变更范围
+- 新增 agreement information 查询接口
+- 新增查询入参对象
+- 新增返回对象
+- 新增 mapper / xml 查询逻辑
+- 新增 service / controller
+- 补充必要单元测试
 
-- 新增内容：
-    - 新增 agreement-information-query 查询接口
-    - 新增查询入参对象
-    - 新增返回对象
-    - 新增 mapper / xml 查询逻辑
-    - 新增 service / controller
-    - 补充必要单元测试
-
-- 修改内容：
-    - 如需复用既有 transaction 查询基础设施，仅允许做最小必要修改
-
-- 复用内容：
-    - 复用 transaction 现有模块分层方式
-    - 复用既有 API 风格、对象命名风格、Mapper / XML 风格
-    - 复用既有 current user / 审计处理方式
-
-- 可能影响的区域：
-    - transaction 模块下的 query 类能力
-    - mapper / xml 查询层
-    - 相关测试用例
-
-### 3.3 禁止变更 / 不可变边界
-明确以下内容不能改：
-
+### 3.4 禁止变更 / 不可变边界
 - 不改资料表结构
 - 不改既有 API path
 - 不改既有 helper
@@ -69,8 +54,9 @@
 - 模板目录：`.project-ai/templates/`
 
 说明：
-- AI 必须先读取 `index.md`，再根据任务识别维度装配 context / rules / templates
-- 不得跳过 index 直接生成 spec / design / tasks
+1. AI 必须先读取 `index.md`
+2. 再由 `index.md` 决定装配哪些 context / rules / templates
+3. 不得跳过 index 直接盲目生成 spec / design / tasks
 
 ## 5. 当前代码现状扫描范围
 ### 5.1 代码仓根目录
@@ -111,10 +97,6 @@
 2. 同模块下相同功能类型的最近设计文档
 3. 同 sprint 下最相近功能文档
 4. 若无可参考文档，明确标注“本次基于存量代码与规则推导设计”
-
-说明：
-- `.project-design-docs` 是设计参考库，不替代功能级 spec / tasks
-- 若引用设计文档，后续 spec / design 中必须记录引用路径
 
 ## 7. 历史功能资产引用（仅 enhancement / refactor 必填）
 ### 7.1 本次是否基于历史功能继续演进
@@ -174,7 +156,3 @@
 9. 人工审核实施结果；如未通过，必须在当前任务上下文中修正
 10. 审核通过后，按归档标准生成 `archive.md`
 11. 若本次任务产生通用规则增量，需同步更新 `.project-ai/context/index.md` 或对应 rules / templates
-
-## 11. 备注
-- 本次任务优先采用“在 transaction 现有模块内增量新增 query 能力”的策略
-- 若后续 agreement 相关能力持续扩张，再独立评估 agreement 子域抽离方案
