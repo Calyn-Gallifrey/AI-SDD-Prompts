@@ -130,6 +130,7 @@ SDD 模式不要求人工指定 branch / commit / date range。
 
 SDD 模式不得生成 HTML 报告。
 
+
 必须直接输出以下内容，作为后续 Review-driven Auto-fix 输入：
 
 ```text
@@ -211,8 +212,9 @@ Report Output Date: YYYY-MM-DD
 2. 不执行 SDD 阶段闸门。
 3. 不检查 SDD 流程状态。
 4. 不要求 Auto-fix。
-5. 必须按指定 Git 范围做代码检查与审核。
-6. 必须按 HTML 模板生成总览报告和个人报告。
+5. Standalone 模式不得自动修改代码，除非用户另行明确要求。
+6. 必须按指定 Git 范围做代码检查与审核。
+7. 必须按 HTML 模板生成总览报告和个人报告。
 
 ## 4.2 HTML 模板固定路径
 
@@ -226,7 +228,6 @@ Report Output Date: YYYY-MM-DD
 禁止使用：
 
 ```text
-代码评审统计报告模板_总(1).html
 .gemini/
 Desktop/
 临时目录/
