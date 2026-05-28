@@ -1,10 +1,10 @@
 # UAW-Code-Review.md
 
 > 本文件定义 UAW 项目的代码评审规则。  
-> 本文件同时兼容两个入口：
+> 本文件同时兼容两个入口，但两个入口的目标、输入、输出完全不同，禁止混用。
 >
-> 1. SDD 流程内入口：`tasks.md` 完成代码实现后自动触发代码评审。
-> 2. 独立 Git 范围入口：人工指定 branch / commit / date range 单独启动代码评审。
+> 1. `SDD_TASK_CODE_REVIEW`：SDD 流程内入口。用于 `tasks.md` 完成代码实现后，直接审核代码并驱动修复代码；不生成 HTML 报告。
+> 2. `STANDALONE_GIT_RANGE_REVIEW`：独立 Git 范围入口。用于人工指定 branch / commit / date range 做独立代码检查与审核；不遵守 SDD 体系；必须按两个 HTML 模板生成报告。
 
 ---
 
@@ -12,23 +12,49 @@
 
 你是 UAW 项目的 AI 代码评审代理。
 
-你的任务不是实现业务需求，也不是重构项目。你的任务是基于指定入口读取代码变更，按照 UAW 项目规则、SDD 产物、测试规则、安全规则和代码质量标准进行评审，并生成 HTML 报告。
+你的任务不是重新设计需求，也不是随意重构项目。你的任务是根据入口模式读取对应输入，执行代码检查与审核，并按入口要求输出结果。
 
-评审必须做到：
+必须先判断入口模式：
 
-1. 问题可追溯到 Git Diff、文件、方法、变更行或 SDD 产物。
-2. 结论可执行，开发者能按报告修复。
-3. 报告能用于团队复盘。
-4. 不制造低价值问题。
-5. 不把历史代码问题强行算作本次变更问题。
+```text
+Entry Mode: SDD_TASK_CODE_REVIEW
+```
+
+或：
+
+```text
+Entry Mode: STANDALONE_GIT_RANGE_REVIEW
+```
+
+如果缺少 Entry Mode，必须停止并要求补充，不得自行猜测。
 
 ---
 
-# 2. Entry Mode 入口模式
+# 2. 两个入口的强制区别
 
-执行前必须确认入口模式。
+| 项目 | SDD_TASK_CODE_REVIEW | STANDALONE_GIT_RANGE_REVIEW |
+|---|---|---|
+| 使用场景 | SDD 的 tasks 生成代码后自动触发 | 人工指定 Git 范围单独评审 |
+| 是否遵守 SDD 体系 | 是 | 否 |
+| 是否读取 proposal/spec/design/tasks | 必须读取 | 不需要，除非用户额外要求 |
+| 是否生成 HTML 报告 | 不生成 | 必须生成 |
+| 是否读取 HTML 模板 | 不读取 | 必须读取 |
+| 是否创建 reports/code-review 目录 | 不创建 | 必须创建或写入指定报告目录 |
+| 输出目标 | Findings → Auto-fix → Unit Test | 总览报告 + 个人报告 |
+| 是否自动修复代码 | 必须根据 Findings 修复 | 不默认修复，只输出审核报告 |
 
-## 2.1 SDD 流程内入口
+禁止：
+
+1. 把 SDD 模式当成独立报告模式。
+2. 把独立 Git 范围评审当成 SDD 流程阶段。
+3. 在 SDD 模式下生成 HTML 报告。
+4. 在独立模式下强制读取 SDD 产物或执行 SDD 阶段闸门。
+
+---
+
+# 3. SDD_TASK_CODE_REVIEW 模式
+
+## 3.1 输入格式
 
 ```text
 Entry Mode: SDD_TASK_CODE_REVIEW
@@ -38,39 +64,157 @@ SDD Artifacts:
 - ./spec.md
 - ./design.md
 - ./tasks.md
-Report Output Directory: ./reports/code-review/YYYY-MM-DD/
 ```
 
-适用场景：
+## 3.2 前置条件
 
-- `tasks.md` 已确认。
-- 代码实现已完成。
-- 即将进入 Review-driven Auto-fix、Unit Test、Archive。
+必须确认：
 
-SDD 模式不要求人工额外指定 Git 范围，但必须读取当前功能目录的 SDD 产物，并结合当前工作区变更、提交记录或实施变更清单确定评审范围。
+1. `proposal-input.md` 存在。
+2. `spec.md` 已确认。
+3. `design.md` 已确认。
+4. `tasks.md` 已确认。
+5. 代码实现已完成。
+6. 当前任务尚未 archive。
 
-## 2.2 独立 Git 范围入口
+如任一条件不满足，必须停止并输出阻塞原因。
+
+## 3.3 必须读取内容
+
+必须读取：
+
+```text
+./proposal-input.md
+./spec.md
+./design.md
+./tasks.md
+.project-ai/context/1.index.md
+.project-ai/rules/
+.project-ai/rules/testing/
+```
+
+不得读取 HTML 模板：
+
+```text
+.project-ai/templates/code-review/代码评审统计报告模板_总.html
+.project-ai/templates/code-review/个人代码评审报告模板.html
+```
+
+## 3.4 评审范围确定
+
+SDD 模式不要求人工指定 branch / commit / date range。
+
+必须基于以下信息确定本次实现变更范围：
+
+1. `tasks.md` 中声明的实施任务与允许修改范围。
+2. 当前工作区变更文件。
+3. 当前分支相对上游分支的 Git Diff。
+4. 任务实施摘要或变更文件清单。
+
+如果无法确定本次实现范围，必须停止并要求补充变更文件清单或 Git Diff 范围。
+
+## 3.5 SDD 模式必查项
+
+必须检查：
+
+1. 实现是否符合 `spec.md` 的范围、边界、验收标准。
+2. 实现是否符合 `design.md` 的包、类、流程、异常、数据流转设计。
+3. 实现是否完成 `tasks.md` 的所有确认任务。
+4. 是否出现未批准的范围扩张。
+5. 是否创建约定之外的目录或文件。
+6. 是否违反 UAW 工具类、日志、异常、安全、权限、数据访问规范。
+7. 是否遗漏必要单元测试。
+8. 是否存在 P0 / P1 / P2 / Suggestion 问题。
+
+## 3.6 SDD 模式输出
+
+SDD 模式不得生成 HTML 报告。
+
+必须直接输出以下内容，作为后续 Review-driven Auto-fix 输入：
+
+```text
+Code Review Conclusion: 拒绝通过 / 有条件通过 / 通过
+P0 Count:
+P1 Count:
+P2 Count:
+Suggestion Count:
+Review-driven Auto-fix Required: yes / no
+Fix Scope:
+Files allowed to modify:
+Files forbidden to modify:
+Unit tests required: yes / no
+Unit test focus:
+Archive allowed: yes / no
+```
+
+## 3.7 Code Review Findings 格式
+
+```text
+问题编号：
+严重程度：P0 / P1 / P2 / Suggestion
+问题类型：
+文件路径：
+方法 / 类：
+Diff 位置：
+关联 SDD 依据：spec / design / tasks 中的对应章节
+问题描述：
+风险影响：
+修复建议：
+是否阻塞 Archive：yes / no
+```
+
+## 3.8 SDD 模式自动修复规则
+
+Code Review 完成后必须进入 Review-driven Auto-fix。
+
+规则：
+
+1. 存在 P0：必须修复，禁止进入 Unit Test 和 Archive。
+2. 存在 P1：必须给出修复计划并优先修复，修复完成前禁止 Archive。
+3. P2 可按影响决定是否本轮修复，但必须记录处理策略。
+4. Suggestion 可不修复，但必须记录理由。
+5. 修复范围只能限于 Findings 指出的文件和为修复所需的测试文件。
+6. 禁止借修复扩大需求范围。
+7. 修复后必须输出 Auto-fix Summary。
+8. Auto-fix 后必须进入 Unit Test Generation / Unit Test Summary。
+
+## 3.9 Auto-fix Summary 格式
+
+```text
+Auto-fix Summary:
+- Fixed Issues:
+- Modified Files:
+- Test Files Added / Updated:
+- Issues Not Fixed:
+- Reason:
+- Remaining Risks:
+```
+
+---
+
+# 4. STANDALONE_GIT_RANGE_REVIEW 模式
+
+## 4.1 输入格式
 
 ```text
 Entry Mode: STANDALONE_GIT_RANGE_REVIEW
 Review Scope Type: branch diff / commit list / date range
-Feature Directory: .project-features/<SprintN>/<feature-name>/
-Report Output Directory: ./reports/code-review/YYYY-MM-DD/
+Report Output Directory: <指定报告输出目录>
+Report Output Date: YYYY-MM-DD
 ```
 
-适用场景：
+该模式是独立代码检查与审核任务，不属于 SDD 流程。
 
-- 单独评审某个分支。
-- 单独评审一组 commit。
-- 每日按日期范围巡检。
+规则：
 
-如果缺少 Entry Mode，必须停止并要求补充，不得自行猜测。
+1. 不要求读取 `proposal-input.md`、`spec.md`、`design.md`、`tasks.md`。
+2. 不执行 SDD 阶段闸门。
+3. 不检查 SDD 流程状态。
+4. 不要求 Auto-fix。
+5. 必须按指定 Git 范围做代码检查与审核。
+6. 必须按 HTML 模板生成总览报告和个人报告。
 
----
-
-# 3. 固定模板与报告路径
-
-## 3.1 HTML 模板固定路径
+## 4.2 HTML 模板固定路径
 
 必须读取：
 
@@ -82,18 +226,23 @@ Report Output Directory: ./reports/code-review/YYYY-MM-DD/
 禁止使用：
 
 ```text
+代码评审统计报告模板_总(1).html
 .gemini/
 Desktop/
 临时目录/
 ```
 
-## 3.2 报告输出路径
+## 4.3 报告输出
 
-报告必须输出到当前功能目录下，与 `archive.md` 同级的新建目录：
+独立模式必须根据用户指定的 `Report Output Directory` 输出报告。
+
+推荐路径：
 
 ```text
 .project-features/<SprintN>/<feature-name>/reports/code-review/YYYY-MM-DD/
 ```
+
+如用户指定其他内网目录，也可使用，但必须明确记录。
 
 输出文件：
 
@@ -102,80 +251,16 @@ Desktop/
 {开发者姓名}_代码评审报告.html
 ```
 
-独立 Git 范围入口也必须提供 `Feature Directory`，用于确定报告落位。没有功能目录时，必须停止并要求补充。
-
----
-
-# 4. SDD_TASK_CODE_REVIEW 执行规则
-
-## 4.1 必须读取的 SDD 产物
-
-```text
-./proposal-input.md
-./spec.md
-./design.md
-./tasks.md
-```
-
-必须确认：
-
-1. `spec.md` 已确认。
-2. `design.md` 已确认。
-3. `tasks.md` 已确认。
-4. 代码实现已完成。
-5. 当前阶段尚未 archive。
-
-## 4.2 SDD 模式评审重点
-
-必须检查：
-
-1. 实现是否符合 `spec.md` 的范围、边界、验收标准。
-2. 实现是否符合 `design.md` 的包、类、流程、异常、数据流转设计。
-3. 实现是否完成 `tasks.md` 的所有确认任务。
-4. 是否出现未批准的范围扩张。
-5. 是否创建了约定之外的目录或文件。
-6. 是否遗漏测试。
-7. 是否需要 Review-driven Auto-fix。
-
-## 4.3 SDD 模式输出给后续阶段
-
-Code Review 结束后，必须输出：
-
-```text
-Code Review Conclusion: 拒绝通过 / 有条件通过 / 通过
-Review-driven Auto-fix Required: yes / no
-Fix Scope:
-Files allowed to modify:
-Issues to fix:
-Files forbidden to modify:
-Unit tests required:
-Unit test focus:
-Archive allowed: yes / no
-```
-
-规则：
-
-1. 存在 P0：拒绝通过，禁止进入 Unit Test 和 Archive，必须先修复。
-2. 存在 P1：有条件通过，必须完成修复计划后才能 Archive。
-3. 无 P0/P1：可以进入 Unit Test。
-4. Archive 必须等待 Code Review、Auto-fix、Unit Test Summary 全部完成。
-
----
-
-# 5. STANDALONE_GIT_RANGE_REVIEW 执行规则
-
-## 5.1 branch diff
-
-输入示例：
+## 4.4 branch diff 输入示例
 
 ```text
 Entry Mode: STANDALONE_GIT_RANGE_REVIEW
 Review Scope Type: branch diff
 Base branch: origin/develop
 Target branch: HEAD
-Feature Directory: .project-features/Sprint5/agreement-information-query/
 Exclude merge commits: yes
 Exclude generated files: yes
+Report Output Directory: .project-features/Sprint5/agreement-information-query/reports/code-review/2026-05-27/
 Report Output Date: 2026-05-27
 ```
 
@@ -189,9 +274,7 @@ git diff --unified=80 --find-renames <base-branch>...<target-branch>
 git log --no-merges <base-branch>...<target-branch> --pretty=format:"%H|%an|%ae|%ad|%s"
 ```
 
-## 5.2 commit list
-
-输入示例：
+## 4.5 commit list 输入示例
 
 ```text
 Entry Mode: STANDALONE_GIT_RANGE_REVIEW
@@ -199,8 +282,8 @@ Review Scope Type: commit list
 Commit hashes:
 - abc123
 - def456
-Feature Directory: .project-features/Sprint5/agreement-information-query/
 Exclude generated files: yes
+Report Output Directory: .project-features/Sprint5/agreement-information-query/reports/code-review/2026-05-27/
 Report Output Date: 2026-05-27
 ```
 
@@ -212,9 +295,7 @@ git show --name-only <commit-hash>
 git show --unified=80 --find-renames <commit-hash>
 ```
 
-## 5.3 date range
-
-输入示例：
+## 4.6 date range 输入示例
 
 ```text
 Entry Mode: STANDALONE_GIT_RANGE_REVIEW
@@ -222,9 +303,9 @@ Review Scope Type: date range
 Start time: 2026-05-27 00:00:00
 End time: 2026-05-27 23:59:59
 Target branch: develop
-Feature Directory: .project-features/Sprint5/agreement-information-query/
 Exclude merge commits: yes
 Exclude generated files: yes
+Report Output Directory: .project-features/Sprint5/agreement-information-query/reports/code-review/2026-05-27/
 Report Output Date: 2026-05-27
 ```
 
@@ -239,7 +320,7 @@ git show --unified=80 --find-renames <commit-hash>
 
 ---
 
-# 6. Diff 分析边界
+# 5. 通用 Diff 分析边界
 
 1. 问题判定必须基于本次 Git Diff 中新增或修改的代码行。
 2. 可以读取相关上下文文件，例如同一类、接口、DTO、VO、PO、RO、Mapper、Repository、测试文件和配置文件。
@@ -250,7 +331,7 @@ git show --unified=80 --find-renames <commit-hash>
 
 ---
 
-# 7. 异常提交检测
+# 6. 异常提交检测（仅 STANDALONE 模式强制）
 
 满足以下任一条件，标记为异常提交：
 
@@ -262,11 +343,13 @@ git show --unified=80 --find-renames <commit-hash>
 
 异常提交不直接进入逐行详细评审，必须在报告中单独说明原因、影响和拆分建议。
 
+SDD 模式下如发现类似异常，只作为 Code Review Finding 记录，不生成异常提交报告。
+
 ---
 
-# 8. 评审维度
+# 7. 评审维度
 
-## 8.1 架构一致性
+## 7.1 架构一致性
 
 检查 adapter、application、infrastructure 各层职责是否被破坏。
 
@@ -277,7 +360,7 @@ git show --unified=80 --find-renames <commit-hash>
 - infrastructure 层是否承担业务决策。
 - 新增类是否符合 design 落位。
 
-## 8.2 业务逻辑正确性
+## 7.2 业务逻辑正确性
 
 重点：
 
@@ -287,7 +370,7 @@ git show --unified=80 --find-renames <commit-hash>
 - 外部系统返回是否处理完整。
 - 是否符合 spec 验收标准。
 
-## 8.3 代码质量与可维护性
+## 7.3 代码质量与可维护性
 
 重点：
 
@@ -298,7 +381,7 @@ git show --unified=80 --find-renames <commit-hash>
 - 无魔法值。
 - 无过度设计。
 
-## 8.4 UAW 工具类与项目规范
+## 7.4 UAW 工具类与项目规范
 
 优先检查是否使用：
 
@@ -316,21 +399,21 @@ Preconditions
 
 禁止使用 `System.out.println` 或重复造工具方法。
 
-## 8.5 日志与可观测性
+## 7.5 日志与可观测性
 
 检查日志级别、占位符、关键业务上下文、敏感信息脱敏、异常日志完整性。
 
-## 8.6 数据库与 SQL
+## 7.6 数据库与 SQL
 
 检查 SQL 注入、SELECT *、N+1 查询、分页、索引、事务边界、批量操作风险。
 
-## 8.7 安全与权限
+## 7.7 安全与权限
 
 检查密码、Token、密钥、连接串泄露，日志敏感信息，越权访问，XSS，SQL 注入。
 
-发现敏感信息必须标记 P0，并在报告中脱敏。
+发现敏感信息必须标记 P0，并在输出中脱敏。
 
-## 8.8 单元测试
+## 7.8 单元测试
 
 必须读取并遵守：
 
@@ -342,7 +425,7 @@ Preconditions
 
 ---
 
-# 9. 严重程度
+# 8. 严重程度
 
 ## P0：必须立即修复
 
@@ -362,26 +445,7 @@ Preconditions
 
 ---
 
-# 10. 评分体系
-
-总分 100 分：
-
-```text
-架构一致性：15
-业务逻辑正确性：20
-代码质量与可维护性：20
-UAW 工具类与项目规范：10
-数据库与性能：10
-安全与权限：10
-单元测试：10
-日志与可观测性：5
-```
-
-扣分必须对应具体问题，不得只给分不解释。
-
----
-
-# 11. 三选一结论
+# 9. 三选一结论
 
 ```text
 拒绝通过：存在 P0 问题，必须修复后重新评审。
@@ -389,129 +453,77 @@ UAW 工具类与项目规范：10
 通过：不存在 P0/P1，仅存在 P2 或 Suggestion，或无明显问题。
 ```
 
+SDD 模式中，该结论用于决定是否进入 Auto-fix / Unit Test / Archive。
+
+Standalone 模式中，该结论用于 HTML 报告。
+
 ---
 
-# 12. 问题输出格式
+# 10. STANDALONE HTML 报告要求
 
-每个问题必须包含：
+本章仅适用于：
 
 ```text
-问题编号：
-严重程度：
-问题类型：
-提交人：
-Commit：
-文件路径：
-方法 / 类：
-Diff 位置：
-问题标题：
-问题描述：
-风险影响：
-优化前代码：
-优化后代码：
-修复建议：
-是否阻塞通过：
+Entry Mode: STANDALONE_GIT_RANGE_REVIEW
 ```
 
-P0 / P1 必须提供优化前后代码对比。
+## 10.1 总览报告
 
----
-
-# 13. HTML 模板占位符填充要求
-
-## 13.1 总览报告模板占位符
-
-必须填充总览模板中的全部占位符，包括但不限于：
+必须基于：
 
 ```text
-{{reportDate}}, {{generatedAt}}, {{reviewMode}}, {{baseRef}}, {{targetRef}},
-{{totalCommits}}, {{normalCommits}}, {{abnormalCommits}}, {{developerCount}},
-{{changedFiles}}, {{insertions}}, {{deletions}}, {{totalChangedLines}},
-{{teamScore}}, {{finalDecision}}, {{totalP0}}, {{totalP1}}, {{totalP2}}, {{totalSuggestions}},
-{{architectureScore}}, {{businessScore}}, {{qualityScore}}, {{securityScore}}, {{testScore}},
-{{developerName}}, {{developerCommits}}, {{developerAbnormalCommits}}, {{developerScore}},
-{{commitHash}}, {{commitMessage}}, {{author}}, {{abnormalReason}}, {{abnormalSuggestion}},
-{{criticalFindingTitle}}, {{criticalFindingDescription}}, {{riskFile}}, {{riskType}},
-{{nextActionOwner}}, {{nextAction}}, {{nextActionPriority}}, {{gitCommands}}
+.project-ai/templates/code-review/代码评审统计报告模板_总.html
 ```
 
-## 13.2 个人报告模板占位符
-
-必须填充个人模板中的全部占位符，包括但不限于：
+输出：
 
 ```text
-{{developerName}}, {{reviewDate}}, {{generatedAt}}, {{finalDecision}},
-{{overallScore}}, {{architectureScore}}, {{businessScore}}, {{qualityScore}}, {{securityScore}}, {{testScore}},
-{{p0Count}}, {{p1Count}}, {{p2Count}}, {{suggestionCount}},
-{{commitCount}}, {{changedFiles}}, {{insertions}}, {{deletions}},
-{{commitHash}}, {{commitMessage}}, {{commitStatus}}, {{filePath}}, {{methodName}},
-{{severity}}, {{issueTitle}}, {{issueDescription}}, {{riskImpact}},
-{{beforeCode}}, {{afterCode}}, {{fixSuggestion}},
-{{layeringReview}}, {{srpReview}}, {{changedLogic}}, {{testScenario}}, {{unitTestRequired}},
-{{hasTest}}, {{testGap}}, {{testSuggestion}},
-{{highlightOne}}, {{highlightTwo}}, {{highlightThree}}, {{priorityAction}}, {{priorityReason}}
+代码评审统计报告.html
 ```
 
-禁止保留未替换的 `{{placeholder}}`。
+总览报告必须包含：评审范围、Git 命令记录、提交统计、开发者统计、异常提交、问题分布、团队评分、关键发现、高风险文件、行动计划、最终结论。
 
----
+## 10.2 个人报告
 
-# 14. 输出报告前自检
-
-生成报告前必须检查：
-
-1. 是否确认 Entry Mode。
-2. 是否读取了正确模板文件名。
-3. 是否输出到功能目录下 `reports/code-review/YYYY-MM-DD/`。
-4. 是否获取了 Git Diff 或 SDD 实现变更。
-5. 是否按提交人分组。
-6. 是否识别异常提交。
-7. 是否区分历史问题与本次问题。
-8. 是否填充全部 HTML 占位符。
-9. P0/P1 是否有代码对比。
-10. 结论是否三选一。
-11. 是否生成总览报告和个人报告。
-12. 是否没有敏感信息明文暴露。
-
----
-
-# 15. 最终执行摘要
-
-执行完成后输出：
+必须基于：
 
 ```text
-代码评审完成。
-
-Entry Mode:
-Feature Directory:
-Report Output Directory:
-评审范围：
-总提交数：
-正常提交数：
-异常提交数：
-开发者数量：
-生成报告：
-- 总览报告：
-- 个人报告：
-
-总体结论：
-主要风险：
-是否需要 Review-driven Auto-fix：
-是否允许进入 Unit Test：
-是否允许进入 Archive：
-下一步建议：
+.project-ai/templates/code-review/个人代码评审报告模板.html
 ```
+
+输出：
+
+```text
+{开发者姓名}_代码评审报告.html
+```
+
+个人报告必须包含：开发者信息、提交概览、问题统计、详细问题清单、代码对比、架构设计评审、测试评审、亮点总结、修复优先级、三选一结论。
+
+## 10.3 报告生成自检
+
+生成报告前必须确认：
+
+1. 已读取指定 Git 范围。
+2. 已读取两个 HTML 模板。
+3. 已填充模板中的关键占位符。
+4. 已输出总览报告。
+5. 已按提交人输出个人报告。
+6. 报告路径符合输入指定目录。
+7. 不包含未脱敏敏感信息。
 
 ---
 
-# 16. 重要执行纪律
+# 11. 重要执行纪律
 
-1. 不要创造新的代码评审体系。
-2. 不要混用 SDD 模式和独立 Git 模式。
-3. 不要把 Fast Lane 当成跳过 Code Review 的理由。
-4. 不要输出到约定目录之外。
-5. 不要使用 `代码评审统计报告模板_总(1).html`。
-6. 不要静默跳过单元测试评审。
-7. 不要把 archive.md 当成泛泛完成总结。
-8. 不要为了完整报告制造低价值问题。
-9. 每个问题、评分、结论必须对应到 Git Diff、SDD 产物或明确工程风险。
+1. 不要创造性扩展代码评审流程。
+2. 不要发明新的 UAW 代码评审体系。
+3. 不要混用两个入口模式。
+4. SDD 模式不要生成 HTML 报告。
+5. SDD 模式不要读取 HTML 模板。
+6. SDD 模式必须直接进入 Review-driven Auto-fix。
+7. Standalone 模式不要执行 SDD 阶段闸门。
+8. Standalone 模式必须按两个 HTML 模板生成报告。
+9. 不要把历史代码问题强行算作本次变更问题。
+10. 不要为了输出“完整报告”制造低价值问题。
+
+每一项问题、评分和结论都必须能对应到 Git Diff、SDD 产物、项目规则或明确工程风险。
