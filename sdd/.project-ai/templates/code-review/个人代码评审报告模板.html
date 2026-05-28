@@ -2,227 +2,117 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>UAW 开发者代码评审报告</title>
+  <!-- Template Usage: STANDALONE_GIT_RANGE_REVIEW only. SDD_TASK_CODE_REVIEW must not use this template. -->
   <style>
-    :root {
-      --bg: #f6f7fb;
-      --panel: #ffffff;
-      --ink: #172033;
-      --muted: #667085;
-      --line: #e5e7eb;
-      --blue: #2458d3;
-      --blue-soft: #eaf0ff;
-      --red: #b42318;
-      --red-soft: #fef3f2;
-      --amber: #b54708;
-      --amber-soft: #fffaeb;
-      --green: #067647;
-      --green-soft: #ecfdf3;
-      --code-bg: #0f172a;
-      --code-ink: #e5e7eb;
-      --shadow: 0 14px 38px rgba(15, 23, 42, 0.08);
-    }
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
-      background: var(--bg);
-      color: var(--ink);
-      line-height: 1.6;
-    }
-    .page { max-width: 1180px; margin: 0 auto; padding: 32px 28px 56px; }
-    .header {
-      background: #fff;
-      border-radius: 24px;
-      padding: 28px;
-      box-shadow: var(--shadow);
-      border: 1px solid rgba(226, 232, 240, 0.8);
-      display: grid;
-      grid-template-columns: 1fr auto;
-      gap: 22px;
-      align-items: center;
-      margin-bottom: 20px;
-    }
-    .header h1 { margin: 0 0 8px; font-size: 28px; }
-    .header p { margin: 0; color: var(--muted); }
-    .score-ring {
-      width: 112px;
-      height: 112px;
-      border-radius: 50%;
-      display: grid;
-      place-items: center;
-      background:
-        radial-gradient(circle at center, #fff 56%, transparent 57%),
-        conic-gradient(var(--blue) calc({{overallScore}} * 1%), #e5e7eb 0);
-      box-shadow: inset 0 0 0 1px var(--line);
-    }
-    .score-ring strong { display: block; font-size: 28px; line-height: 1; }
-    .score-ring span { display: block; font-size: 12px; color: var(--muted); text-align: center; }
-    .section {
-      background: var(--panel);
-      border-radius: 20px;
-      padding: 24px;
-      box-shadow: var(--shadow);
-      border: 1px solid rgba(226, 232, 240, 0.8);
-      margin-bottom: 20px;
-    }
-    h2 { margin: 0 0 16px; font-size: 20px; }
-    h3 { margin: 0 0 12px; font-size: 16px; }
-    .meta-grid, .score-grid, .issue-grid { display: grid; gap: 14px; }
-    .meta-grid { grid-template-columns: repeat(4, 1fr); margin-top: 18px; }
-    .score-grid { grid-template-columns: repeat(4, 1fr); }
-    .issue-grid { grid-template-columns: repeat(4, 1fr); }
-    .card { border: 1px solid var(--line); background: #fbfcff; border-radius: 16px; padding: 16px; }
-    .label { color: var(--muted); font-size: 13px; }
-    .value { margin-top: 5px; font-size: 18px; font-weight: 800; }
-    .tag {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      border-radius: 999px;
-      padding: 4px 10px;
-      font-size: 12px;
-      font-weight: 700;
-      white-space: nowrap;
-    }
-    .tag.p0 { background: var(--red-soft); color: var(--red); }
-    .tag.p1 { background: var(--amber-soft); color: var(--amber); }
-    .tag.p2 { background: var(--blue-soft); color: var(--blue); }
-    .tag.pass { background: var(--green-soft); color: var(--green); }
-    table { width: 100%; border-collapse: collapse; font-size: 14px; }
-    th { background: #f8fafc; color: #475467; text-align: left; padding: 12px 14px; border-bottom: 1px solid var(--line); }
-    td { padding: 12px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
-    .issue { border: 1px solid var(--line); border-radius: 18px; padding: 20px; margin-bottom: 18px; background: #fff; }
-    .issue-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
-    .issue-title { font-size: 18px; font-weight: 800; }
-    .issue-meta { color: var(--muted); font-size: 13px; margin-bottom: 14px; }
-    .comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 14px; }
-    .code-panel { border-radius: 16px; overflow: hidden; border: 1px solid #1e293b; background: var(--code-bg); }
-    .code-title { background: #111827; color: #fff; padding: 10px 14px; font-size: 13px; font-weight: 800; border-bottom: 1px solid #334155; }
-    pre { margin: 0; padding: 16px; overflow-x: auto; color: var(--code-ink); font-size: 13px; line-height: 1.55; }
-    .notes { margin-top: 14px; background: #f8fafc; border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; color: #344054; }
-    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
-    .footer { color: var(--muted); text-align: center; font-size: 12px; padding: 18px 0 0; }
-    @media (max-width: 900px) {
-      .header, .comparison, .two-col, .meta-grid, .score-grid, .issue-grid { grid-template-columns: 1fr; }
-      .score-ring { justify-self: start; }
-    }
+    body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,"Microsoft YaHei",sans-serif;margin:0;background:#f6f7fb;color:#1f2937;}
+    .page{max-width:1120px;margin:0 auto;padding:28px}.hero{background:#111827;color:#fff;border-radius:18px;padding:26px 30px;margin-bottom:20px}.hero h1{margin:0;font-size:28px}.muted{color:#6b7280;font-size:13px}.hero .muted{color:#d1d5db}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:16px 0}.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:16px 0}.card{background:#fff;border-radius:14px;padding:16px;box-shadow:0 8px 24px rgba(15,23,42,.06)}.label{font-size:12px;color:#6b7280;margin-bottom:6px}.value{font-size:22px;font-weight:800}h2{font-size:20px;margin:28px 0 12px}h3{font-size:16px;margin:12px 0 8px}table{width:100%;border-collapse:collapse;background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 8px 24px rgba(15,23,42,.06);margin-bottom:18px}th,td{padding:12px;border-bottom:1px solid #e5e7eb;text-align:left;font-size:14px;vertical-align:top}th{background:#f3f4f6}.badge{display:inline-block;border-radius:999px;padding:4px 10px;font-size:12px;font-weight:700}.pass{background:#dcfce7;color:#166534}.warn{background:#fef3c7;color:#92400e}.fail{background:#fee2e2;color:#991b1b}pre{background:#0f172a;color:#e5e7eb;padding:12px;border-radius:10px;overflow:auto;font-size:13px}.issue{border-left:4px solid #111827}.section-note{background:#eef2ff;border-left:4px solid #4f46e5;padding:12px;border-radius:10px;margin-bottom:16px;}
   </style>
 </head>
 <body>
-  <main class="page">
-    <header class="header">
-      <div>
-        <h1>{{developerName}} 代码评审报告</h1>
-        <p>基于 UAW 项目规则和本次 Git Diff 变更生成。只评审变更，不做全项目泛泛体检。</p>
-        <section class="meta-grid">
-          <div class="card"><div class="label">评审日期</div><div class="value">{{reviewDate}}</div></div>
-          <div class="card"><div class="label">Commit 数</div><div class="value">{{commitCount}}</div></div>
-          <div class="card"><div class="label">变更文件</div><div class="value">{{changedFiles}}</div></div>
-          <div class="card"><div class="label">结论</div><div class="value">{{finalDecision}}</div></div>
-        </section>
-      </div>
-      <div class="score-ring"><div><strong>{{overallScore}}</strong><span>/100</span></div></div>
-    </header>
+<div class="page">
+  <div class="hero">
+    <h1>UAW 开发者代码评审报告</h1>
+    <p class="muted">Template Usage: STANDALONE_GIT_RANGE_REVIEW only</p>
+  </div>
 
-    <section class="section">
-      <h2>1. 评分明细</h2>
-      <div class="score-grid">
-        <div class="card"><div class="label">架构一致性</div><div class="value">{{architectureScore}}/15</div></div>
-        <div class="card"><div class="label">业务逻辑</div><div class="value">{{businessScore}}/20</div></div>
-        <div class="card"><div class="label">代码质量</div><div class="value">{{qualityScore}}/20</div></div>
-        <div class="card"><div class="label">单元测试</div><div class="value">{{testScore}}/10</div></div>
-      </div>
-    </section>
+  <div class="grid">
+    <div class="card"><div class="label">开发者</div><div class="value">{{developerName}}</div></div>
+    <div class="card"><div class="label">评审日期</div><div class="value">{{reviewDate}}</div></div>
+    <div class="card"><div class="label">综合评分</div><div class="value">{{overallScore}}</div></div>
+    <div class="card"><div class="label">最终结论</div><div class="value">{{finalDecision}}</div></div>
+  </div>
 
-    <section class="section">
-      <h2>2. 问题统计</h2>
-      <div class="issue-grid">
-        <div class="card"><div class="label">P0 必须修复</div><div class="value">{{p0Count}}</div></div>
-        <div class="card"><div class="label">P1 建议修复</div><div class="value">{{p1Count}}</div></div>
-        <div class="card"><div class="label">P2 后续优化</div><div class="value">{{p2Count}}</div></div>
-        <div class="card"><div class="label">Suggestion</div><div class="value">{{suggestionCount}}</div></div>
-      </div>
-    </section>
+  <h2>1. 提交概览</h2>
+  <div class="grid">
+    <div class="card"><div class="label">提交数</div><div class="value">{{commitCount}}</div></div>
+    <div class="card"><div class="label">变更文件数</div><div class="value">{{changedFiles}}</div></div>
+    <div class="card"><div class="label">新增行数</div><div class="value">{{insertions}}</div></div>
+    <div class="card"><div class="label">删除行数</div><div class="value">{{deletions}}</div></div>
+  </div>
+  <table>
+    <thead><tr><th>Commit</th><th>提交信息</th><th>文件数</th><th>新增</th><th>删除</th><th>状态</th></tr></thead>
+    <tbody><tr><td>{{commitHash}}</td><td>{{commitMessage}}</td><td>{{filesChanged}}</td><td>{{insertions}}</td><td>{{deletions}}</td><td><span class="badge {{commitStatusClass}}">{{commitStatus}}</span></td></tr></tbody>
+  </table>
 
-    <section class="section">
-      <h2>3. 提交概览</h2>
-      <table>
-        <thead><tr><th>Commit</th><th>提交信息</th><th>文件数</th><th>新增/删除</th><th>是否异常</th></tr></thead>
-        <tbody>
-          <tr>
-            <td><code>{{commitHash}}</code></td>
-            <td>{{commitMessage}}</td>
-            <td>{{filesChanged}}</td>
-            <td>+{{insertions}} / -{{deletions}}</td>
-            <td><span class="tag {{commitStatusClass}}">{{commitStatus}}</span></td>
-          </tr>
-        </tbody>
-      </table>
-    </section>
+  <h2>2. 评分明细</h2>
+  <table>
+    <thead><tr><th>维度</th><th>得分</th><th>问题摘要</th></tr></thead>
+    <tbody>
+      <tr><td>架构一致性与包结构</td><td>{{architectureScore}}</td><td>{{architectureReview}}</td></tr>
+      <tr><td>业务逻辑正确性</td><td>{{businessScore}}</td><td>{{businessReview}}</td></tr>
+      <tr><td>代码质量与可维护性</td><td>{{qualityScore}}</td><td>{{qualityReview}}</td></tr>
+      <tr><td>UAW 工具类与项目规范</td><td>{{uawStandardScore}}</td><td>{{uawStandardReview}}</td></tr>
+      <tr><td>数据库与性能</td><td>{{databaseScore}}</td><td>{{databaseReview}}</td></tr>
+      <tr><td>安全与权限</td><td>{{securityScore}}</td><td>{{securityReview}}</td></tr>
+      <tr><td>单元测试</td><td>{{testScore}}</td><td>{{testReview}}</td></tr>
+      <tr><td>日志与可观测性</td><td>{{loggingScore}}</td><td>{{loggingReview}}</td></tr>
+      <tr><td>外部接口与配置风险</td><td>{{integrationConfigScore}}</td><td>{{integrationConfigReview}}</td></tr>
+      <tr><td>事务、幂等与重复提交</td><td>{{idempotencyScore}}</td><td>{{idempotencyReview}}</td></tr>
+    </tbody>
+  </table>
 
-    <section class="section">
-      <h2>4. 详细代码评审</h2>
-      <article class="issue">
-        <div class="issue-header">
-          <div class="issue-title">{{issueNo}}. {{issueTitle}}</div>
-          <span class="tag {{severityClass}}">{{severity}}</span>
-        </div>
-        <div class="issue-meta">文件：<code>{{filePath}}</code> · 位置：{{location}} · 开发者：{{developerName}}</div>
-        <p><strong>问题描述：</strong>{{issueDescription}}</p>
-        <p><strong>影响说明：</strong>{{impactDescription}}</p>
-        <div class="comparison">
-          <div class="code-panel"><div class="code-title">优化前：问题代码</div><pre><code class="language-java">{{beforeCode}}</code></pre></div>
-          <div class="code-panel"><div class="code-title">优化后：建议代码</div><pre><code class="language-java">{{afterCode}}</code></pre></div>
-        </div>
-        <div class="notes">
-          <strong>修复建议：</strong>{{fixSuggestion}}<br />
-          <strong>是否需要单元测试：</strong>{{unitTestRequired}}<br />
-          <strong>建议测试场景：</strong>{{testScenario}}
-        </div>
-      </article>
-    </section>
+  <h2>3. 问题统计</h2>
+  <div class="grid">
+    <div class="card"><div class="label">P0</div><div class="value">{{p0Count}}</div></div>
+    <div class="card"><div class="label">P1</div><div class="value">{{p1Count}}</div></div>
+    <div class="card"><div class="label">P2</div><div class="value">{{p2Count}}</div></div>
+    <div class="card"><div class="label">Suggestion</div><div class="value">{{suggestionCount}}</div></div>
+  </div>
 
-    <section class="section">
-      <h2>5. 架构与设计评审</h2>
-      <div class="two-col">
-        <div class="card"><h3>分层架构</h3><p>{{layeringReview}}</p></div>
-        <div class="card"><h3>单一职责与可维护性</h3><p>{{srpReview}}</p></div>
-      </div>
-    </section>
+  <h2>4. 详细代码评审</h2>
+  <div class="card issue">
+    <h3>{{issueNo}}. {{issueTitle}} <span class="badge {{severityClass}}">{{severity}}</span></h3>
+    <p><strong>文件：</strong>{{filePath}}</p>
+    <p><strong>位置：</strong>{{location}}</p>
+    <p><strong>问题描述：</strong>{{issueDescription}}</p>
+    <p><strong>风险影响：</strong>{{impactDescription}}</p>
+    <p><strong>修复建议：</strong>{{fixSuggestion}}</p>
+    <h3>优化前</h3><pre>{{beforeCode}}</pre>
+    <h3>优化后</h3><pre>{{afterCode}}</pre>
+  </div>
 
-    <section class="section">
-      <h2>6. 测试评审</h2>
-      <table>
-        <thead><tr><th>变更点</th><th>是否已有测试</th><th>缺口</th><th>建议补充</th></tr></thead>
-        <tbody>
-          <tr><td>{{changedLogic}}</td><td>{{hasTest}}</td><td>{{testGap}}</td><td>{{testSuggestion}}</td></tr>
-        </tbody>
-      </table>
-    </section>
+  <h2>5. 架构与包结构评审</h2>
+  <table>
+    <thead><tr><th>检查项</th><th>结论</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td>模块结构识别</td><td>{{moduleStructureResult}}</td><td>{{moduleStructureReview}}</td></tr>
+      <tr><td>职责边界</td><td>{{responsibilityResult}}</td><td>{{responsibilityReview}}</td></tr>
+      <tr><td>依赖方向</td><td>{{dependencyResult}}</td><td>{{dependencyReview}}</td></tr>
+      <tr><td>新增包 / 类落位</td><td>{{placementResult}}</td><td>{{placementReview}}</td></tr>
+    </tbody>
+  </table>
 
-    <section class="section">
-      <h2>7. 亮点总结</h2>
-      <div class="two-col">
-        <div class="card"><h3>亮点 1</h3><p>{{highlightOne}}</p></div>
-        <div class="card"><h3>亮点 2</h3><p>{{highlightTwo}}</p></div>
-      </div>
-    </section>
+  <h2>6. 测试评审</h2>
+  <table>
+    <thead><tr><th>是否需要单测</th><th>测试场景</th><th>缺口</th><th>建议</th></tr></thead>
+    <tbody><tr><td>{{unitTestRequired}}</td><td>{{testScenario}}</td><td>{{testGap}}</td><td>{{testSuggestion}}</td></tr></tbody>
+  </table>
 
-    <section class="section">
-      <h2>8. 修复优先级</h2>
-      <table>
-        <thead><tr><th>优先级</th><th>处理内容</th><th>建议完成时点</th></tr></thead>
-        <tbody>
-          <tr><td><span class="tag p0">P0</span></td><td>{{p0Action}}</td><td>合并前</td></tr>
-          <tr><td><span class="tag p1">P1</span></td><td>{{p1Action}}</td><td>本次合并前或下个迭代</td></tr>
-          <tr><td><span class="tag p2">P2</span></td><td>{{p2Action}}</td><td>后续技术债</td></tr>
-        </tbody>
-      </table>
-    </section>
+  <h2>7. 外部接口、配置、事务与幂等</h2>
+  <table>
+    <thead><tr><th>专项</th><th>检查结果</th><th>风险</th><th>建议</th></tr></thead>
+    <tbody>
+      <tr><td>外部接口与远程调用</td><td>{{externalCallResult}}</td><td>{{externalCallRisk}}</td><td>{{externalCallSuggestion}}</td></tr>
+      <tr><td>配置与环境兼容</td><td>{{configResult}}</td><td>{{configRisk}}</td><td>{{configSuggestion}}</td></tr>
+      <tr><td>事务、幂等、重复提交</td><td>{{idempotencyResult}}</td><td>{{idempotencyRisk}}</td><td>{{idempotencySuggestion}}</td></tr>
+    </tbody>
+  </table>
 
-    <footer class="footer">UAW Developer Code Review Report · Generated by UAW-SDD Code Review Workflow · {{generatedAt}}</footer>
-  </main>
+  <h2>8. 亮点总结</h2>
+  <div class="grid-2"><div class="card">{{highlightOne}}</div><div class="card">{{highlightTwo}}</div></div>
+
+  <h2>9. 修复优先级</h2>
+  <table>
+    <thead><tr><th>优先级</th><th>动作</th></tr></thead>
+    <tbody>
+      <tr><td>P0</td><td>{{p0Action}}</td></tr>
+      <tr><td>P1</td><td>{{p1Action}}</td></tr>
+      <tr><td>P2</td><td>{{p2Action}}</td></tr>
+    </tbody>
+  </table>
+
+  <p class="muted">Generated at: {{generatedAt}}</p>
+</div>
 </body>
 </html>
