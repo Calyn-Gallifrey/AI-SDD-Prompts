@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>UAW 代码评审统计报告</title>
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --panel: #ffffff;
+      --ink: #172033;
+      --muted: #667085;
+      --line: #e5e7eb;
+      --blue: #2458d3;
+      --blue-soft: #eaf0ff;
+      --red: #c2410c;
+      --red-soft: #fff1eb;
+      --amber: #b7791f;
+      --amber-soft: #fff7e6;
+      --green: #087443;
+      --green-soft: #e9f8f0;
+      --purple: #6d28d9;
+      --purple-soft: #f3e8ff;
+      --shadow: 0 14px 38px rgba(15, 23, 42, 0.08);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.6;
+    }
+    .page { max-width: 1280px; margin: 0 auto; padding: 32px 28px 56px; }
+    .hero {
+      background: linear-gradient(135deg, #102a63, #2458d3);
+      color: #fff;
+      border-radius: 24px;
+      padding: 32px;
+      box-shadow: var(--shadow);
+      margin-bottom: 24px;
+    }
+    .hero h1 { margin: 0 0 10px; font-size: 30px; letter-spacing: 0.2px; }
+    .hero p { margin: 0; opacity: 0.9; font-size: 15px; }
+    .meta-grid, .metric-grid, .action-grid { display: grid; gap: 16px; }
+    .meta-grid { grid-template-columns: repeat(4, 1fr); margin-top: 24px; }
+    .meta-card {
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 16px;
+      padding: 14px 16px;
+    }
+    .meta-card .label { font-size: 12px; opacity: 0.78; }
+    .meta-card .value { margin-top: 4px; font-size: 16px; font-weight: 700; }
+    .section {
+      background: var(--panel);
+      border-radius: 20px;
+      padding: 24px;
+      box-shadow: var(--shadow);
+      margin-bottom: 20px;
+      border: 1px solid rgba(226, 232, 240, 0.7);
+    }
+    .section h2 { margin: 0 0 16px; font-size: 20px; }
+    .section-desc { margin: -8px 0 18px; color: var(--muted); font-size: 14px; }
+    .metric-grid { grid-template-columns: repeat(6, 1fr); }
+    .metric-card {
+      background: #fbfcff;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 18px;
+    }
+    .metric-card .label { color: var(--muted); font-size: 13px; }
+    .metric-card .num { margin-top: 8px; font-size: 28px; font-weight: 800; }
+    .metric-card .hint { margin-top: 4px; color: var(--muted); font-size: 12px; }
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 12px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .tag.pass { background: var(--green-soft); color: var(--green); }
+    .tag.warn { background: var(--amber-soft); color: var(--amber); }
+    .tag.reject { background: var(--red-soft); color: var(--red); }
+    .tag.info { background: var(--blue-soft); color: var(--blue); }
+    .tag.purple { background: var(--purple-soft); color: var(--purple); }
+    table { width: 100%; border-collapse: collapse; overflow: hidden; border-radius: 14px; font-size: 14px; }
+    th {
+      background: #f8fafc;
+      color: #475467;
+      text-align: left;
+      font-weight: 700;
+      border-bottom: 1px solid var(--line);
+      padding: 12px 14px;
+    }
+    td { border-bottom: 1px solid var(--line); padding: 12px 14px; vertical-align: top; }
+    tr:last-child td { border-bottom: none; }
+    .score-bar { height: 8px; background: #eef2f7; border-radius: 999px; overflow: hidden; min-width: 120px; }
+    .score-bar span { display: block; height: 100%; background: var(--blue); border-radius: 999px; }
+    .two-col { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 20px; }
+    .finding-list, .plan-list { list-style: none; padding: 0; margin: 0; }
+    .finding-list li, .plan-list li {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 14px 16px;
+      margin-bottom: 12px;
+      background: #fbfcff;
+    }
+    .finding-title { font-weight: 800; margin-bottom: 4px; }
+    .finding-body { color: var(--muted); font-size: 13px; }
+    .code-box { background: #0f172a; color: #e5e7eb; padding: 16px; border-radius: 14px; overflow-x: auto; font-size: 13px; }
+    .footer { color: var(--muted); text-align: center; font-size: 12px; padding: 18px 0 0; }
+    @media (max-width: 980px) {
+      .meta-grid, .metric-grid, .two-col { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 640px) {
+      .page { padding: 18px; }
+      .meta-grid, .metric-grid, .two-col { grid-template-columns: 1fr; }
+      .hero h1 { font-size: 24px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="hero">
+      <h1>UAW 代码评审统计报告</h1>
+      <p>基于 Git Diff、UAW 项目规则和代码评审模板生成。重点不是好看，是把风险拎出来，别让问题偷偷混进主分支。</p>
+      <section class="meta-grid">
+        <div class="meta-card"><div class="label">评审日期</div><div class="value">{{reviewDate}}</div></div>
+        <div class="meta-card"><div class="label">评审范围</div><div class="value">{{baseRef}} → {{headRef}}</div></div>
+        <div class="meta-card"><div class="label">评审方式</div><div class="value">Git Diff + UAW Rules</div></div>
+        <div class="meta-card"><div class="label">最终结论</div><div class="value">{{finalDecision}}</div></div>
+      </section>
+    </header>
+
+    <section class="section">
+      <h2>1. 核心统计</h2>
+      <p class="section-desc">以下数据来自 Git 统计与评审结果汇总。</p>
+      <div class="metric-grid">
+        <div class="metric-card"><div class="label">总提交数</div><div class="num">{{totalCommits}}</div><div class="hint">排除 merge：{{excludeMerge}}</div></div>
+        <div class="metric-card"><div class="label">开发者数</div><div class="num">{{developerCount}}</div><div class="hint">按 author 统计</div></div>
+        <div class="metric-card"><div class="label">变更文件数</div><div class="num">{{changedFiles}}</div><div class="hint">Java/XML/SQL/配置等</div></div>
+        <div class="metric-card"><div class="label">新增行数</div><div class="num">{{insertions}}</div><div class="hint">Git numstat</div></div>
+        <div class="metric-card"><div class="label">删除行数</div><div class="num">{{deletions}}</div><div class="hint">Git numstat</div></div>
+        <div class="metric-card"><div class="label">异常提交</div><div class="num">{{abnormalCommits}}</div><div class="hint">>500 行或 >20 文件</div></div>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>2. 团队评分与问题分布</h2>
+      <table>
+        <thead><tr><th>维度</th><th>得分</th><th>权重</th><th>主要扣分原因</th><th>趋势</th></tr></thead>
+        <tbody>
+          <tr><td>架构一致性</td><td>{{architectureScore}}/15</td><td>15%</td><td>{{architectureDeductionReason}}</td><td><div class="score-bar"><span style="width: {{architecturePercent}}%;"></span></div></td></tr>
+          <tr><td>业务逻辑正确性</td><td>{{businessScore}}/20</td><td>20%</td><td>{{businessDeductionReason}}</td><td><div class="score-bar"><span style="width: {{businessPercent}}%;"></span></div></td></tr>
+          <tr><td>代码质量与可维护性</td><td>{{qualityScore}}/20</td><td>20%</td><td>{{qualityDeductionReason}}</td><td><div class="score-bar"><span style="width: {{qualityPercent}}%;"></span></div></td></tr>
+          <tr><td>测试完整性</td><td>{{testScore}}/10</td><td>10%</td><td>{{testDeductionReason}}</td><td><div class="score-bar"><span style="width: {{testPercent}}%;"></span></div></td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="section">
+      <h2>3. 开发者统计</h2>
+      <table>
+        <thead><tr><th>开发者</th><th>提交数</th><th>文件数</th><th>新增/删除</th><th>异常提交</th><th>问题数</th><th>个人评分</th><th>结论</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>{{developerName}}</td>
+            <td>{{developerCommits}}</td>
+            <td>{{developerFiles}}</td>
+            <td>+{{developerInsertions}} / -{{developerDeletions}}</td>
+            <td>{{developerAbnormalCommits}}</td>
+            <td>P0: {{p0Count}} / P1: {{p1Count}} / P2: {{p2Count}}</td>
+            <td>{{developerScore}}/100</td>
+            <td><span class="tag {{developerDecisionClass}}">{{developerDecision}}</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="section">
+      <h2>4. 异常提交统计</h2>
+      <table>
+        <thead><tr><th>Commit</th><th>开发者</th><th>提交信息</th><th>文件数</th><th>变更行数</th><th>异常原因</th><th>建议</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><code>{{commitHash}}</code></td>
+            <td>{{author}}</td>
+            <td>{{commitMessage}}</td>
+            <td>{{filesChanged}}</td>
+            <td>{{totalChangedLines}}</td>
+            <td><span class="tag warn">{{abnormalReason}}</span></td>
+            <td>{{abnormalSuggestion}}</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="section">
+      <h2>5. 关键发现</h2>
+      <div class="two-col">
+        <ul class="finding-list">
+          <li><div class="finding-title"><span class="tag reject">P0</span> {{criticalFindingTitle}}</div><div class="finding-body">{{criticalFindingDescription}}</div></li>
+          <li><div class="finding-title"><span class="tag warn">P1</span> {{majorFindingTitle}}</div><div class="finding-body">{{majorFindingDescription}}</div></li>
+          <li><div class="finding-title"><span class="tag info">P2</span> {{minorFindingTitle}}</div><div class="finding-body">{{minorFindingDescription}}</div></li>
+        </ul>
+        <div>
+          <h3>问题分布</h3>
+          <table>
+            <tbody>
+              <tr><td>P0 必须修复</td><td>{{totalP0}}</td></tr>
+              <tr><td>P1 建议修复</td><td>{{totalP1}}</td></tr>
+              <tr><td>P2 后续优化</td><td>{{totalP2}}</td></tr>
+              <tr><td>Suggestion 建议</td><td>{{totalSuggestions}}</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>6. 高风险文件</h2>
+      <table>
+        <thead><tr><th>文件路径</th><th>风险类型</th><th>涉及开发者</th><th>问题等级</th><th>处理建议</th></tr></thead>
+        <tbody>
+          <tr><td><code>{{riskFilePath}}</code></td><td>{{riskType}}</td><td>{{riskOwner}}</td><td><span class="tag {{riskLevelClass}}">{{riskLevel}}</span></td><td>{{riskSuggestion}}</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="section">
+      <h2>7. 下一步行动计划</h2>
+      <ul class="plan-list">
+        <li><div class="finding-title">P0：立即处理</div><div class="finding-body">{{p0ActionPlan}}</div></li>
+        <li><div class="finding-title">P1：本次合并前或下个迭代处理</div><div class="finding-body">{{p1ActionPlan}}</div></li>
+        <li><div class="finding-title">P2 / Suggestion：纳入技术债</div><div class="finding-body">{{p2ActionPlan}}</div></li>
+      </ul>
+    </section>
+
+    <section class="section">
+      <h2>8. Git 命令记录</h2>
+      <pre class="code-box"><code>{{gitCommandsUsed}}</code></pre>
+    </section>
+
+    <footer class="footer">UAW Code Review Report · Generated by UAW-SDD Code Review Workflow · {{generatedAt}}</footer>
+  </main>
+</body>
+</html>
