@@ -111,4 +111,4 @@
 - [ ] 已明确是否包含 untracked files
 - [ ] 已明确 Report Output Directory
 - [ ] 已明确 Report Output Date
-- [ ] 已确认本次 Standalone 报告不替代 SDD 内部 Code Review Findings
+- [ ] 已确认本次 Standalone 报告不替代 SDD 内部 `code-review-findings.md`

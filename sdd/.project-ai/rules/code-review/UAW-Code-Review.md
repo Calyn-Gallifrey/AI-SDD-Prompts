@@ -3,7 +3,7 @@
 > 本文件定义 UAW 项目的代码评审规则。
 > 本文件支持三个入口。不同入口的输入依据、执行流程、输出内容和后续动作不同，禁止混用。
 >
-> - `SDD_TASK_CODE_REVIEW`：SDD 流程内入口。用于 `tasks.md` 完成代码实现后，执行代码审核，输出 Findings，并进入 Review-driven Auto-fix 与 Unit Test。**不生成 HTML 报告，不读取 HTML 模板。**
+> - `SDD_TASK_CODE_REVIEW`：SDD 流程内入口。用于 `tasks.md` 完成代码实现后，执行代码审核，输出 `code-review-findings.md`，并进入 Review-driven Auto-fix 与 Unit Test。**不生成 HTML 报告，不读取 HTML 模板。**
 > - `STANDALONE_GIT_RANGE_REVIEW`：独立 Git 范围评审入口。用于人工指定 branch / commit / date range 做独立代码检查与审核。**不遵守 SDD 阶段闸门，不自动修复代码，必须按 HTML 模板生成报告。**
 > - `STANDALONE_WORKTREE_SNAPSHOT_REVIEW`：独立工作区快照评审入口。仅用于未提交的新工程、临时 demo、迁移前代码盘点等无法提供 Git range 的场景。**必须显式记录 Target Path 与 Scope Deviation，必须生成 HTML 报告，但不得作为正式合并闸门。**
 
@@ -38,7 +38,7 @@
 | 是否生成 HTML 报告 | 不生成 | 必须生成 | 必须生成 |
 | 是否读取 HTML 模板 | 不读取 | 必须读取 | 必须读取 |
 | 是否创建 reports/code-review 目录 | 不创建 | 按用户指定目录生成 | 按用户指定目录生成 |
-| 输出目标 | Findings → Auto-fix → Unit Test | 总览报告 + 个人报告 | 总览报告 + 个人报告 + Scope Deviation |
+| 输出目标 | `code-review-findings.md` → Auto-fix → Unit Test | 总览报告 + 个人报告 | 总览报告 + 个人报告 + Scope Deviation |
 | 是否自动修复代码 | 必须根据 Findings 修复 | 不默认修复，只输出审核报告 | 不默认修复，只输出审核报告 |
 | 是否归档到 archive | 作为 SDD 后续流程输入 | 不参与 SDD archive | 不参与 SDD archive，不得作为正式合并闸门 |
 
@@ -49,7 +49,7 @@
 3. 在 SDD 模式下生成 HTML 报告。
 4. 在 SDD 模式下读取 HTML 模板。
 5. 在独立模式下强制读取 SDD 产物或执行 SDD 阶段闸门。
-6. 用 Standalone 报告替代 SDD 内部 Code Review Findings。
+6. 用 Standalone 报告替代 SDD 内部 `code-review-findings.md`。
 7. 把未提交目录快照静默伪装为 Git range。
 
 ---
@@ -69,7 +69,7 @@
 3. 不要求用户重复列出 SDD Artifacts。
 4. 默认当前工作目录就是对应功能资产目录。
 5. 默认 `proposal-input.md`、`spec.md`、`design.md`、`tasks.md` 与当前任务处于同一功能目录。
-6. 评审结果直接回写为 Code Review Findings，并进入 Review-driven Auto-fix 和 Unit Test。
+6. 评审结果必须写入当前功能目录的 `code-review-findings.md`，并进入 Review-driven Auto-fix 和 Unit Test。
 7. 禁止生成 HTML 报告，禁止读取 HTML 模板，禁止创建报告目录。
 
 ## 3.2 前置条件
@@ -96,6 +96,7 @@
 ./design.md
 ./tasks.md
 .project-ai/context/1.index.md
+.project-ai/rules/process/SDD-Process-Control.md
 .project-ai/rules/
 .project-ai/rules/testing/
 ```
@@ -137,7 +138,13 @@ SDD 模式不要求人工指定 branch / commit / date range。
 
 SDD 模式不得生成 HTML 报告。
 
-必须直接输出以下内容，作为后续 Review-driven Auto-fix 输入：
+必须在当前功能目录生成：
+
+```text
+./code-review-findings.md
+```
+
+`code-review-findings.md` 必须包含以下内容，作为后续 Review-driven Auto-fix 输入：
 
 ```text
 Code Review Conclusion: 拒绝通过 / 有条件通过 / 通过
@@ -153,6 +160,13 @@ Unit tests required: yes / no
 Unit test focus:
 Archive allowed: yes / no
 ```
+
+规则：
+
+1. `code-review-findings.md` 是 SDD 内部 Markdown 质量闸门产物。
+2. `code-review-findings.md` 不得使用 HTML 报告模板。
+3. `code-review-findings.md` 不得放入 `reports/code-review/YYYY-MM-DD/` 目录。
+4. `tasks.md` 和 `archive.md` 必须引用该文件。
 
 ## 3.7 Code Review Findings 格式
 
@@ -184,6 +198,7 @@ Code Review 完成后必须进入 Review-driven Auto-fix。
 6. 禁止借修复扩大需求范围。
 7. 修复后必须输出 Auto-fix Summary。
 8. Auto-fix 后必须进入 Unit Test Generation / Unit Test Summary。
+9. Auto-fix Summary 必须回写到 `tasks.md` 和 `archive.md`，并与 `code-review-findings.md` 的问题编号一致。
 
 ## 3.9 Auto-fix Summary 格式
 
@@ -393,7 +408,7 @@ SDD 模式下如发现类似异常，只作为 Code Review Finding 记录，不�
 
 不同入口的执行方式不同：
 
-- `SDD_TASK_CODE_REVIEW`：结合 SDD 产物判断实现是否符合已确认的范围、设计、任务和允许修改边界，并输出 Findings，随后进入 Review-driven Auto-fix 和 Unit Test。
+- `SDD_TASK_CODE_REVIEW`：结合 SDD 产物判断实现是否符合已确认的范围、设计、任务和允许修改边界，并输出 `code-review-findings.md`，随后进入 Review-driven Auto-fix 和 Unit Test。
 - `STANDALONE_GIT_RANGE_REVIEW`：仅基于用户指定的 Git 范围执行，不强制读取 SDD 产物，不自动修复代码，必须按 HTML 模板生成报告。
 - `STANDALONE_WORKTREE_SNAPSHOT_REVIEW`：仅基于用户指定的工作区目录快照执行，不强制读取 SDD 产物，不自动修复代码，必须按 HTML 模板生成报告，并标明不是正式 Git range。
 

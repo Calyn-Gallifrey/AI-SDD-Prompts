@@ -94,7 +94,9 @@ UAW-SDD 体系使用一段时间后，暴露过以下问题：
 .project-ai/templates/3.design-template.md
 .project-ai/templates/4.tasks-template.md
 .project-ai/templates/5.archive-template.md
+.project-ai/rules/process/SDD-Process-Control.md
 .project-ai/rules/code-review/UAW-Code-Review.md
+.project-ai/templates/code-review/sdd-code-review-findings-template.md
 .project-ai/templates/code-review/代码评审统计报告模板_总.html
 .project-ai/templates/code-review/个人代码评审报告模板.html
 .project-ai/rules/testing/
@@ -136,6 +138,7 @@ proposal-input.md
 spec.md
 design.md
 tasks.md
+code-review-findings.md
 archive.md
 ```
 
@@ -179,11 +182,15 @@ Proposal
 2. `spec.md` 未经过人工确认，不允许生成 `design.md`。
 3. `design.md` 未经过人工确认，不允许生成 `tasks.md`。
 4. `tasks.md` 未经过人工确认，不允许开始代码实现。
-5. 代码实现后必须进入 `SDD_TASK_CODE_REVIEW`。
-6. Code Review 后必须根据 Findings 进行 Review-driven Auto-fix。
-7. Auto-fix 后必须进入 Unit Test Generation。
-8. Unit Test Summary 完成后，才允许进入 Archive。
-9. `archive.md` 不能在 Code Review、Auto-fix、Unit Test Summary 完成之前生成。
+5. tasks 中每个实际执行的 Phase 完成后，必须记录 Phase Review。
+6. 代码实现后必须进入 `SDD_TASK_CODE_REVIEW`。
+7. `SDD_TASK_CODE_REVIEW` 必须输出 `code-review-findings.md`。
+8. Code Review 后必须根据 Findings 进行 Review-driven Auto-fix。
+9. Auto-fix 后必须进入 Unit Test Generation。
+10. Unit Test Summary 必须记录实际验证方式。
+11. Unit Test Summary 完成后，才允许进入 Archive。
+12. `archive.md` 不能在 Code Review、Auto-fix、Unit Test Summary 完成之前生成。
+13. Archive 前必须同步 `proposal-input.md`、`spec.md`、`design.md`、`tasks.md` 的最终 Process Status。
 
 ---
 
@@ -215,13 +222,14 @@ Fast Lane 禁止：
 5. 跳过 `SDD_TASK_CODE_REVIEW`。
 6. 跳过 Review-driven Auto-fix。
 7. 跳过 Unit Test Summary。
-8. 在 Code Review 和 Unit Test 完成前生成 archive 或 archive-lite。
+8. 跳过 Phase Review。
+9. 在 Code Review 和 Unit Test 完成前生成 archive 或 archive-lite。
 
 ---
 
-## 7. Code Review 两种入口
+## 7. Code Review 三种入口
 
-当前代码评审体系有两个入口，必须严格区分。
+当前代码评审体系有三个入口，必须严格区分。
 
 ---
 
@@ -248,11 +256,11 @@ tasks.md 已确认
    - `design.md`
    - `tasks.md`
 5. 必须结合 `proposal-input.md`、`spec.md`、`design.md`、`tasks.md` 判断代码是否符合 SDD 约束。
-6. 只输出 Code Review Findings。
+6. 只输出 `code-review-findings.md`。
 7. 不生成 HTML 报告。
 8. 不读取 HTML 报告模板。
 9. 不创建 `reports/code-review/YYYY-MM-DD/` 目录。
-10. Code Review Findings 输出后，必须进入 Review-driven Auto-fix。
+10. `code-review-findings.md` 输出后，必须进入 Review-driven Auto-fix。
 11. Auto-fix 后必须进入 Unit Test Generation。
 12. Unit Test 必须遵守 `.project-ai/rules/testing/`。
 
@@ -298,9 +306,33 @@ Report Output Date:
 
 ---
 
+### 7.3 STANDALONE_WORKTREE_SNAPSHOT_REVIEW
+
+这是独立工作区快照评审任务。
+
+适用场景：
+
+- 无法提供 Git range 的未提交工程目录
+- 临时代码目录或迁移前代码盘点
+- 用户明确指定目标目录快照
+
+重要规则：
+
+1. 不遵守 SDD 流程闸门。
+2. 不强制读取 `proposal-input.md`、`spec.md`、`design.md`、`tasks.md`。
+3. 不自动修复代码。
+4. 不进入 Unit Test Generation。
+5. 必须显式记录 Target Path 和 Scope Deviation。
+6. 必须读取并使用两个 HTML 模板。
+7. 必须生成总览报告和个人报告。
+8. 报告首页必须标明 `Scope Deviation: worktree snapshot, not Git range`。
+9. 该报告不得作为正式合并闸门。
+
+---
+
 ## 8. HTML 模板使用边界
 
-以下两个 HTML 模板只允许在 `STANDALONE_GIT_RANGE_REVIEW` 模式下使用：
+以下两个 HTML 模板只允许在 `STANDALONE_GIT_RANGE_REVIEW` 或 `STANDALONE_WORKTREE_SNAPSHOT_REVIEW` 模式下使用：
 
 ```text
 .project-ai/templates/code-review/代码评审统计报告模板_总.html
@@ -324,18 +356,19 @@ HTML 模板必须与 `UAW-Code-Review.md` 中的占位符契合清单保持一�
 
 `UAW-Code-Review.md` 是代码评审规则文件，不是单纯提示词。
 
-它必须同时服务两个入口：
+它必须同时服务三个入口：
 
 1. `SDD_TASK_CODE_REVIEW`
 2. `STANDALONE_GIT_RANGE_REVIEW`
+3. `STANDALONE_WORKTREE_SNAPSHOT_REVIEW`
 
-但两个入口的执行方式不同：
+但三个入口的执行方式不同：
 
 ```text
 SDD_TASK_CODE_REVIEW:
 - 内部流程调用
 - 结合 SDD 产物评审
-- 输出 Findings
+- 输出 code-review-findings.md
 - 进入 Auto-fix
 - 进入 Unit Test
 - 不生成 HTML 报告
@@ -345,6 +378,13 @@ STANDALONE_GIT_RANGE_REVIEW:
 - 不依赖 SDD 产物
 - 不自动修复
 - 生成 HTML 报告
+
+STANDALONE_WORKTREE_SNAPSHOT_REVIEW:
+- 人工指定工作区快照目录
+- 不依赖 SDD 产物
+- 不自动修复
+- 生成 HTML 报告
+- 标明不是正式 Git range
 ```
 
 代码评审规则本身应保持通用，不得写死某个业务模块。
@@ -407,7 +447,7 @@ STANDALONE_GIT_RANGE_REVIEW:
 14. Converter / Helper / Strategy 职责边界
 15. 依赖方向和循环依赖风险
 
-评审规则不得因为入口不同而降低质量，但两个入口的执行方式、输入依据和输出要求必须严格区分。
+评审规则不得因为入口不同而降低质量，但三个入口的执行方式、输入依据和输出要求必须严格区分。
 
 ---
 
@@ -493,52 +533,73 @@ STANDALONE_GIT_RANGE_REVIEW:
 4. 生成 `archive.md` 前，`proposal-input.md`、`spec.md`、`design.md`、`tasks.md` 都必须处于最终可归档状态。
 5. 如果阶段被跳过或不适用，必须写明原因。
 6. 禁止静默跳过。
+7. Process Status 生命周期必须遵守 `.project-ai/rules/process/SDD-Process-Control.md`。
+8. Archive 前必须同步 proposal-input.md、spec.md、design.md、tasks.md 的最终状态。
 
 ---
 
-## 15. 当前已经完成的主要调整
+## 14.1 Phase Review 与验证方式
 
-当前已经围绕 UAW-SDD 体系完成以下工作。
+tasks 阶段必须记录每个实际执行 Phase 的人工审核结果：
 
-### 15.1 修复 SDD 主流程
+- Reviewer Role
+- Review Time
+- Result
+- Findings
+- Required Action
+- Next Phase Allowed
 
-已将代码实现后的流程调整为：
+Unit Test Summary 必须记录实际验证方式：
+
+- Validation Method
+- Execution Environment
+- Build Tool 或测试执行器
+- 实际执行入口
+- 测试结果
+- warning / failure / skipped 说明
+
+SDD 不强制绑定单一命令行工具，不得把本机是否安装 `mvn` 作为流程前置条件。
+
+---
+
+## 15. 当前体系规则摘要
+
+### 15.1 SDD 主流程
 
 ```text
 Code Implementation
 → SDD_TASK_CODE_REVIEW
+→ code-review-findings.md
 → Review-driven Auto-fix
 → Unit Test Generation
 → Unit Test Summary
 → Archive
 ```
 
-### 15.2 定义 Code Review 两入口
-
-已明确：
+### 15.2 Code Review 入口
 
 ```text
 SDD_TASK_CODE_REVIEW:
-内部调用，不生成报告，只输出 Findings 并进入修复和单测。
+内部调用，不生成 HTML 报告，只输出 code-review-findings.md，并进入修复和单测。
 
 STANDALONE_GIT_RANGE_REVIEW:
 独立任务，按 Git 范围评审，生成 HTML 报告。
+
+STANDALONE_WORKTREE_SNAPSHOT_REVIEW:
+独立任务，按工作区快照评审，生成 HTML 报告，并标明不是正式 Git range。
 ```
 
-### 15.3 更新 UAW-Code-Review.md
+### 15.3 UAW-Code-Review.md 规则职责
 
-已完成：
+- SDD 模式不要求用户手动填写 Entry Mode。
+- Standalone 模式必须显式填写输入范围。
+- HTML 模板占位符契合清单必须保留。
+- 模块架构与包结构一致性规则必须保持通用，不得写死单一业务模块。
+- 外部接口、事务、幂等、配置、安全、测试等维度必须纳入评审。
 
-- 删除 SDD 模式人工输入格式
-- 保留 Standalone 模式输入格式
-- 补回 HTML 模板占位符契合清单
-- 重写模块架构与包结构一致性规则
-- 避免把 transaction 模块写死为全局规则
-- 补充外部接口、事务、幂等、配置、安全、测试等评审维度
+### 15.4 HTML 模板边界
 
-### 15.4 更新 HTML 模板
-
-已确定两个模板只服务 `STANDALONE_GIT_RANGE_REVIEW`：
+两个 HTML 模板只服务 `STANDALONE_GIT_RANGE_REVIEW` 和 `STANDALONE_WORKTREE_SNAPSHOT_REVIEW`：
 
 ```text
 代码评审统计报告模板_总.html
@@ -547,18 +608,19 @@ STANDALONE_GIT_RANGE_REVIEW:
 
 模板必须和 `UAW-Code-Review.md` 中的占位符契合清单保持一致。
 
-### 15.5 更新流程模板
-
-已围绕以下问题多轮修正：
+### 15.5 流程模板强制点
 
 - Proposal 后不能直接生成多个文件
 - Spec 后不能直接写代码
 - Fast Lane 不能直接写代码
 - Tasks 后不能跳过 Code Review
+- Tasks Phase Review 不能缺失
 - Code Review 后必须进入 Auto-fix
 - Auto-fix 后必须进入 Unit Test
 - Unit Test Summary 前不能 Archive
+- Unit Test Summary 必须记录实际验证方式
 - Process Status / Audit Trail 必须更新
+- Archive 前必须同步核心资产最终状态
 - 约定外目录和文件禁止生成
 
 ---
@@ -580,7 +642,9 @@ STANDALONE_GIT_RANGE_REVIEW:
 .project-ai/templates/3.design-template.md
 .project-ai/templates/4.tasks-template.md
 .project-ai/templates/5.archive-template.md
+.project-ai/rules/process/SDD-Process-Control.md
 .project-ai/rules/code-review/UAW-Code-Review.md
+.project-ai/templates/code-review/sdd-code-review-findings-template.md
 .project-ai/templates/code-review/代码评审统计报告模板_总.html
 .project-ai/templates/code-review/个人代码评审报告模板.html
 .project-ai/rules/testing/
@@ -593,18 +657,21 @@ STANDALONE_GIT_RANGE_REVIEW:
 1. Standard Lane 是否全文件一致。
 2. Fast Lane 是否全文件一致。
 3. `SDD_TASK_CODE_REVIEW` 是否不生成报告。
-4. `STANDALONE_GIT_RANGE_REVIEW` 是否只在独立代码评审中生成报告。
-5. HTML 模板是否只给 Standalone 使用。
-6. `UAW-Code-Review.md` 占位符清单是否覆盖 HTML 模板全部占位符。
-7. `tasks.md` 检查项规则是否无冲突。
-8. `archive.md` 检查项规则是否无冲突。
-9. Process Status / Audit Trail 是否所有核心模板都有。
-10. Archive 前置条件是否完整。
-11. Unit Test 是否强制引用 `.project-ai/rules/testing/`。
-12. 是否还有旧流程残留描述。
-13. 是否还有约定外目录输出。
-14. 是否还有让 AI 自行猜测入口、目录、阶段的描述。
-15. Code Review 规则是否仍保持通用，而不是绑定某个业务模块。
+4. `SDD_TASK_CODE_REVIEW` 是否生成 `code-review-findings.md`。
+5. `STANDALONE_GIT_RANGE_REVIEW` 和 `STANDALONE_WORKTREE_SNAPSHOT_REVIEW` 是否只在独立代码评审中生成报告。
+6. HTML 模板是否只给 Standalone 使用。
+7. `UAW-Code-Review.md` 占位符清单是否覆盖 HTML 模板全部占位符。
+8. `tasks.md` 检查项规则是否无冲突。
+9. `archive.md` 检查项规则是否无冲突。
+10. Process Status / Audit Trail 是否所有核心模板都有。
+11. Archive 前置条件是否完整。
+12. Unit Test 是否强制引用 `.project-ai/rules/testing/`。
+13. Unit Test Summary 是否记录实际验证方式。
+14. tasks Phase Review 是否强制记录。
+15. 是否还有旧流程残留描述。
+16. 是否还有约定外目录输出。
+17. 是否还有让 AI 自行猜测入口、目录、阶段的描述。
+18. Code Review 规则是否仍保持通用，而不是绑定某个业务模块。
 
 ### 16.3 最后再提出修复计划
 
