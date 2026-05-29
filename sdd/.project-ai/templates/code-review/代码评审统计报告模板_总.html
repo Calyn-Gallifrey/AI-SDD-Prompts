@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <title>UAW 代码评审统计报告</title>
-  <!-- Template Usage: STANDALONE_GIT_RANGE_REVIEW only. SDD_TASK_CODE_REVIEW must not use this template. -->
+  <!-- Template Usage: STANDALONE_GIT_RANGE_REVIEW or STANDALONE_WORKTREE_SNAPSHOT_REVIEW only. SDD_TASK_CODE_REVIEW must not use this template. -->
   <style>
     body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,"Microsoft YaHei",sans-serif;margin:0;background:#f5f7fb;color:#1f2937;}
     .page{max-width:1180px;margin:0 auto;padding:28px;}
@@ -27,7 +27,8 @@
 <div class="page">
   <div class="hero">
     <h1>UAW 代码评审统计报告</h1>
-    <div class="muted">Template Usage: STANDALONE_GIT_RANGE_REVIEW only</div>
+    <div class="muted">Template Usage: STANDALONE_GIT_RANGE_REVIEW / STANDALONE_WORKTREE_SNAPSHOT_REVIEW only</div>
+    <div class="section-note">{{scopeDeviation}}</div>
     <div class="meta">
       <div><div class="label">评审日期</div><div class="value">{{reviewDate}}</div></div>
       <div><div class="label">Base Ref</div><div class="value">{{baseRef}}</div></div>

@@ -1,5 +1,9 @@
 # 功能提案入口
 
+> 旧版样板说明：本文件生成于 2026-05-28 UAW-SDD 体系更新前，仅作为历史功能资产和旧版 query 类案例参考。
+> 它不完整体现新版强制闭环，包括 Process Status / Process Audit Trail、`SDD_TASK_CODE_REVIEW`、Review-driven Auto-fix 和 Unit Test Summary。
+> 新功能不得直接照搬本文件作为新版流程样板，应以 `.project-ai/context/1.index.md` 和当前模板为准。
+
 ## 1. 任务基本信息
 - 功能名称：agreement-information-query
 - 功能类型：query
@@ -48,7 +52,7 @@
 
 ## 4. AI 知识底座路径
 - AI 知识底座根目录：`.project-ai/`
-- 索引文件：`.project-ai/context/index.md`
+- 索引文件：`.project-ai/context/1.index.md`
 - 上下文目录：`.project-ai/context/`
 - 规则目录：`.project-ai/rules/`
 - 模板目录：`.project-ai/templates/`
@@ -155,4 +159,4 @@
     - 已知问题 / 风险点
 9. 人工审核实施结果；如未通过，必须在当前任务上下文中修正
 10. 审核通过后，按归档标准生成 `archive.md`
-11. 若本次任务产生通用规则增量，需同步更新 `.project-ai/context/index.md` 或对应 rules / templates
+11. 若本次任务产生通用规则增量，需同步更新 `.project-ai/context/1.index.md` 或对应 rules / templates

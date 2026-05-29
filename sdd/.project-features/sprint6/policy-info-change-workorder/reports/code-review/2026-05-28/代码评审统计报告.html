@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>UAW 代码评审统计报告 - uaw-sdd-demo</title>
+  <!-- Template Usage: STANDALONE_GIT_RANGE_REVIEW only. SDD_TASK_CODE_REVIEW must not use this template. -->
+  <style>
+    body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,"Microsoft YaHei",sans-serif;margin:0;background:#f5f7fb;color:#1f2937;}
+    .page{max-width:1180px;margin:0 auto;padding:28px;}
+    .hero{background:#111827;color:white;border-radius:18px;padding:26px 30px;margin-bottom:20px;}
+    .hero h1{margin:0 0 10px;font-size:28px;}
+    .meta{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:18px;}
+    .meta div,.card{background:white;border-radius:14px;padding:16px;box-shadow:0 8px 24px rgba(15,23,42,.06);}
+    .hero .meta div{background:rgba(255,255,255,.1);box-shadow:none;color:white;}
+    .label{font-size:12px;color:#6b7280;margin-bottom:6px;}.hero .label{color:#d1d5db;}
+    .value{font-size:20px;font-weight:700;}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:16px;}.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;}
+    h2{font-size:20px;margin:26px 0 12px;} h3{font-size:16px;margin:12px 0 8px;}
+    table{width:100%;border-collapse:collapse;background:white;border-radius:14px;overflow:hidden;box-shadow:0 8px 24px rgba(15,23,42,.06);margin-bottom:18px;}
+    th,td{padding:12px;border-bottom:1px solid #e5e7eb;text-align:left;font-size:14px;vertical-align:top;} th{background:#f3f4f6;font-weight:700;}
+    .badge{display:inline-block;border-radius:999px;padding:4px 10px;font-size:12px;font-weight:700;}.pass{background:#dcfce7;color:#166534}.warn{background:#fef3c7;color:#92400e}.fail{background:#fee2e2;color:#991b1b}
+    .muted{color:#6b7280;font-size:13px;}.section-note{background:#eef2ff;border-left:4px solid #4f46e5;padding:12px;border-radius:10px;margin-bottom:16px;}
+    pre{background:#0f172a;color:#e5e7eb;padding:12px;border-radius:10px;overflow:auto;font-size:13px;}
+  </style>
+</head>
+<body>
+<div class="page">
+  <div class="hero">
+    <h1>UAW 代码评审统计报告</h1>
+    <div class="muted">Entry Mode: STANDALONE_GIT_RANGE_REVIEW ｜ Scope Deviation: 当前工作区目录快照 uaw-sdd-demo/，非 branch / commit / date range</div>
+    <div class="meta">
+      <div><div class="label">评审日期</div><div class="value">2026-05-28</div></div>
+      <div><div class="label">Base Ref</div><div class="value">N/A</div></div>
+      <div><div class="label">Head Ref</div><div class="value">working tree</div></div>
+      <div><div class="label">最终结论</div><div class="value">有条件通过</div></div>
+    </div>
+  </div>
+
+  <h2>1. 核心统计</h2>
+  <div class="grid">
+    <div class="card"><div class="label">总提交数</div><div class="value">0</div></div>
+    <div class="card"><div class="label">是否排除 Merge</div><div class="value">不适用</div></div>
+    <div class="card"><div class="label">开发者数量</div><div class="value">1</div></div>
+    <div class="card"><div class="label">异常提交 / 范围</div><div class="value">1</div></div>
+    <div class="card"><div class="label">变更文件数</div><div class="value">18</div></div>
+    <div class="card"><div class="label">新增行数</div><div class="value">817</div></div>
+    <div class="card"><div class="label">删除行数</div><div class="value">0</div></div>
+    <div class="card"><div class="label">团队评分</div><div class="value">73 / 100</div></div>
+  </div>
+
+  <h2>2. 团队评分</h2>
+  <div class="section-note">评分维度与 <code>UAW-Code-Review.md</code> 对齐。扣分项均追溯到具体文件、行号或明确工程风险。本次评审对象是 demo 工程，结论不等同真实生产项目评审结论。</div>
+  <table>
+    <thead><tr><th>维度</th><th>得分</th><th>扣分原因</th><th>占比</th></tr></thead>
+    <tbody>
+      <tr><td>架构一致性与包结构</td><td>13 / 15</td><td>普通 MVC 分层清晰；缺少 UAW 常见 core/service/impl/package-info 形态，作为独立 demo 可接受。</td><td>13%</td></tr>
+      <tr><td>业务逻辑正确性</td><td>12 / 15</td><td>创建、查询、基础校验正确；重复提交校验不是原子操作。</td><td>12%</td></tr>
+      <tr><td>代码质量与可维护性</td><td>13 / 15</td><td>代码简洁；异常处理和转换逻辑仍偏示例化。</td><td>13%</td></tr>
+      <tr><td>UAW 工具类与项目规范</td><td>7 / 10</td><td>未使用 CurrentUser、LogUtil、MyJsonUtil 等 UAW 工具；demo 工程无这些依赖，记录为适配风险。</td><td>7%</td></tr>
+      <tr><td>数据库与性能</td><td>7 / 10</td><td>内存仓储 stream 全量扫描，仅适合 demo；生产需 DB 索引和唯一约束。</td><td>7%</td></tr>
+      <tr><td>安全与权限</td><td>6 / 10</td><td>接口无认证 / 授权，响应直接返回 oldValue / newValue / requester。</td><td>6%</td></tr>
+      <tr><td>单元测试</td><td>8 / 10</td><td>mvn test 通过；缺并发重复提交、真实 Repository 行为、Controller 404 场景。</td><td>8%</td></tr>
+      <tr><td>日志与可观测性</td><td>2 / 5</td><td>无业务日志、无异常日志、无 traceId。</td><td>2%</td></tr>
+      <tr><td>外部接口与配置风险</td><td>3 / 5</td><td>无外部接口；Maven 测试依赖 Byte Buddy experimental 参数，环境稳定性不足。</td><td>3%</td></tr>
+      <tr><td>事务、幂等与重复提交</td><td>2 / 5</td><td>exists + save 分离，无法防并发重复提交。</td><td>2%</td></tr>
+    </tbody>
+  </table>
+
+  <h2>3. 开发者统计</h2>
+  <table>
+    <thead><tr><th>开发者</th><th>提交数</th><th>文件数</th><th>新增</th><th>删除</th><th>异常提交 / 范围</th><th>P0</th><th>P1</th><th>P2</th><th>评分</th><th>结论</th></tr></thead>
+    <tbody>
+      <tr><td>Codex / working tree</td><td>0</td><td>18</td><td>817</td><td>0</td><td>1</td><td>0</td><td>2</td><td>3</td><td>73</td><td><span class="badge warn">有条件通过</span></td></tr>
+    </tbody>
+  </table>
+
+  <h2>4. 异常提交 / 范围</h2>
+  <table>
+    <thead><tr><th>Commit</th><th>作者</th><th>提交信息</th><th>文件数</th><th>变更行</th><th>异常原因</th><th>建议</th></tr></thead>
+    <tbody><tr><td>N/A</td><td>Codex / working tree</td><td>当前工作区目录快照</td><td>18</td><td>817</td><td>超过 500 行，且不是规则要求的 branch / commit / date range 输入。</td><td>正式评审建议先提交到独立分支，再按 branch diff 生成报告；工程骨架、业务代码、测试代码可拆分提交。</td></tr></tbody>
+  </table>
+
+  <h2>5. 关键发现</h2>
+  <div class="grid-2">
+    <div class="card"><h3>P0 / 高风险</h3><p><strong>无 P0</strong></p><p>未发现敏感密钥、SQL 注入、直接生产事故级问题。</p></div>
+    <div class="card"><h3>P1 / 主要问题</h3><p><strong>重复提交校验非原子，接口无认证 / 授权</strong></p><p>作为 demo 可运行；作为 UAW 生产代码必须修复。</p></div>
+    <div class="card"><h3>P2 / 一般问题</h3><p><strong>异常日志、测试覆盖、环境配置稳定性不足</strong></p><p>需要在生产化或作为公司样板前补齐。</p></div>
+    <div class="card"><h3>风险分布</h3><p>P0: 0 ｜ P1: 2 ｜ P2: 3 ｜ Suggestion: 2</p></div>
+  </div>
+
+  <h2>6. 问题明细</h2>
+  <table>
+    <thead><tr><th>编号</th><th>级别</th><th>文件</th><th>位置</th><th>问题</th><th>影响</th><th>建议</th></tr></thead>
+    <tbody>
+      <tr><td>CR-DEMO-001</td><td>P1</td><td>PolicyInfoChangeWorkOrderService.java / InMemoryPolicyInfoChangeWorkOrderRepository.java</td><td>Service 34-38；Repository 16-28</td><td>重复提交校验与保存分离，存在并发窗口。</td><td>两个相同请求可能同时通过 existsSubmittedDuplicate，再各自 save，形成重复待处理工单。</td><td>把重复判断与保存合成原子方法；真实生产使用唯一索引、事务或业务幂等键。</td></tr>
+      <tr><td>CR-DEMO-002</td><td>P1</td><td>PolicyInfoChangeWorkOrderController.java / PolicyInfoChangeWorkOrderResponse.java</td><td>Controller 26-34；Response 10-17</td><td>接口无认证 / 授权，响应返回变更前后值和提交人。</td><td>若接真实保单数据，可能出现越权查询和敏感信息泄露。</td><td>接入 CurrentUser / 权限校验 / 数据范围校验；对手机号、邮箱、地址等字段做脱敏或按角色返回。</td></tr>
+      <tr><td>CR-DEMO-003</td><td>P2</td><td>ApiExceptionHandler.java</td><td>17-35</td><td>缺少系统异常兜底和日志。</td><td>运行时异常排查信息不足，错误返回也不统一。</td><td>增加全局异常处理和 LogUtil / traceId；日志避免输出 oldValue / newValue 明文。</td></tr>
+      <tr><td>CR-DEMO-004</td><td>P2</td><td>pom.xml</td><td>56-61</td><td>测试依赖 Byte Buddy experimental 参数适配 Java 26。</td><td>可让当前机器测试通过，但正式内网环境稳定性取决于 JDK / Mockito / Byte Buddy 组合。</td><td>用 Maven Toolchains 或 CI 固定 Java 17；或升级到明确支持目标 JDK 的测试依赖。</td></tr>
+      <tr><td>CR-DEMO-005</td><td>P2</td><td>PolicyInfoChangeWorkOrderControllerTest.java / PolicyInfoChangeWorkOrderServiceTest.java</td><td>ControllerTest 51-105；ServiceTest 36-101</td><td>测试缺少并发重复提交、真实 Repository 业务键、Controller 404 场景。</td><td>当前测试能证明主路径可用，但不能证明幂等实现可靠。</td><td>补 Repository 测试、Controller 404 测试和并发重复提交测试。</td></tr>
+    </tbody>
+  </table>
+
+  <h2>7. 专项风险</h2>
+  <table>
+    <thead><tr><th>专项</th><th>发现</th><th>影响</th><th>建议</th></tr></thead>
+    <tbody>
+      <tr><td>模块架构与包结构</td><td>普通分层职责清楚，未出现 Controller 直连 Repository 或 DAO 承担业务决策。</td><td>demo 可读性好；与 UAW 真实模块结构仍需 profile 适配。</td><td>真实 UAW 工程中按现有 core/service/impl/pojo 结构落位。</td></tr>
+      <tr><td>外部接口与配置</td><td>无外部接口；测试 JVM 参数依赖当前环境。</td><td>CI 或内网开发机 JDK 不一致时结果可能不同。</td><td>固定 Maven JDK 和私服依赖版本。</td></tr>
+      <tr><td>事务、幂等与重复提交</td><td>重复提交检查不是原子操作。</td><td>高并发下可能重复生成待处理工单。</td><td>原子 save-if-absent 或 DB 唯一约束。</td></tr>
+    </tbody>
+  </table>
+
+  <h2>8. 高风险文件</h2>
+  <table>
+    <thead><tr><th>文件</th><th>风险类型</th><th>问题数</th><th>建议</th></tr></thead>
+    <tbody>
+      <tr><td>uaw-sdd-demo/src/main/java/com/example/uawsdddemo/service/PolicyInfoChangeWorkOrderService.java</td><td>幂等 / 重复提交</td><td>1</td><td>把重复判断与保存下沉为仓储层原子操作。</td></tr>
+      <tr><td>uaw-sdd-demo/src/main/java/com/example/uawsdddemo/controller/PolicyInfoChangeWorkOrderController.java</td><td>安全 / 权限</td><td>1</td><td>接入用户上下文与数据权限。</td></tr>
+      <tr><td>uaw-sdd-demo/pom.xml</td><td>环境兼容</td><td>1</td><td>固定构建 JDK，减少 experimental 参数依赖。</td></tr>
+    </tbody>
+  </table>
+
+  <h2>9. 行动计划</h2>
+  <table>
+    <thead><tr><th>优先级</th><th>动作</th><th>负责人</th><th>建议完成时间</th></tr></thead>
+    <tbody>
+      <tr><td>P0</td><td>无 P0；无需立即阻断 demo 使用。</td><td>N/A</td><td>N/A</td></tr>
+      <tr><td>P1</td><td>修复重复提交原子性；补认证、授权和敏感字段返回策略。</td><td>后端开发</td><td>进入真实业务样板前</td></tr>
+      <tr><td>P2</td><td>补日志、异常兜底、测试缺口和构建环境稳定化。</td><td>后端开发 / 工程治理</td><td>下一轮迭代</td></tr>
+    </tbody>
+  </table>
+
+  <h2>10. Git 命令记录</h2>
+  <pre>git ls-files --others --exclude-standard uaw-sdd-demo
+find uaw-sdd-demo -type f -not -path '*/target/*' | sort
+nl -ba uaw-sdd-demo/src/main/java/com/example/uawsdddemo/service/PolicyInfoChangeWorkOrderService.java
+nl -ba uaw-sdd-demo/src/main/java/com/example/uawsdddemo/repository/InMemoryPolicyInfoChangeWorkOrderRepository.java
+nl -ba uaw-sdd-demo/src/main/java/com/example/uawsdddemo/controller/PolicyInfoChangeWorkOrderController.java
+nl -ba uaw-sdd-demo/src/main/java/com/example/uawsdddemo/model/dto/PolicyInfoChangeWorkOrderResponse.java
+nl -ba uaw-sdd-demo/src/main/java/com/example/uawsdddemo/handler/ApiExceptionHandler.java
+nl -ba uaw-sdd-demo/pom.xml
+rg -n "System\.out|System\.err|TODO|FIXME|password|secret|token|key|jdbc|http://|https://" uaw-sdd-demo -g '!target/**'
+mvn test</pre>
+
+  <p class="muted">Generated at: 2026-05-28 17:23:25 +0800</p>
+</div>
+</body>
+</html>

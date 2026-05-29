@@ -1,0 +1,45 @@
+# UAW SDD Demo
+
+Spring Boot + Maven demo project for validating the UAW-SDD workflow.
+
+## Requirements
+
+- Java 17+ for compilation
+- Maven 3.9+
+
+Current local Maven runs on Java 26. The `maven-surefire-plugin` configuration enables Byte Buddy experimental mode so Mockito-based tests can run in this environment.
+
+## Run Tests
+
+```bash
+mvn test
+```
+
+## Start App
+
+```bash
+mvn spring-boot:run
+```
+
+## APIs
+
+Create a policy info change work order:
+
+```http
+POST /api/work-orders/policy-info-change
+Content-Type: application/json
+
+{
+  "policyNo": "P-10001",
+  "changeFieldType": "HOLDER_PHONE",
+  "oldValue": "13800000000",
+  "newValue": "13900000000",
+  "requester": "alice"
+}
+```
+
+Get a policy info change work order:
+
+```http
+GET /api/work-orders/policy-info-change/{workOrderId}
+```

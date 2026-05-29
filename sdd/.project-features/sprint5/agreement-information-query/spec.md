@@ -1,5 +1,9 @@
 # agreement-information-query 功能规格
 
+> 旧版样板说明：本文件生成于 2026-05-28 UAW-SDD 体系更新前，仅作为历史功能资产和旧版 query 类案例参考。
+> 它不完整体现新版强制闭环，包括 Process Status / Process Audit Trail、`SDD_TASK_CODE_REVIEW`、Review-driven Auto-fix 和 Unit Test Summary。
+> 新功能不得直接照搬本文件作为新版流程样板，应以 `.project-ai/context/1.index.md` 和当前模板为准。
+
 > 本文件是 agreement-information-query 功能的正式规格文件。  
 > 本文件负责定义：目标、边界、双基线、规则装配结果、验收标准，以及 design 必须承接的约束。
 
@@ -40,7 +44,7 @@
 ### 3.1 Base Context
 - UAW 既定目录结构
 - transaction 模块现有语义与分层约定
-- `.project-ai/context/index.md` 所定义的装配逻辑
+- `.project-ai/context/1.index.md` 所定义的装配逻辑
 - 当前 Git 代码扫描范围
 - `.project-design-docs` 中相近功能设计文档（如存在）
 

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <title>UAW 开发者代码评审报告</title>
-  <!-- Template Usage: STANDALONE_GIT_RANGE_REVIEW only. SDD_TASK_CODE_REVIEW must not use this template. -->
+  <!-- Template Usage: STANDALONE_GIT_RANGE_REVIEW or STANDALONE_WORKTREE_SNAPSHOT_REVIEW only. SDD_TASK_CODE_REVIEW must not use this template. -->
   <style>
     body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,"Microsoft YaHei",sans-serif;margin:0;background:#f6f7fb;color:#1f2937;}
     .page{max-width:1120px;margin:0 auto;padding:28px}.hero{background:#111827;color:#fff;border-radius:18px;padding:26px 30px;margin-bottom:20px}.hero h1{margin:0;font-size:28px}.muted{color:#6b7280;font-size:13px}.hero .muted{color:#d1d5db}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:16px 0}.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:16px 0}.card{background:#fff;border-radius:14px;padding:16px;box-shadow:0 8px 24px rgba(15,23,42,.06)}.label{font-size:12px;color:#6b7280;margin-bottom:6px}.value{font-size:22px;font-weight:800}h2{font-size:20px;margin:28px 0 12px}h3{font-size:16px;margin:12px 0 8px}table{width:100%;border-collapse:collapse;background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 8px 24px rgba(15,23,42,.06);margin-bottom:18px}th,td{padding:12px;border-bottom:1px solid #e5e7eb;text-align:left;font-size:14px;vertical-align:top}th{background:#f3f4f6}.badge{display:inline-block;border-radius:999px;padding:4px 10px;font-size:12px;font-weight:700}.pass{background:#dcfce7;color:#166534}.warn{background:#fef3c7;color:#92400e}.fail{background:#fee2e2;color:#991b1b}pre{background:#0f172a;color:#e5e7eb;padding:12px;border-radius:10px;overflow:auto;font-size:13px}.issue{border-left:4px solid #111827}.section-note{background:#eef2ff;border-left:4px solid #4f46e5;padding:12px;border-radius:10px;margin-bottom:16px;}
@@ -13,7 +13,8 @@
 <div class="page">
   <div class="hero">
     <h1>UAW 开发者代码评审报告</h1>
-    <p class="muted">Template Usage: STANDALONE_GIT_RANGE_REVIEW only</p>
+    <p class="muted">Template Usage: STANDALONE_GIT_RANGE_REVIEW / STANDALONE_WORKTREE_SNAPSHOT_REVIEW only</p>
+    <p class="muted">{{scopeDeviation}}</p>
   </div>
 
   <div class="grid">

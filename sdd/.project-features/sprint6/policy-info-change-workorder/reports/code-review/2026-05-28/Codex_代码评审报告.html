@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>UAW 开发者代码评审报告 - uaw-sdd-demo</title>
+  <!-- Template Usage: STANDALONE_GIT_RANGE_REVIEW only. SDD_TASK_CODE_REVIEW must not use this template. -->
+  <style>
+    body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,"Microsoft YaHei",sans-serif;margin:0;background:#f6f7fb;color:#1f2937;}
+    .page{max-width:1120px;margin:0 auto;padding:28px}.hero{background:#111827;color:#fff;border-radius:18px;padding:26px 30px;margin-bottom:20px}.hero h1{margin:0;font-size:28px}.muted{color:#6b7280;font-size:13px}.hero .muted{color:#d1d5db}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:16px 0}.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:16px 0}.card{background:#fff;border-radius:14px;padding:16px;box-shadow:0 8px 24px rgba(15,23,42,.06)}.label{font-size:12px;color:#6b7280;margin-bottom:6px}.value{font-size:22px;font-weight:800}h2{font-size:20px;margin:28px 0 12px}h3{font-size:16px;margin:12px 0 8px}table{width:100%;border-collapse:collapse;background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 8px 24px rgba(15,23,42,.06);margin-bottom:18px}th,td{padding:12px;border-bottom:1px solid #e5e7eb;text-align:left;font-size:14px;vertical-align:top}th{background:#f3f4f6}.badge{display:inline-block;border-radius:999px;padding:4px 10px;font-size:12px;font-weight:700}.pass{background:#dcfce7;color:#166534}.warn{background:#fef3c7;color:#92400e}.fail{background:#fee2e2;color:#991b1b}pre{background:#0f172a;color:#e5e7eb;padding:12px;border-radius:10px;overflow:auto;font-size:13px}.issue{border-left:4px solid #111827}.section-note{background:#eef2ff;border-left:4px solid #4f46e5;padding:12px;border-radius:10px;margin-bottom:16px;}
+  </style>
+</head>
+<body>
+<div class="page">
+  <div class="hero">
+    <h1>UAW 开发者代码评审报告</h1>
+    <p class="muted">Entry Mode: STANDALONE_GIT_RANGE_REVIEW ｜ Review Scope: uaw-sdd-demo/ working tree snapshot</p>
+  </div>
+
+  <div class="grid">
+    <div class="card"><div class="label">开发者</div><div class="value">Codex</div></div>
+    <div class="card"><div class="label">评审日期</div><div class="value">2026-05-28</div></div>
+    <div class="card"><div class="label">综合评分</div><div class="value">73 / 100</div></div>
+    <div class="card"><div class="label">最终结论</div><div class="value">有条件通过</div></div>
+  </div>
+
+  <h2>1. 提交概览</h2>
+  <div class="grid">
+    <div class="card"><div class="label">提交数</div><div class="value">0</div></div>
+    <div class="card"><div class="label">变更文件数</div><div class="value">18</div></div>
+    <div class="card"><div class="label">新增行数</div><div class="value">817</div></div>
+    <div class="card"><div class="label">删除行数</div><div class="value">0</div></div>
+  </div>
+  <table>
+    <thead><tr><th>Commit</th><th>提交信息</th><th>文件数</th><th>新增</th><th>删除</th><th>状态</th></tr></thead>
+    <tbody><tr><td>N/A</td><td>当前工作区目录快照：uaw-sdd-demo/</td><td>18</td><td>817</td><td>0</td><td><span class="badge warn">范围偏差</span></td></tr></tbody>
+  </table>
+
+  <h2>2. 评分明细</h2>
+  <table>
+    <thead><tr><th>维度</th><th>得分</th><th>问题摘要</th></tr></thead>
+    <tbody>
+      <tr><td>架构一致性与包结构</td><td>13 / 15</td><td>Controller / Service / Repository / Model 分层清楚；与 UAW 真实工程结构仍需适配。</td></tr>
+      <tr><td>业务逻辑正确性</td><td>12 / 15</td><td>基础业务正确；重复提交检查不是原子操作。</td></tr>
+      <tr><td>代码质量与可维护性</td><td>13 / 15</td><td>代码简洁，职责相对清楚；异常处理和对象转换仍偏 demo。</td></tr>
+      <tr><td>UAW 工具类与项目规范</td><td>7 / 10</td><td>未使用 CurrentUser、LogUtil、MyJsonUtil 等 UAW 工具，因 demo 工程无相关依赖，作为适配风险记录。</td></tr>
+      <tr><td>数据库与性能</td><td>7 / 10</td><td>内存仓储和 stream 扫描不适合生产持久化。</td></tr>
+      <tr><td>安全与权限</td><td>6 / 10</td><td>接口无认证 / 授权；响应包含变更前后值和提交人。</td></tr>
+      <tr><td>单元测试</td><td>8 / 10</td><td>9 个测试通过；缺并发、真实 Repository、Controller 404。</td></tr>
+      <tr><td>日志与可观测性</td><td>2 / 5</td><td>无业务日志、无异常日志、无 traceId。</td></tr>
+      <tr><td>外部接口与配置风险</td><td>3 / 5</td><td>无外部接口；测试运行依赖 Byte Buddy experimental 参数。</td></tr>
+      <tr><td>事务、幂等与重复提交</td><td>2 / 5</td><td>exists + save 分离，存在并发重复提交风险。</td></tr>
+    </tbody>
+  </table>
+
+  <h2>3. 问题统计</h2>
+  <div class="grid">
+    <div class="card"><div class="label">P0</div><div class="value">0</div></div>
+    <div class="card"><div class="label">P1</div><div class="value">2</div></div>
+    <div class="card"><div class="label">P2</div><div class="value">3</div></div>
+    <div class="card"><div class="label">Suggestion</div><div class="value">2</div></div>
+  </div>
+
+  <h2>4. 详细代码评审</h2>
+  <div class="card issue">
+    <h3>CR-DEMO-001. 重复提交校验不是原子操作 <span class="badge warn">P1</span></h3>
+    <p><strong>文件：</strong>uaw-sdd-demo/src/main/java/com/example/uawsdddemo/service/PolicyInfoChangeWorkOrderService.java；uaw-sdd-demo/src/main/java/com/example/uawsdddemo/repository/InMemoryPolicyInfoChangeWorkOrderRepository.java</p>
+    <p><strong>位置：</strong>Service 34-38；Repository 16-28</p>
+    <p><strong>问题描述：</strong>Service 先调用 existsSubmittedDuplicate，再调用 save。两个并发相同请求可能同时完成重复检查，然后都保存成功。</p>
+    <p><strong>风险影响：</strong>违反重复提交控制目标；真实生产中可能产生重复待处理工单。</p>
+    <p><strong>修复建议：</strong>将重复判断与保存合并为仓储层原子操作；真实 DB 实现应使用唯一索引、事务或业务幂等键。</p>
+    <h3>优化前</h3><pre>if (repository.existsSubmittedDuplicate(workOrder)) {
+    throw new BadRequestException("submitted duplicate policy info change work order exists");
+}
+return toResponse(repository.save(workOrder));</pre>
+    <h3>优化后</h3><pre>PolicyInfoChangeWorkOrder saved = repository.saveSubmittedIfAbsent(workOrder)
+        .orElseThrow(() -&gt; new BadRequestException("submitted duplicate policy info change work order exists"));
+return toResponse(saved);</pre>
+  </div>
+
+  <div class="card issue">
+    <h3>CR-DEMO-002. 接口缺少认证授权且返回敏感变更值 <span class="badge warn">P1</span></h3>
+    <p><strong>文件：</strong>uaw-sdd-demo/src/main/java/com/example/uawsdddemo/controller/PolicyInfoChangeWorkOrderController.java；uaw-sdd-demo/src/main/java/com/example/uawsdddemo/model/dto/PolicyInfoChangeWorkOrderResponse.java</p>
+    <p><strong>位置：</strong>Controller 26-34；Response 10-17</p>
+    <p><strong>问题描述：</strong>创建和查询接口没有 CurrentUser / 权限校验；响应对象返回 oldValue、newValue、requester。</p>
+    <p><strong>风险影响：</strong>一旦接入真实保单数据，可能越权查询并泄露手机号、邮箱、地址等敏感信息。</p>
+    <p><strong>修复建议：</strong>接入认证和数据权限；按角色控制字段返回，对敏感字段脱敏。</p>
+    <h3>优化前</h3><pre>public PolicyInfoChangeWorkOrderResponse get(@PathVariable String workOrderId) {
+    return service.get(workOrderId);
+}</pre>
+    <h3>优化后</h3><pre>public PolicyInfoChangeWorkOrderResponse get(@PathVariable String workOrderId) {
+    CurrentUser user = currentUserProvider.get();
+    return service.get(workOrderId, user);
+}</pre>
+  </div>
+
+  <div class="card issue">
+    <h3>CR-DEMO-003. 缺少系统异常兜底和必要日志 <span class="badge warn">P2</span></h3>
+    <p><strong>文件：</strong>uaw-sdd-demo/src/main/java/com/example/uawsdddemo/handler/ApiExceptionHandler.java</p>
+    <p><strong>位置：</strong>17-35</p>
+    <p><strong>问题描述：</strong>仅处理 BadRequest、Validation、NotFound，缺少系统异常兜底和日志记录。</p>
+    <p><strong>风险影响：</strong>异常排查信息不足，错误响应不完全统一。</p>
+    <p><strong>修复建议：</strong>增加全局异常处理，记录 traceId、workOrderId 等安全上下文，避免记录 oldValue / newValue 明文。</p>
+    <h3>优化前</h3><pre>@RestControllerAdvice
+public class ApiExceptionHandler {
+    // only business handlers
+}</pre>
+    <h3>优化后</h3><pre>@ExceptionHandler(Exception.class)
+public ResponseEntity&lt;Map&lt;String, String&gt;&gt; handleSystem(Exception exception) {
+    log.error("policy info change request failed", exception);
+    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+            .body(errorBody("system error"));
+}</pre>
+  </div>
+
+  <div class="card issue">
+    <h3>CR-DEMO-004. 构建配置依赖实验参数 <span class="badge warn">P2</span></h3>
+    <p><strong>文件：</strong>uaw-sdd-demo/pom.xml</p>
+    <p><strong>位置：</strong>56-61</p>
+    <p><strong>问题描述：</strong>Surefire 通过 <code>-Dnet.bytebuddy.experimental=true</code> 适配当前 Java 26 测试环境。</p>
+    <p><strong>风险影响：</strong>当前测试能通过，但长期稳定性依赖 JDK / Mockito / Byte Buddy 组合。</p>
+    <p><strong>修复建议：</strong>用 Maven Toolchains 或 CI 固定 Java 17；或升级到明确支持目标 JDK 的测试依赖。</p>
+    <h3>优化前</h3><pre>&lt;argLine&gt;-Dnet.bytebuddy.experimental=true&lt;/argLine&gt;</pre>
+    <h3>优化后</h3><pre>&lt;plugin&gt;
+  &lt;artifactId&gt;maven-toolchains-plugin&lt;/artifactId&gt;
+  &lt;!-- enforce Java 17 in build and test --&gt;
+&lt;/plugin&gt;</pre>
+  </div>
+
+  <div class="card issue">
+    <h3>CR-DEMO-005. 单元测试缺少关键风险场景 <span class="badge warn">P2</span></h3>
+    <p><strong>文件：</strong>PolicyInfoChangeWorkOrderControllerTest.java；PolicyInfoChangeWorkOrderServiceTest.java</p>
+    <p><strong>位置：</strong>ControllerTest 51-105；ServiceTest 36-101</p>
+    <p><strong>问题描述：</strong>已有测试覆盖主路径和基础异常，但未覆盖并发重复提交、真实 Repository 业务键判断、Controller 查询不存在。</p>
+    <p><strong>风险影响：</strong>测试不能证明幂等实现可靠。</p>
+    <p><strong>修复建议：</strong>新增 Repository 行为测试、Controller 404 测试、并发重复提交测试。</p>
+    <h3>优化前</h3><pre>// duplicate case is mocked at service level only
+when(repository.existsSubmittedDuplicate(any(PolicyInfoChangeWorkOrder.class))).thenReturn(true);</pre>
+    <h3>优化后</h3><pre>// add repository-level and concurrency test
+ExecutorService executor = Executors.newFixedThreadPool(2);
+// submit two same business-key requests and assert only one is saved</pre>
+  </div>
+
+  <h2>5. 架构与包结构评审</h2>
+  <table>
+    <thead><tr><th>检查项</th><th>结论</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td>模块结构识别</td><td>通过</td><td>当前是独立普通 MVC demo，不是 UAW 真实 core 模块。</td></tr>
+      <tr><td>职责边界</td><td>基本通过</td><td>Controller 未写业务逻辑，Service 负责业务校验，Repository 负责存储。</td></tr>
+      <tr><td>依赖方向</td><td>通过</td><td>未发现 Controller 直连 Repository、Repository 反向依赖 Service 等问题。</td></tr>
+      <tr><td>新增包 / 类落位</td><td>通过但需适配</td><td>demo 落位清晰；真实 UAW 工程需遵守所在模块既有包结构。</td></tr>
+    </tbody>
+  </table>
+
+  <h2>6. 测试评审</h2>
+  <table>
+    <thead><tr><th>是否需要单测</th><th>测试场景</th><th>缺口</th><th>建议</th></tr></thead>
+    <tbody><tr><td>是</td><td>创建成功、新旧值一致、重复待处理、查询成功、查询不存在、参数校验失败、业务异常映射。</td><td>并发重复提交、真实 Repository、Controller 404。</td><td>补三类测试；正式 UAW 工程中优先使用项目统一 JSON / 用户上下文测试工具。</td></tr></tbody>
+  </table>
+
+  <h2>7. 外部接口、配置、事务与幂等</h2>
+  <table>
+    <thead><tr><th>专项</th><th>检查结果</th><th>风险</th><th>建议</th></tr></thead>
+    <tbody>
+      <tr><td>外部接口与远程调用</td><td>无外部接口。</td><td>无。</td><td>若后续接保单系统，应放在 Service / ACL 层并处理超时、失败和日志。</td></tr>
+      <tr><td>配置与环境兼容</td><td>mvn test 通过，但有 Java agent / Byte Buddy warning。</td><td>JDK 版本变化可能造成测试不稳定。</td><td>固定 Maven JDK 或升级测试依赖。</td></tr>
+      <tr><td>事务、幂等、重复提交</td><td>重复提交逻辑存在非原子窗口。</td><td>并发重复工单。</td><td>仓储原子操作或数据库唯一约束。</td></tr>
+    </tbody>
+  </table>
+
+  <h2>8. 亮点总结</h2>
+  <div class="grid-2">
+    <div class="card">分层简洁，Controller / Service / Repository 职责没有明显混乱。</div>
+    <div class="card">测试能在当前环境下执行通过，覆盖了主路径和基础业务异常。</div>
+  </div>
+
+  <h2>9. 修复优先级</h2>
+  <table>
+    <thead><tr><th>优先级</th><th>动作</th></tr></thead>
+    <tbody>
+      <tr><td>P0</td><td>无 P0。</td></tr>
+      <tr><td>P1</td><td>修复重复提交原子性；接入认证、授权和敏感字段返回策略。</td></tr>
+      <tr><td>P2</td><td>补异常兜底、日志、测试缺口和稳定的 Maven JDK 策略。</td></tr>
+    </tbody>
+  </table>
+
+  <p class="muted">Generated at: 2026-05-28 17:23:25 +0800</p>
+</div>
+</body>
+</html>

@@ -1,10 +1,13 @@
 # UAW-Code-Review.md
 
-> 本文件定义 UAW 项目的代码评审规则。  
-> 本文件支持两个入口，但两个入口的输入依据、执行流程、输出内容和后续动作不同，禁止混用。
+> 本文件定义 UAW 项目的代码评审规则。
+> 本文件支持三个入口。不同入口的输入依据、执行流程、输出内容和后续动作不同，禁止混用。
 >
 > - `SDD_TASK_CODE_REVIEW`：SDD 流程内入口。用于 `tasks.md` 完成代码实现后，执行代码审核，输出 Findings，并进入 Review-driven Auto-fix 与 Unit Test。**不生成 HTML 报告，不读取 HTML 模板。**
 > - `STANDALONE_GIT_RANGE_REVIEW`：独立 Git 范围评审入口。用于人工指定 branch / commit / date range 做独立代码检查与审核。**不遵守 SDD 阶段闸门，不自动修复代码，必须按 HTML 模板生成报告。**
+> - `STANDALONE_WORKTREE_SNAPSHOT_REVIEW`：独立工作区快照评审入口。仅用于未提交的新工程、临时 demo、迁移前代码盘点等无法提供 Git range 的场景。**必须显式记录 Target Path 与 Scope Deviation，必须生成 HTML 报告，但不得作为正式合并闸门。**
+
+> 如果用户要求“评审整个工程 / 目录 / 未提交 demo”，不得静默伪装成 `STANDALONE_GIT_RANGE_REVIEW`。必须改用 `STANDALONE_WORKTREE_SNAPSHOT_REVIEW`，并在报告中标明“非 Git range，只代表当前工作区快照”。
 
 ---
 
@@ -18,34 +21,36 @@
 
 1. 当本文件被 SDD 流程中的 `tasks.md` 在代码实现后调用时，默认进入 `SDD_TASK_CODE_REVIEW` 模式。该模式不需要用户额外提供输入格式，当前功能目录、SDD 产物和实现范围由 SDD 流程上下文提供。
 2. 当用户单独发起代码评审任务，并显式指定 Git 范围时，进入 `STANDALONE_GIT_RANGE_REVIEW` 模式。该模式必须提供独立评审输入参数。
+3. 当用户单独发起代码评审任务，只指定工程目录 / 模块目录 / 未提交工作区时，进入 `STANDALONE_WORKTREE_SNAPSHOT_REVIEW` 模式。该模式必须记录目标路径和范围偏差。
 
-如果当前调用既不是 SDD 流程上下文，也没有提供独立 Git 评审范围，必须停止并要求补充评审范围，不得自行猜测。
+如果当前调用既不是 SDD 流程上下文，也没有提供独立 Git 范围或工作区快照范围，必须停止并要求补充评审范围，不得自行猜测。
 
 ---
 
-# 2. 两个入口的强制区别
+# 2. 三个入口的强制区别
 
-| 项目 | SDD_TASK_CODE_REVIEW | STANDALONE_GIT_RANGE_REVIEW |
-|---|---|---|
-| 使用场景 | SDD 的 tasks 生成代码后自动触发 | 人工指定 Git 范围单独评审 |
-| 是否遵守 SDD 体系 | 是 | 否 |
-| 是否读取 proposal/spec/design/tasks | 必须读取 | 不需要，除非用户明确要求 |
-| 是否执行 SDD 阶段闸门 | 必须执行 | 不执行 |
-| 是否生成 HTML 报告 | 不生成 | 必须生成 |
-| 是否读取 HTML 模板 | 不读取 | 必须读取 |
-| 是否创建 reports/code-review 目录 | 不创建 | 按用户指定目录生成 |
-| 输出目标 | Findings → Auto-fix → Unit Test | 总览报告 + 个人报告 |
-| 是否自动修复代码 | 必须根据 Findings 修复 | 不默认修复，只输出审核报告 |
-| 是否归档到 archive | 作为 SDD 后续流程输入 | 不参与 SDD archive |
+| 项目 | SDD_TASK_CODE_REVIEW | STANDALONE_GIT_RANGE_REVIEW | STANDALONE_WORKTREE_SNAPSHOT_REVIEW |
+|---|---|---|---|
+| 使用场景 | SDD 的 tasks 生成代码后自动触发 | 人工指定 Git 范围单独评审 | 人工指定未提交工程目录 / 模块目录快照 |
+| 是否遵守 SDD 体系 | 是 | 否 | 否 |
+| 是否读取 proposal/spec/design/tasks | 必须读取 | 不需要，除非用户明确要求 | 不需要，除非用户明确要求 |
+| 是否执行 SDD 阶段闸门 | 必须执行 | 不执行 | 不执行 |
+| 是否生成 HTML 报告 | 不生成 | 必须生成 | 必须生成 |
+| 是否读取 HTML 模板 | 不读取 | 必须读取 | 必须读取 |
+| 是否创建 reports/code-review 目录 | 不创建 | 按用户指定目录生成 | 按用户指定目录生成 |
+| 输出目标 | Findings → Auto-fix → Unit Test | 总览报告 + 个人报告 | 总览报告 + 个人报告 + Scope Deviation |
+| 是否自动修复代码 | 必须根据 Findings 修复 | 不默认修复，只输出审核报告 | 不默认修复，只输出审核报告 |
+| 是否归档到 archive | 作为 SDD 后续流程输入 | 不参与 SDD archive | 不参与 SDD archive，不得作为正式合并闸门 |
 
 禁止：
 
 1. 把 SDD 模式当成独立报告模式。
-2. 把独立 Git 范围评审当成 SDD 流程阶段。
+2. 把独立 Git 范围评审或工作区快照评审当成 SDD 流程阶段。
 3. 在 SDD 模式下生成 HTML 报告。
 4. 在 SDD 模式下读取 HTML 模板。
 5. 在独立模式下强制读取 SDD 产物或执行 SDD 阶段闸门。
 6. 用 Standalone 报告替代 SDD 内部 Code Review Findings。
+7. 把未提交目录快照静默伪装为 Git range。
 
 ---
 
@@ -228,7 +233,7 @@ Report Output Date: YYYY-MM-DD
 .project-ai/templates/code-review/个人代码评审报告模板.html
 ```
 
-这两个模板仅允许在 `STANDALONE_GIT_RANGE_REVIEW` 模式下使用。
+这两个模板仅允许在 `STANDALONE_GIT_RANGE_REVIEW` 或 `STANDALONE_WORKTREE_SNAPSHOT_REVIEW` 模式下使用。
 
 禁止使用：
 
@@ -256,6 +261,31 @@ Desktop/
 代码评审统计报告.html
 {开发者姓名}_代码评审报告.html
 ```
+
+## 4.3.1 Worktree Snapshot 输入格式
+
+`STANDALONE_WORKTREE_SNAPSHOT_REVIEW` 仅用于无法提供 Git range 的临时场景。该模式必须显式提供以下输入：
+
+```text
+Entry Mode: STANDALONE_WORKTREE_SNAPSHOT_REVIEW
+Review Scope Type: worktree snapshot
+Target Path: <工程目录或模块目录>
+Include Untracked Files: yes / no
+Baseline: none / current HEAD / specified ref
+Report Output Directory: <指定报告输出目录>
+Report Output Date: YYYY-MM-DD
+Formal Merge Gate: no
+```
+
+规则：
+
+1. 必须读取 `Target Path` 下的源代码、测试代码、构建配置和 README / 文档。
+2. 必须排除 `target/`、`build/`、`.idea/`、`.DS_Store`、生成报告目录和其他构建产物。
+3. 必须在 HTML 报告首页标明 `Scope Deviation: worktree snapshot, not Git range`。
+4. 必须将文件数、总代码行数、未跟踪文件列表作为统计依据。
+5. 不得输出“提交统计”为真实 Git 提交；若无提交，提交数必须写 0 或 N/A。
+6. 不得将该报告作为正式合并闸门；正式合并前必须重新执行 `STANDALONE_GIT_RANGE_REVIEW`。
+7. 如果用户要求该模式自动修复代码，必须另起任务并明确修复范围；本模式默认只评审不修复。
 
 ## 4.4 branch diff 输入示例
 
@@ -365,8 +395,9 @@ SDD 模式下如发现类似异常，只作为 Code Review Finding 记录，不�
 
 - `SDD_TASK_CODE_REVIEW`：结合 SDD 产物判断实现是否符合已确认的范围、设计、任务和允许修改边界，并输出 Findings，随后进入 Review-driven Auto-fix 和 Unit Test。
 - `STANDALONE_GIT_RANGE_REVIEW`：仅基于用户指定的 Git 范围执行，不强制读取 SDD 产物，不自动修复代码，必须按 HTML 模板生成报告。
+- `STANDALONE_WORKTREE_SNAPSHOT_REVIEW`：仅基于用户指定的工作区目录快照执行，不强制读取 SDD 产物，不自动修复代码，必须按 HTML 模板生成报告，并标明不是正式 Git range。
 
-两个入口可以共用评审维度，但不得混用执行流程、输入依据和输出要求。
+三个入口可以共用评审维度，但不得混用执行流程、输入依据和输出要求。
 
 ## 7.1 模块架构与包结构一致性
 
@@ -381,7 +412,7 @@ SDD 模式下如发现类似异常，只作为 Code Review Finding 记录，不�
 1. 如果变更位于已有业务模块下，必须优先遵守该模块当前已存在的目录结构和命名方式。
 2. 如果存在对应的模块结构规范文档，必须读取并作为评审依据。
 3. 如果 `design.md` 明确规定了新增类、包、层级或落位，必须优先以 `design.md` 为准。
-4. 如果是独立 Git 范围评审且没有 SDD 产物，则以当前代码仓库中同类模块的既有结构为主要依据。
+4. 如果是独立 Git 范围评审或工作区快照评审且没有 SDD 产物，则以当前代码仓库中同类模块的既有结构为主要依据。
 5. 不得仅凭通用分层模型强行要求所有模块都使用同一种目录结构。
 
 ### 7.1.2 通用模块分层检查
@@ -668,20 +699,23 @@ Preconditions
 
 ```text
 .project-ai/rules/testing/
+.project-ai/rules/testing/0.testing-profile-routing.md
 ```
 
 检查：
 
-1. 是否覆盖正常路径。
-2. 是否覆盖异常路径。
-3. 是否覆盖边界条件。
-4. 是否覆盖状态流转。
-5. 是否覆盖 Review 修复点。
-6. 是否存在无断言测试。
-7. 是否存在只追求覆盖率、不验证业务结果的测试。
-8. Mock 是否合理。
-9. 测试命名是否清晰。
-10. 不适用单元测试时是否说明原因。
+1. 是否先识别 Testing Profile。
+2. 是否覆盖正常路径。
+3. 是否覆盖异常路径。
+4. 是否覆盖边界条件。
+5. 是否覆盖状态流转。
+6. 是否覆盖 Review 修复点。
+7. 是否存在无断言测试。
+8. 是否存在只追求覆盖率、不验证业务结果的测试。
+9. Mock 是否合理。
+10. 测试命名是否清晰。
+11. 不适用单元测试时是否说明原因。
+12. 是否强行引入不必要的 JUnit Vintage / UAW 工具类依赖。
 
 ## 7.9 外部接口与远程调用
 
@@ -801,11 +835,12 @@ Standalone 模式中，该结论用于 HTML 报告。
 
 ```text
 Entry Mode: STANDALONE_GIT_RANGE_REVIEW
+Entry Mode: STANDALONE_WORKTREE_SNAPSHOT_REVIEW
 ```
 
 ## 11.1 HTML 模板使用边界
 
-以下两个 HTML 模板仅允许在 `STANDALONE_GIT_RANGE_REVIEW` 模式下读取和使用：
+以下两个 HTML 模板仅允许在 `STANDALONE_GIT_RANGE_REVIEW` 或 `STANDALONE_WORKTREE_SNAPSHOT_REVIEW` 模式下读取和使用：
 
 ```text
 .project-ai/templates/code-review/代码评审统计报告模板_总.html
@@ -874,19 +909,19 @@ Entry Mode: STANDALONE_GIT_RANGE_REVIEW
 
 生成报告前必须确认：
 
-1. 已读取指定 Git 范围。
+1. 已读取指定 Git 范围或工作区快照范围。
 2. 已读取两个 HTML 模板。
 3. 已填充模板中的关键占位符。
 4. 已输出总览报告。
 5. 已按提交人输出个人报告。
 6. 报告路径符合输入指定目录。
 7. 不包含未脱敏敏感信息。
-8. 模板中明确标记为 `STANDALONE_GIT_RANGE_REVIEW only`。
+8. 模板中明确标记为 Standalone HTML Review only，不得允许 `SDD_TASK_CODE_REVIEW` 使用。
 
 
 ## 11.6 HTML 模板占位符契合清单（强制）
 
-本节仅适用于 `STANDALONE_GIT_RANGE_REVIEW`。
+本节仅适用于 `STANDALONE_GIT_RANGE_REVIEW` 或 `STANDALONE_WORKTREE_SNAPSHOT_REVIEW`。
 
 生成报告前，必须逐项填充下列占位符。任何占位符缺少数据时，必须填入 `无`、`不适用` 或 `未发现`，不得让 `{{placeholder}}` 原样保留在最终 HTML 报告中。
 
@@ -897,10 +932,11 @@ SDD_TASK_CODE_REVIEW 模式禁止执行本节，禁止读取 HTML 模板，禁�
 | 占位符 | 填充要求 |
 |---|---|
 | `{{reviewDate}}` | 评审日期，格式 YYYY-MM-DD |
-| `{{baseRef}}` | branch diff 模式的 Base branch；非分支模式填写“不适用” |
-| `{{headRef}}` | branch diff 模式的 Target branch / HEAD；非分支模式填写“不适用” |
+| `{{scopeDeviation}}` | 范围偏差说明；Git range 模式填“Scope: Git range”，worktree snapshot 填“Scope Deviation: worktree snapshot, not Git range; Formal Merge Gate: no” |
+| `{{baseRef}}` | branch diff 模式的 Base branch；worktree snapshot 填写“none / current HEAD / specified ref” |
+| `{{headRef}}` | branch diff 模式的 Target branch / HEAD；worktree snapshot 填写“working tree: <Target Path>” |
 | `{{finalDecision}}` | 最终结论：拒绝通过 / 有条件通过 / 通过 |
-| `{{totalCommits}}` | 本次评审范围内提交总数 |
+| `{{totalCommits}}` | 本次评审范围内提交总数；worktree snapshot 无提交时填 0 / N/A |
 | `{{excludeMerge}}` | 是否排除 merge commit：是 / 否 |
 | `{{developerCount}}` | 涉及开发者数量 |
 | `{{abnormalCommits}}` | 异常提交数量 |
@@ -989,7 +1025,7 @@ SDD_TASK_CODE_REVIEW 模式禁止执行本节，禁止读取 HTML 模板，禁�
 | `{{p2Action}}` | P2 行动计划；无则填“无” |
 | `{{p2Owner}}` | P2 负责人；无则填“无” |
 | `{{p2Due}}` | P2 建议完成时间；无则填“无” |
-| `{{gitCommands}}` | 本次实际执行的 Git 命令记录 |
+| `{{gitCommands}}` | 本次实际执行的 Git / 文件扫描 / 测试命令记录 |
 | `{{generatedAt}}` | 报告生成时间 |
 
 ### 11.6.2 个人报告模板占位符
@@ -997,6 +1033,7 @@ SDD_TASK_CODE_REVIEW 模式禁止执行本节，禁止读取 HTML 模板，禁�
 | 占位符 | 填充要求 |
 |---|---|
 | `{{developerName}}` | 开发者姓名 |
+| `{{scopeDeviation}}` | 范围偏差说明；Git range 模式填“Scope: Git range”，worktree snapshot 填“Scope Deviation: worktree snapshot, not Git range; Formal Merge Gate: no” |
 | `{{reviewDate}}` | 评审日期，格式 YYYY-MM-DD |
 | `{{overallScore}}` | 个人综合评分 |
 | `{{finalDecision}}` | 最终结论：拒绝通过 / 有条件通过 / 通过 |
@@ -1080,8 +1117,8 @@ SDD_TASK_CODE_REVIEW 模式禁止执行本节，禁止读取 HTML 模板，禁�
 2. 个人报告中不得残留任何 `{{...}}`。
 3. 所有评分维度必须与第 9 章评分体系一致。
 4. 所有严重程度必须符合第 8 章定义。
-5. 所有问题必须能追溯到 Git Diff、文件路径、提交或明确工程风险。
-6. 模板中的 `Template Usage: STANDALONE_GIT_RANGE_REVIEW only` 标记不得删除。
+5. 所有问题必须能追溯到 Git Diff、文件路径、提交、工作区快照或明确工程风险。
+6. 模板中的 Standalone HTML Review 标记不得删除，也不得允许 `SDD_TASK_CODE_REVIEW` 使用。
 
 ---
 
@@ -1089,15 +1126,16 @@ SDD_TASK_CODE_REVIEW 模式禁止执行本节，禁止读取 HTML 模板，禁�
 
 1. 不要创造性扩展代码评审流程。
 2. 不要发明新的 UAW 代码评审体系。
-3. 不要混用两个入口模式。
+3. 不要混用三个入口模式。
 4. SDD 模式不要生成 HTML 报告。
 5. SDD 模式不要读取 HTML 模板。
 6. SDD 模式必须直接进入 Review-driven Auto-fix。
 7. Standalone 模式不要执行 SDD 阶段闸门。
 8. Standalone 模式必须按两个 HTML 模板生成报告。
-9. 不要把历史代码问题强行算作本次变更问题。
-10. 不要为了输出“完整报告”制造低价值问题。
-11. 不要把某一个模块案例硬编码成全项目架构规则。
-12. 每个架构问题必须基于当前模块已有结构、设计约束或明确项目规范。
+9. Worktree Snapshot 模式必须标明 Scope Deviation，且不得作为正式合并闸门。
+10. 不要把历史代码问题强行算作本次变更问题。
+11. 不要为了输出“完整报告”制造低价值问题。
+12. 不要把某一个模块案例硬编码成全项目架构规则。
+13. 每个架构问题必须基于当前模块已有结构、设计约束或明确项目规范。
 
 每一项问题、评分和结论都必须能对应到 Git Diff、SDD 产物、项目规则或明确工程风险。

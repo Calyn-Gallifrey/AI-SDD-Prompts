@@ -1,5 +1,9 @@
 # 任务归档：agreement-information-query
 
+> 旧版样板说明：本文件生成于 2026-05-28 UAW-SDD 体系更新前，仅作为历史功能资产和旧版 query 类案例参考。
+> 它不完整体现新版强制闭环，包括 Process Status / Process Audit Trail、`SDD_TASK_CODE_REVIEW`、Review-driven Auto-fix 和 Unit Test Summary。
+> 新功能不得直接照搬本文件作为新版流程样板，应以 `.project-ai/context/1.index.md` 和当前模板为准。
+
 ## 1. 基本信息
 - 功能名称：agreement-information-query
 - 功能类型：query
