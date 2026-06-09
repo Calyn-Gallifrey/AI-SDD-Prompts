@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>UAW 代码评审统计报告</title>
+  <!-- Template Usage: STANDALONE_GIT_RANGE_REVIEW or STANDALONE_WORKTREE_SNAPSHOT_REVIEW only. SDD_TASK_CODE_REVIEW must not use this template. -->
+  <style>
+    body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,"Microsoft YaHei",sans-serif;margin:0;background:#f5f7fb;color:#1f2937;}
+    .page{max-width:1180px;margin:0 auto;padding:28px;}
+    .hero{background:#111827;color:white;border-radius:18px;padding:26px 30px;margin-bottom:20px;}
+    .hero h1{margin:0 0 10px;font-size:28px;}
+    .meta{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:18px;}
+    .meta div,.card{background:white;border-radius:14px;padding:16px;box-shadow:0 8px 24px rgba(15,23,42,.06);}
+    .hero .meta div{background:rgba(255,255,255,.1);box-shadow:none;color:white;}
+    .label{font-size:12px;color:#6b7280;margin-bottom:6px;}.hero .label{color:#d1d5db;}
+    .value{font-size:20px;font-weight:700;}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:16px;}.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;}
+    h2{font-size:20px;margin:26px 0 12px;} h3{font-size:16px;margin:12px 0 8px;}
+    table{width:100%;border-collapse:collapse;background:white;border-radius:14px;overflow:hidden;box-shadow:0 8px 24px rgba(15,23,42,.06);margin-bottom:18px;}
+    th,td{padding:12px;border-bottom:1px solid #e5e7eb;text-align:left;font-size:14px;vertical-align:top;} th{background:#f3f4f6;font-weight:700;}
+    .badge{display:inline-block;border-radius:999px;padding:4px 10px;font-size:12px;font-weight:700;}.pass{background:#dcfce7;color:#166534}.warn{background:#fef3c7;color:#92400e}.fail{background:#fee2e2;color:#991b1b}
+    .scorebar{height:8px;background:#e5e7eb;border-radius:999px;overflow:hidden;margin-top:8px}.scorebar span{display:block;height:100%;background:#111827;width:var(--w)}
+    .muted{color:#6b7280;font-size:13px;}.section-note{background:#eef2ff;border-left:4px solid #4f46e5;padding:12px;border-radius:10px;margin-bottom:16px;}
+    pre{background:#0f172a;color:#e5e7eb;padding:12px;border-radius:10px;overflow:auto;font-size:13px;}
+  </style>
+</head>
+<body>
+<div class="page">
+  <div class="hero">
+    <h1>UAW 代码评审统计报告</h1>
+    <div class="muted">Template Usage: STANDALONE_GIT_RANGE_REVIEW / STANDALONE_WORKTREE_SNAPSHOT_REVIEW only</div>
+    <div class="section-note">{{scopeDeviation}}</div>
+    <div class="meta">
+      <div><div class="label">评审日期</div><div class="value">{{reviewDate}}</div></div>
+      <div><div class="label">Base Ref</div><div class="value">{{baseRef}}</div></div>
+      <div><div class="label">Head Ref</div><div class="value">{{headRef}}</div></div>
+      <div><div class="label">最终结论</div><div class="value">{{finalDecision}}</div></div>
+    </div>
+  </div>
+
+  <h2>1. 核心统计</h2>
+  <div class="grid">
+    <div class="card"><div class="label">总提交数</div><div class="value">{{totalCommits}}</div></div>
+    <div class="card"><div class="label">是否排除 Merge</div><div class="value">{{excludeMerge}}</div></div>
+    <div class="card"><div class="label">开发者数量</div><div class="value">{{developerCount}}</div></div>
+    <div class="card"><div class="label">异常提交</div><div class="value">{{abnormalCommits}}</div></div>
+    <div class="card"><div class="label">变更文件数</div><div class="value">{{changedFiles}}</div></div>
+    <div class="card"><div class="label">新增行数</div><div class="value">{{insertions}}</div></div>
+    <div class="card"><div class="label">删除行数</div><div class="value">{{deletions}}</div></div>
+    <div class="card"><div class="label">团队评分</div><div class="value">{{teamScore}}</div></div>
+  </div>
+
+  <h2>2. 团队评分</h2>
+  <div class="section-note">评分维度与 <code>UAW-Code-Review.md</code> 完全对齐。扣分项必须能追溯到具体问题、文件、提交或明确工程风险。</div>
+  <table>
+    <thead><tr><th>维度</th><th>得分</th><th>扣分原因</th><th>占比</th></tr></thead>
+    <tbody>
+      <tr><td>架构一致性与包结构</td><td>{{architectureScore}}</td><td>{{architectureDeductionReason}}</td><td>{{architecturePercent}}</td></tr>
+      <tr><td>业务逻辑正确性</td><td>{{businessScore}}</td><td>{{businessDeductionReason}}</td><td>{{businessPercent}}</td></tr>
+      <tr><td>代码质量与可维护性</td><td>{{qualityScore}}</td><td>{{qualityDeductionReason}}</td><td>{{qualityPercent}}</td></tr>
+      <tr><td>UAW 工具类与项目规范</td><td>{{uawStandardScore}}</td><td>{{uawStandardDeductionReason}}</td><td>{{uawStandardPercent}}</td></tr>
+      <tr><td>数据库与性能</td><td>{{databaseScore}}</td><td>{{databaseDeductionReason}}</td><td>{{databasePercent}}</td></tr>
+      <tr><td>安全与权限</td><td>{{securityScore}}</td><td>{{securityDeductionReason}}</td><td>{{securityPercent}}</td></tr>
+      <tr><td>单元测试</td><td>{{testScore}}</td><td>{{testDeductionReason}}</td><td>{{testPercent}}</td></tr>
+      <tr><td>日志与可观测性</td><td>{{loggingScore}}</td><td>{{loggingDeductionReason}}</td><td>{{loggingPercent}}</td></tr>
+      <tr><td>外部接口与配置风险</td><td>{{integrationConfigScore}}</td><td>{{integrationConfigDeductionReason}}</td><td>{{integrationConfigPercent}}</td></tr>
+      <tr><td>事务、幂等与重复提交</td><td>{{idempotencyScore}}</td><td>{{idempotencyDeductionReason}}</td><td>{{idempotencyPercent}}</td></tr>
+    </tbody>
+  </table>
+
+  <h2>3. 开发者统计</h2>
+  <table>
+    <thead><tr><th>开发者</th><th>提交数</th><th>文件数</th><th>新增</th><th>删除</th><th>异常提交</th><th>P0</th><th>P1</th><th>P2</th><th>评分</th><th>结论</th></tr></thead>
+    <tbody>
+      <tr><td>{{developerName}}</td><td>{{developerCommits}}</td><td>{{developerFiles}}</td><td>{{developerInsertions}}</td><td>{{developerDeletions}}</td><td>{{developerAbnormalCommits}}</td><td>{{p0Count}}</td><td>{{p1Count}}</td><td>{{p2Count}}</td><td>{{developerScore}}</td><td><span class="badge {{developerDecisionClass}}">{{developerDecision}}</span></td></tr>
+    </tbody>
+  </table>
+
+  <h2>4. 异常提交</h2>
+  <table>
+    <thead><tr><th>Commit</th><th>作者</th><th>提交信息</th><th>文件数</th><th>变更行</th><th>异常原因</th><th>建议</th></tr></thead>
+    <tbody><tr><td>{{commitHash}}</td><td>{{author}}</td><td>{{commitMessage}}</td><td>{{filesChanged}}</td><td>{{totalChangedLines}}</td><td>{{abnormalReason}}</td><td>{{abnormalSuggestion}}</td></tr></tbody>
+  </table>
+
+  <h2>5. 关键发现</h2>
+  <div class="grid-2">
+    <div class="card"><h3>P0 / 高风险</h3><p><strong>{{criticalFindingTitle}}</strong></p><p>{{criticalFindingDescription}}</p></div>
+    <div class="card"><h3>P1 / 主要问题</h3><p><strong>{{majorFindingTitle}}</strong></p><p>{{majorFindingDescription}}</p></div>
+    <div class="card"><h3>P2 / 一般问题</h3><p><strong>{{minorFindingTitle}}</strong></p><p>{{minorFindingDescription}}</p></div>
+    <div class="card"><h3>风险分布</h3><p>P0: {{totalP0}} ｜ P1: {{totalP1}} ｜ P2: {{totalP2}} ｜ Suggestion: {{totalSuggestion}}</p></div>
+  </div>
+
+  <h2>6. 专项风险</h2>
+  <table>
+    <thead><tr><th>专项</th><th>发现</th><th>影响</th><th>建议</th></tr></thead>
+    <tbody>
+      <tr><td>模块架构与包结构</td><td>{{architectureFinding}}</td><td>{{architectureImpact}}</td><td>{{architectureAction}}</td></tr>
+      <tr><td>外部接口与配置</td><td>{{integrationConfigFinding}}</td><td>{{integrationConfigImpact}}</td><td>{{integrationConfigAction}}</td></tr>
+      <tr><td>事务、幂等与重复提交</td><td>{{idempotencyFinding}}</td><td>{{idempotencyImpact}}</td><td>{{idempotencyAction}}</td></tr>
+    </tbody>
+  </table>
+
+  <h2>7. 高风险文件</h2>
+  <table>
+    <thead><tr><th>文件</th><th>风险类型</th><th>问题数</th><th>建议</th></tr></thead>
+    <tbody><tr><td>{{riskFilePath}}</td><td>{{riskType}}</td><td>{{riskIssueCount}}</td><td>{{riskSuggestion}}</td></tr></tbody>
+  </table>
+
+  <h2>8. 行动计划</h2>
+  <table>
+    <thead><tr><th>优先级</th><th>动作</th><th>负责人</th><th>建议完成时间</th></tr></thead>
+    <tbody>
+      <tr><td>P0</td><td>{{p0Action}}</td><td>{{p0Owner}}</td><td>{{p0Due}}</td></tr>
+      <tr><td>P1</td><td>{{p1Action}}</td><td>{{p1Owner}}</td><td>{{p1Due}}</td></tr>
+      <tr><td>P2</td><td>{{p2Action}}</td><td>{{p2Owner}}</td><td>{{p2Due}}</td></tr>
+    </tbody>
+  </table>
+
+  <h2>9. Git 命令记录</h2>
+  <pre>{{gitCommands}}</pre>
+
+  <p class="muted">Generated at: {{generatedAt}}</p>
+</div>
+</body>
+</html>

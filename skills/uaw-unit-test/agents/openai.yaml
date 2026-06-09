@@ -1,0 +1,4 @@
+interface:
+  display_name: "UAW Unit Test"
+  short_description: "Generate and validate UAW Java unit tests."
+  default_prompt: "Use this skill to generate or validate UAW unit tests."

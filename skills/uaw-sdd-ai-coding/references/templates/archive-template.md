@@ -1,0 +1,465 @@
+# 功能级 Archive 模板
+
+> 本文件用于沉淀一次任务的最终结果，使其成为后续 enhancement / refactor 的高质量输入资产。  
+> 本文件是当前任务闭环终点，也是下一轮任务的起点参考。  
+> 本文件负责固化：最终方案、关键决策、边界约束、实施结果、风险遗留、下一次如何接手。
+
+---
+
+# 1. 基本信息
+
+- 功能名称：
+- 功能类型：query / submit / edit / enhancement / refactor / fix
+- 所属模块：
+- 所在 sprint：
+- 对应目录：`sdd2-features/.../`
+- 完成时间：
+- 归档时间：
+- 任务状态：已完成 / 部分完成 / 暂停 / 废弃
+
+---
+
+# 2. 对应资产文件
+
+- proposal：`./proposal-input.md`（如有）
+- spec：`./spec.md`
+- design：`./design.md`
+- tasks：`./tasks.md`
+- code review findings：`./code-review-findings.md`
+
+说明：
+
+- 若文件不存在，必须说明原因
+- 若采用 Fast Lane，可替换为 mini-spec / archive-lite
+
+---
+
+# 3. 原始目标回顾
+
+## 一句话目标
+
+-
+
+## 业务背景
+
+-
+
+## 本次最终是否达成
+
+- 是 / 部分达成 / 否
+
+## 若未完全达成，原因
+
+-
+
+---
+
+# 4. 最终实施结果
+
+## 新增能力
+
+-
+
+## 修改能力
+
+-
+
+## 删除 / 下线能力（如有）
+
+-
+
+## 对外表现变化
+
+- 新接口
+- 字段变化
+- 行为变化
+- 内部优化（无外部感知）
+
+---
+
+# 5. 最终结构落地结果
+
+## 接口层
+
+- 新增 / 修改 Controller：
+- 新增 / 修改 API：
+
+## 业务层
+
+- 新增 / 修改 Service：
+- 新增 / 修改流程：
+
+## 数据层
+
+- 新增 / 修改 Mapper / Repository：
+- SQL 变化：
+
+## 对象层
+
+- 新增 / 修改 DTO / VO / BO / Entity：
+
+## 集成层（如有）
+
+- 新增 / 修改外部调用：
+
+---
+
+# 6. 主要变更文件清单
+
+-
+-
+-
+
+说明：
+
+- 仅列关键文件
+- 不必罗列无价值小改动
+
+---
+
+# 7. 关键决策与取舍（高价值区）
+
+## 为什么采用当前方案
+
+-
+
+## 为什么没有采用其他方案
+
+-
+
+## 哪些地方做了妥协
+
+-
+
+## 哪些方案被验证不可行
+
+-
+
+## 哪些存量资产被复用
+
+-
+
+---
+
+# 8. 当前仍然有效的边界
+
+任务完成后，以下约束仍成立：
+
+- 不改：
+- 不影响：
+- 暂不支持：
+- 继续沿用：
+
+---
+
+# 9. 与原 Spec / Design 的偏差记录
+
+若实施过程中发生变化，必须记录：
+
+| 类型 | 原计划 | 最终结果 | 原因 |
+|---|---|---|---|
+| 范围 |  |  |  |
+| 设计 |  |  |  |
+| 技术实现 |  |  |  |
+| 交付节奏 |  |  |  |
+
+若无偏差，写：无
+
+---
+
+# 10. 质量结果
+
+## Code Review 结果
+
+- 结论：拒绝通过 / 有条件通过 / 通过
+- P0：
+- P1：
+- P2：
+- Suggestion：
+
+## Review-driven Auto-fix 结果
+
+- 已完成 / 不需要 / 部分完成
+- 修复文件：
+- 未修复问题及原因：
+
+## Unit Test Summary
+
+- pass / fail / not applicable
+- Validation Method：IDE / Wrapper / Local CLI / CI / Script / Manual / Other
+- Execution Environment：
+- Build Tool 或测试执行器：
+- 实际执行入口：命令 / IDE 配置名 / CI Job / 脚本路径 / 手工验证说明
+- 新增 / 修改测试文件：
+- 覆盖场景：
+- 未覆盖场景及原因：
+- warning / failure / skipped 说明：
+
+## 验证范围
+
+- Unit Test
+- Integration Test
+- 手工验证
+- 回归验证
+
+## 已知问题
+
+-
+
+---
+
+# 11. 风险与遗留事项
+
+## 当前风险
+
+-
+
+## 未完成项
+
+-
+
+## 后续建议
+
+-
+
+## 若继续演进，优先方向
+
+-
+-
+
+---
+
+# 12. 性能 / 稳定性复盘（如适用）
+
+- 查询性能是否符合预期：
+- 是否出现慢 SQL：
+- 外部依赖是否稳定：
+- 是否存在超时 / 重试问题：
+- 是否建议后续优化：
+
+---
+
+# 13. 回写资产记录
+
+## 本次是否新增 / 修正规则
+
+- 是 / 否
+
+涉及文件：
+
+- `skills/uaw-sdd-ai-coding/references/rules/...`
+
+## 本次是否更新上下文
+
+- 是 / 否
+
+涉及文件：
+
+- `skills/uaw-sdd-ai-coding/references/context/...`
+
+## 本次是否更新 Index
+
+- 是 / 否
+
+涉及文件：
+
+- `skills/uaw-sdd-ai-coding/references/context/routing-index.md`
+
+## 本次是否优化模板
+
+- 是 / 否
+
+涉及文件：
+
+- `skills/uaw-sdd-ai-coding/references/templates/...`
+
+## Process Status 同步结果
+
+- proposal-input.md 最终状态：
+- spec.md 最终状态：
+- design.md 最终状态：
+- tasks.md 最终状态：
+- archive.md 最终状态：
+
+规则：
+
+1. 归档前必须完成核心 SDD 资产的最终状态同步。
+2. 任何核心资产仍停留在旧阶段待办状态时，不允许归档完成。
+3. 状态同步只记录流程事实，不得改写已确认的需求、设计和实现结论。
+
+---
+
+# 14. 下一次 Enhancement / Refactor 阅读顺序（最重要）
+
+建议按以下顺序阅读：
+
+1. 本文件 `archive.md`
+2. `spec.md`
+3. `design.md`
+4. 当前 Git 代码现状
+5. `tasks.md`（按需）
+
+原则：
+
+1. Git 代码是实物基线
+2. 历史文档是知识基线
+3. 二者冲突，以 Git 为准
+4. 差异必须写入新 spec
+
+---
+
+# 15. 下一次提案特别注意
+
+## 最可能变化的点
+
+-
+
+## 最不建议再碰的区域
+
+-
+
+## 可直接复用的资产
+
+-
+
+## 需要重新验证的假设
+
+-
+
+---
+
+# 16. 归档质量自检
+
+## 16.1 归档检查项标记规则（强制）
+
+Archive 文件中的所有 `[ ]` 检查项在正式归档前必须经过实际检查，并更新为 `[✓]` 或 `[x]`。
+
+- `[✓]`：已检查，且发现问题 / 不满足 / 有阻塞。
+- `[x]`：已检查，且无问题 / 已满足 / 可通过。
+- `[ ]`：仅允许作为模板初始占位。正式生成或更新 `archive.md` 后，禁止继续保留 `[ ]`。
+
+规则：
+
+1. 发现问题必须打 `[✓]`，并写明问题、影响和后续动作。
+2. 无问题必须打 `[x]`。
+3. 不适用必须写成 `[x] 不适用：原因...`。
+4. 若归档判断中仍存在 `[ ]`，禁止把 `archive.md` 标记为完成。
+5. 若存在 `[✓]`，必须同步写入“风险与遗留事项”或“Process Deviations”。
+
+## 16.2 归档质量自检
+
+请确认：
+
+- [ ] 基于最终确认版本编写
+- [ ] 与当前 Git 代码一致
+- [ ] 已说明目标、边界、最终方案
+- [ ] 已记录关键决策与取舍
+- [ ] 已记录实施结果、风险、遗留问题
+- [ ] 已记录是否回写 rules / context / index / templates
+- [ ] 已给出下一次阅读顺序
+- [ ] 后续人员无需翻聊天记录即可接手
+
+结论：
+
+- 已满足归档标准 / 未满足归档标准
+
+若未满足，缺失项：
+
+-
+-
+
+---
+
+# 17. 最终结论
+
+- 本次任务整体评价：
+- 是否建议作为同类功能参考样板：是 / 否
+- 后续维护难度：low / medium / high
+- 备注：
+
+---
+
+# 18. Code Review 归档证据（强制）
+
+## 18.1 SDD 内部 Code Review 说明
+
+本归档对应的是 SDD 流程内代码评审。
+
+规则：
+
+1. SDD 内部 Code Review 不生成 HTML 报告。
+2. 不存在 `代码评审统计报告.html` 或个人代码评审报告路径。
+3. SDD 内部 Code Review 必须生成 `./code-review-findings.md`。
+4. 归档必须记录 Code Review Findings、Auto-fix Summary、Unit Test Summary。
+5. 若需要独立代码评审报告，必须另行使用 `Entry Mode: STANDALONE_GIT_RANGE_REVIEW` 或 `Entry Mode: STANDALONE_WORKTREE_SNAPSHOT_REVIEW`，该结果不作为本 SDD 归档的强制前置条件。
+6. `STANDALONE_WORKTREE_SNAPSHOT_REVIEW` 只能作为目录快照评审证据，不得作为正式合并闸门。
+
+## 18.1.1 Findings 文件
+
+- 文件路径：`./code-review-findings.md`
+- 是否已生成：是 / 否
+- 是否已在 tasks.md 引用：是 / 否
+- 是否完成 Auto-fix 交接：是 / 否
+
+## 18.2 Code Review Findings
+
+| 问题编号 | 严重程度 | 文件 | 问题摘要 | 处理结果 |
+|---|---|---|---|---|
+|  |  |  |  |  |
+
+## 18.3 Auto-fix Summary
+
+| 问题编号 | 修复文件 | 修复方式 | 是否完成 | 未完成原因 |
+|---|---|---|---|---|
+|  |  |  |  |  |
+
+## 18.4 Unit Test Summary
+
+| 测试文件 | 覆盖场景 | 结果 | 备注 |
+|---|---|---|---|
+|  |  |  |  |
+
+## 18.5 Process Deviations
+
+| Deviation | Reason | Approved By | Impact | Follow-up |
+|---|---|---|---|---|
+|  |  |  |  |  |
+
+归档判断：
+
+> 以下 `[ ]` 在正式归档前必须按第 16.1 节更新为 `[✓]` 或 `[x]`。
+
+- [ ] `code-review-findings.md` 已输出
+- [ ] code-review-findings.md 已生成并被 tasks.md / archive.md 引用
+- [ ] Auto-fix 已完成或明确不需要
+- [ ] Unit Test Summary 已完成或明确不适用
+- [ ] 所有偏差已记录
+- [ ] proposal-input/spec/design/tasks 的 Process Status 已更新
+
+
+---
+
+# Process Status（强制｜流程闸门）
+
+- Current Stage：
+- Stage Status：draft / confirmed / executing / review / fix / unit-test / archived / blocked
+- Last Completed Step：
+- Next Required Step：
+- Human Confirmation Required：yes / no
+- Allowed Next Action：
+- Forbidden Next Action：
+- Updated At：
+
+# Process Audit Trail（强制｜过程审核轨迹）
+
+| Time | Stage | Action | Input | Output | Result | Next Gate |
+|---|---|---|---|---|---|---|
+|  |  |  |  |  |  |  |
+
+规则：
+
+1. 进入下一阶段前，必须先更新当前文件的 Process Status 和 Process Audit Trail。
+2. 未更新状态区块，不允许进入下一阶段。
+3. 如果某阶段被跳过或不适用，必须写明原因，禁止静默跳过。
+4. 生成 archive.md 前，proposal-input.md、spec.md、design.md、tasks.md 均必须处于最终可归档状态。
+5. Process Status 生命周期、归档前状态同步和验证方式记录必须遵守 `skills/uaw-sdd-ai-coding/references/process-control.md`。

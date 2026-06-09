@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>UAW 开发者代码评审报告</title>
+  <!-- Template Usage: STANDALONE_GIT_RANGE_REVIEW or STANDALONE_WORKTREE_SNAPSHOT_REVIEW only. SDD_TASK_CODE_REVIEW must not use this template. -->
+  <style>
+    body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,"Microsoft YaHei",sans-serif;margin:0;background:#f6f7fb;color:#1f2937;}
+    .page{max-width:1120px;margin:0 auto;padding:28px}.hero{background:#111827;color:#fff;border-radius:18px;padding:26px 30px;margin-bottom:20px}.hero h1{margin:0;font-size:28px}.muted{color:#6b7280;font-size:13px}.hero .muted{color:#d1d5db}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:16px 0}.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:16px 0}.card{background:#fff;border-radius:14px;padding:16px;box-shadow:0 8px 24px rgba(15,23,42,.06)}.label{font-size:12px;color:#6b7280;margin-bottom:6px}.value{font-size:22px;font-weight:800}h2{font-size:20px;margin:28px 0 12px}h3{font-size:16px;margin:12px 0 8px}table{width:100%;border-collapse:collapse;background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 8px 24px rgba(15,23,42,.06);margin-bottom:18px}th,td{padding:12px;border-bottom:1px solid #e5e7eb;text-align:left;font-size:14px;vertical-align:top}th{background:#f3f4f6}.badge{display:inline-block;border-radius:999px;padding:4px 10px;font-size:12px;font-weight:700}.pass{background:#dcfce7;color:#166534}.warn{background:#fef3c7;color:#92400e}.fail{background:#fee2e2;color:#991b1b}pre{background:#0f172a;color:#e5e7eb;padding:12px;border-radius:10px;overflow:auto;font-size:13px}.issue{border-left:4px solid #111827}.section-note{background:#eef2ff;border-left:4px solid #4f46e5;padding:12px;border-radius:10px;margin-bottom:16px;}
+  </style>
+</head>
+<body>
+<div class="page">
+  <div class="hero">
+    <h1>UAW 开发者代码评审报告</h1>
+    <p class="muted">Template Usage: STANDALONE_GIT_RANGE_REVIEW / STANDALONE_WORKTREE_SNAPSHOT_REVIEW only</p>
+    <p class="muted">{{scopeDeviation}}</p>
+  </div>
+
+  <div class="grid">
+    <div class="card"><div class="label">开发者</div><div class="value">{{developerName}}</div></div>
+    <div class="card"><div class="label">评审日期</div><div class="value">{{reviewDate}}</div></div>
+    <div class="card"><div class="label">综合评分</div><div class="value">{{overallScore}}</div></div>
+    <div class="card"><div class="label">最终结论</div><div class="value">{{finalDecision}}</div></div>
+  </div>
+
+  <h2>1. 提交概览</h2>
+  <div class="grid">
+    <div class="card"><div class="label">提交数</div><div class="value">{{commitCount}}</div></div>
+    <div class="card"><div class="label">变更文件数</div><div class="value">{{changedFiles}}</div></div>
+    <div class="card"><div class="label">新增行数</div><div class="value">{{insertions}}</div></div>
+    <div class="card"><div class="label">删除行数</div><div class="value">{{deletions}}</div></div>
+  </div>
+  <table>
+    <thead><tr><th>Commit</th><th>提交信息</th><th>文件数</th><th>新增</th><th>删除</th><th>状态</th></tr></thead>
+    <tbody><tr><td>{{commitHash}}</td><td>{{commitMessage}}</td><td>{{filesChanged}}</td><td>{{insertions}}</td><td>{{deletions}}</td><td><span class="badge {{commitStatusClass}}">{{commitStatus}}</span></td></tr></tbody>
+  </table>
+
+  <h2>2. 评分明细</h2>
+  <table>
+    <thead><tr><th>维度</th><th>得分</th><th>问题摘要</th></tr></thead>
+    <tbody>
+      <tr><td>架构一致性与包结构</td><td>{{architectureScore}}</td><td>{{architectureReview}}</td></tr>
+      <tr><td>业务逻辑正确性</td><td>{{businessScore}}</td><td>{{businessReview}}</td></tr>
+      <tr><td>代码质量与可维护性</td><td>{{qualityScore}}</td><td>{{qualityReview}}</td></tr>
+      <tr><td>UAW 工具类与项目规范</td><td>{{uawStandardScore}}</td><td>{{uawStandardReview}}</td></tr>
+      <tr><td>数据库与性能</td><td>{{databaseScore}}</td><td>{{databaseReview}}</td></tr>
+      <tr><td>安全与权限</td><td>{{securityScore}}</td><td>{{securityReview}}</td></tr>
+      <tr><td>单元测试</td><td>{{testScore}}</td><td>{{testReview}}</td></tr>
+      <tr><td>日志与可观测性</td><td>{{loggingScore}}</td><td>{{loggingReview}}</td></tr>
+      <tr><td>外部接口与配置风险</td><td>{{integrationConfigScore}}</td><td>{{integrationConfigReview}}</td></tr>
+      <tr><td>事务、幂等与重复提交</td><td>{{idempotencyScore}}</td><td>{{idempotencyReview}}</td></tr>
+    </tbody>
+  </table>
+
+  <h2>3. 问题统计</h2>
+  <div class="grid">
+    <div class="card"><div class="label">P0</div><div class="value">{{p0Count}}</div></div>
+    <div class="card"><div class="label">P1</div><div class="value">{{p1Count}}</div></div>
+    <div class="card"><div class="label">P2</div><div class="value">{{p2Count}}</div></div>
+    <div class="card"><div class="label">Suggestion</div><div class="value">{{suggestionCount}}</div></div>
+  </div>
+
+  <h2>4. 详细代码评审</h2>
+  <div class="card issue">
+    <h3>{{issueNo}}. {{issueTitle}} <span class="badge {{severityClass}}">{{severity}}</span></h3>
+    <p><strong>文件：</strong>{{filePath}}</p>
+    <p><strong>位置：</strong>{{location}}</p>
+    <p><strong>问题描述：</strong>{{issueDescription}}</p>
+    <p><strong>风险影响：</strong>{{impactDescription}}</p>
+    <p><strong>修复建议：</strong>{{fixSuggestion}}</p>
+    <h3>优化前</h3><pre>{{beforeCode}}</pre>
+    <h3>优化后</h3><pre>{{afterCode}}</pre>
+  </div>
+
+  <h2>5. 架构与包结构评审</h2>
+  <table>
+    <thead><tr><th>检查项</th><th>结论</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td>模块结构识别</td><td>{{moduleStructureResult}}</td><td>{{moduleStructureReview}}</td></tr>
+      <tr><td>职责边界</td><td>{{responsibilityResult}}</td><td>{{responsibilityReview}}</td></tr>
+      <tr><td>依赖方向</td><td>{{dependencyResult}}</td><td>{{dependencyReview}}</td></tr>
+      <tr><td>新增包 / 类落位</td><td>{{placementResult}}</td><td>{{placementReview}}</td></tr>
+    </tbody>
+  </table>
+
+  <h2>6. 测试评审</h2>
+  <table>
+    <thead><tr><th>是否需要单测</th><th>测试场景</th><th>缺口</th><th>建议</th></tr></thead>
+    <tbody><tr><td>{{unitTestRequired}}</td><td>{{testScenario}}</td><td>{{testGap}}</td><td>{{testSuggestion}}</td></tr></tbody>
+  </table>
+
+  <h2>7. 外部接口、配置、事务与幂等</h2>
+  <table>
+    <thead><tr><th>专项</th><th>检查结果</th><th>风险</th><th>建议</th></tr></thead>
+    <tbody>
+      <tr><td>外部接口与远程调用</td><td>{{externalCallResult}}</td><td>{{externalCallRisk}}</td><td>{{externalCallSuggestion}}</td></tr>
+      <tr><td>配置与环境兼容</td><td>{{configResult}}</td><td>{{configRisk}}</td><td>{{configSuggestion}}</td></tr>
+      <tr><td>事务、幂等、重复提交</td><td>{{idempotencyResult}}</td><td>{{idempotencyRisk}}</td><td>{{idempotencySuggestion}}</td></tr>
+    </tbody>
+  </table>
+
+  <h2>8. 亮点总结</h2>
+  <div class="grid-2"><div class="card">{{highlightOne}}</div><div class="card">{{highlightTwo}}</div></div>
+
+  <h2>9. 修复优先级</h2>
+  <table>
+    <thead><tr><th>优先级</th><th>动作</th></tr></thead>
+    <tbody>
+      <tr><td>P0</td><td>{{p0Action}}</td></tr>
+      <tr><td>P1</td><td>{{p1Action}}</td></tr>
+      <tr><td>P2</td><td>{{p2Action}}</td></tr>
+    </tbody>
+  </table>
+
+  <p class="muted">Generated at: {{generatedAt}}</p>
+</div>
+</body>
+</html>
