@@ -17,7 +17,7 @@
 * 当BO需要扩展时，由用户自行指定继承已有的BO类（如`EnquiryInformationBO`）
 * 在{API接口所在业务包package位置}的`pojo/bo`包下新增BO入参对象
 * 覆盖toString方法，使用`ToStringUtil.toStringHelper(this)`格式
-* 满足[8.如何增加model对象(Bo,Po,VO,Dto).md](8.%E5%A6%82%E4%BD%95%E5%A2%9E%E5%8A%A0model%E5%AF%B9%E8%B1%A1%28Bo%2CPo%2CVO%2CDto%29.md)的规范
+* 满足[BO 对象规则](../model/bo.md)的规范
 * 不使用内部类
 
 ## 背景3：响应结果规范
@@ -25,7 +25,7 @@
 * 如果没有特定返回值，可以使用`IICResponseModel<Void>`或简单返回成功消息
 * 在{API接口所在业务包package位置}的`pojo/vo`包下新增VO返回值对象
 * 覆盖toString方法，使用`ToStringUtil.toStringHelper(this)`格式
-* 满足[8.如何增加model对象(Bo,Po,VO,Dto).md](8.%E5%A6%82%E4%BD%95%E5%A2%9E%E5%8A%A0model%E5%AF%B9%E8%B1%A1%28Bo%2CPo%2CVO%2CDto%29.md)的规范
+* 满足[VO 对象规则](../model/vo.md)的规范
 
 
 ## 背景4：Service层规范
