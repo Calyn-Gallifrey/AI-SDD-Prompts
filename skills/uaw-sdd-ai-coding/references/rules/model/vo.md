@@ -9,10 +9,489 @@
 
 ## 背景2：VO对象生成规范
 * 根据用户输入生成VO（View Object）模型对象
-* **VO类**：实现 `Serializable` 接口，不继承特定基类，类名必须以`VO`为后缀
+* **VO类**：实现 `Serializable` 接口，类名必须以`VO`为后缀
+* **VO基类说明**：VO基类提供公共属性，子类继承基类可复用这些属性。基类中的属性必须使用protected修饰符，以便子类访问
 * 生成的对象放在对应位置，包路径为：`com.ocft.iic.uaw.server.modules.transaction.core.{模块名}.pojo.vo`
 
-## 包路径规范
+## 属性修饰符与toString规范
+* **VO基类属性必须使用protected修饰符**：所有VO基类中的属性应使用protected修饰符，以便子类继承访问
+* **VO子类属性默认使用private修饰符**：VO子类的自有属性应使用private修饰符
+* **VO类需实现Serializable接口**：VO类必须实现 `Serializable` 接口，确保序列化兼容性
+* **子类toString方法需包含父类属性**：当子类重写toString方法时，必须显式包含父类的所有属性，确保日志输出的完整性
+* **VO类需重写toString方法**：当VO类包含复杂属性或需要日志输出时，应重写 `toString()` 方法，确保日志输出的完整性
+
+### 示例：VO基类属性修饰符为protected
+```java
+package com.ocft.iic.uaw.server.modules.transaction.base.pojo.vo;
+
+import com.ocft.iic.uaw.server.modules.transaction.support.utils.ToStringUtil;
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import java.io.Serializable;
+
+/**
+ * 基础交易响应数据传输对象
+ * @author {当前用户账号}
+ * @date {生成当天日期}
+ */
+@Data
+@EqualsAndHashCode(callSuper = true)
+@ApiModel(description = "基础交易响应数据传输对象")
+public class BaseTransactionVO implements Serializable {
+
+    private static final long serialVersionUID = 1L;
+
+    @ApiModelProperty(value = "前端防重提交 token", required = true)
+    protected String requestToken;
+
+    @ApiModelProperty(value = "联系人ID", required = true)
+    protected String contactId;
+
+    @ApiModelProperty(value = "客户ID", required = true)
+    protected String customerId;
+
+    @ApiModelProperty(value = "交易类型", required = true)
+    protected String transactionType;
+
+    @Override
+    public String toString() {
+        return ToStringUtil.toStringHelper(this)
+                .add("requestToken", requestToken)
+                .add("contactId", contactId)
+                .add("customerId", customerId)
+                .add("transactionType", transactionType)
+                .toString();
+    }
+}
+```
+
+### 示例：VO子类属性修饰符为private
+```java
+package com.ocft.iic.uaw.server.modules.transaction.core.changecontactinfo.pojo.vo;
+
+import com.ocft.iic.uaw.server.modules.transaction.base.pojo.vo.BaseTransactionVO;
+import com.ocft.iic.uaw.server.modules.transaction.support.utils.ToStringUtil;
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import java.io.Serializable;
+import java.util.List;
+
+/**
+ * 联系信息变更出参VO
+ * VO类名必须以`VO`为后缀
+ * @author {当前用户账号}
+ * @date {生成当天日期}
+ */
+@Data
+@EqualsAndHashCode(callSuper = true)
+@ApiModel(description = "联系信息变更出参VO")
+public class ChangeContactInfoVO extends BaseTransactionVO implements Serializable {
+
+    private static final long serialVersionUID = 1L;
+
+    @ApiModelProperty(value = "最初的地址信息")
+    private List<ChangeAddressDetailVO> originalAddressList;
+
+    @ApiModelProperty(value = "修改后的地址信息")
+    private List<ChangeAddressDetailVO> modifiedAddressList;
+
+    @ApiModelProperty(value = "最初的邮箱信息")
+    private List<ChangeEmailsDetailVO> originalEmailsList;
+
+    @ApiModelProperty(value = "修改后的邮箱信息")
+    private List<ChangeEmailsDetailVO> modifiedEmailsList;
+
+    @ApiModelProperty(value = "最初的电话信息")
+    private List<ChangePhonesDetailVO> originalPhoneList;
+
+    @ApiModelProperty(value = "修改后的电话信息")
+    private List<ChangePhonesDetailVO> modifiedPhoneList;
+
+    @ApiModelProperty(value = "工单id", example = "transaction_123456")
+    private String transactionId;
+
+    @ApiModelProperty(value = "操作类型", example = "submit")
+    private String operateFlag;
+
+    @Override
+    public String toString() {
+        return ToStringUtil.toStringHelper(this)
+                .add("requestToken", requestToken)
+                .add("contactId", contactId)
+                .add("customerId", customerId)
+                .add("transactionType", transactionType)
+                .add("originalAddressList", originalAddressList)
+                .add("modifiedAddressList", modifiedAddressList)
+                .add("originalEmailsList", originalEmailsList)
+                .add("modifiedEmailsList", modifiedEmailsList)
+                .add("originalPhoneList", originalPhoneList)
+                .add("modifiedPhoneList", modifiedPhoneList)
+                .add("transactionId", transactionId)
+                .add("operateFlag", operateFlag)
+                .toString();
+    }
+}
+```
+
+### 示例：VO子类toString方法包含父类属性
+```java
+package com.ocft.iic.uaw.server.modules.transaction.core.changecontactinfo.pojo.vo;
+
+import com.ocft.iic.uaw.server.modules.transaction.base.pojo.vo.BaseChangeCusInfoVO;
+import com.ocft.iic.uaw.server.modules.transaction.support.utils.ToStringUtil;
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import java.io.Serializable;
+
+/**
+ * 联系信息变更-电话详情VO
+ * VO类名必须以`VO`为后缀
+ * @author {当前用户账号}
+ * @date {生成当天日期}
+ */
+@Data
+@EqualsAndHashCode(callSuper = true)
+@ApiModel(description = "联系信息变更-电话详情VO")
+public class ChangePhonesDetailVO extends BaseChangeCusInfoVO implements Serializable {
+
+    @ApiModelProperty(value = "电话类型", example = "MOBILE")
+    private String phoneType;
+
+    @ApiModelProperty(value = "国家", example = "CN")
+    private String country;
+
+    @ApiModelProperty(value = "国际区号", example = "+86")
+    private String diallingCode;
+
+    @ApiModelProperty(value = "电话号码", example = "13800138000")
+    private String number;
+
+    @ApiModelProperty(value = "是否为默认电话", example = "Y/N")
+    private String preferred;
+
+    @Override
+    public String toString() {
+        return ToStringUtil.toStringHelper(this)
+                .add("uniqueKey", uniqueKey)
+                .add("dealType", dealType)
+                .add("changeId", changeId)
+                .add("preferred", preferred)
+                .add("phoneType", phoneType)
+                .add("country", country)
+                .add("diallingCode", diallingCode)
+                .add("number", number)
+                .toString();
+    }
+}
+```
+
+### 示例：VO类属性修饰符为private（无继承）
+```java
+package com.ocft.iic.uaw.server.modules.transaction.core.changecontactinfo.pojo.vo;
+
+import com.ocft.iic.uaw.server.modules.transaction.support.utils.ToStringUtil;
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.io.Serializable;
+
+/**
+ * 联系信息变更-地址详情VO
+ * VO类名必须以`VO`为后缀
+ * @author {当前用户账号}
+ * @date {生成当天日期}
+ */
+@Data
+@ApiModel(description = "联系信息变更-地址详情VO")
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class ChangeAddressDetailVO implements Serializable {
+
+    private static final long serialVersionUID = 1L;
+
+    @ApiModelProperty(value = "唯一key", example = "unique_key_123")
+    private String uniqueKey;
+
+    @ApiModelProperty(value = "地址类型", example = "HOME")
+    private String addressType;
+
+    @ApiModelProperty(value = "地址行1", example = "123 Main Street")
+    private String line1;
+
+    @ApiModelProperty(value = "地址行2", example = "Apt 4B")
+    private String line2;
+
+    @ApiModelProperty(value = "地址行3", example = "Building A")
+    private String line3;
+
+    @ApiModelProperty(value = "地址行4", example = "District 5")
+    private String line4;
+
+    @ApiModelProperty(value = "国家", example = "CN")
+    private String country;
+
+    @ApiModelProperty(value = "邮政编码", example = "100000")
+    private String postalCode;
+
+    @ApiModelProperty(value = "是否为默认", example = "Y/N")
+    private String preferred;
+
+    @ApiModelProperty(value = "处理类型", example = "UPDATE")
+    private String dealType;
+
+    @Override
+    public String toString() {
+        return ToStringUtil.toStringHelper(this)
+                .add("uniqueKey", uniqueKey)
+                .add("addressType", addressType)
+                .add("line1", line1)
+                .add("line2", line2)
+                .add("line3", line3)
+                .add("line4", line4)
+                .add("country", country)
+                .add("postalCode", postalCode)
+                .add("preferred", preferred)
+                .add("dealType", dealType)
+                .toString();
+    }
+}
+```
+
+### 示例：VO类属性修饰符为private
+```java
+package com.ocft.iic.uaw.server.modules.transaction.core.changecontactinfo.pojo.vo;
+
+import com.ocft.iic.uaw.server.modules.transaction.support.utils.ToStringUtil;
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.io.Serializable;
+
+/**
+ * 联系信息变更-地址详情VO
+ * VO类名必须以`VO`为后缀
+ * @author {当前用户账号}
+ * @date {生成当天日期}
+ */
+@Data
+@ApiModel(description = "联系信息变更-地址详情VO")
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class ChangeAddressDetailVO implements Serializable {
+
+    private static final long serialVersionUID = 1L;
+
+    @ApiModelProperty(value = "唯一key", example = "unique_key_123")
+    private String uniqueKey;
+
+    @ApiModelProperty(value = "地址类型", example = "HOME")
+    private String addressType;
+
+    @ApiModelProperty(value = "地址行1", example = "123 Main Street")
+    private String line1;
+
+    @ApiModelProperty(value = "地址行2", example = "Apt 4B")
+    private String line2;
+
+    @ApiModelProperty(value = "地址行3", example = "Building A")
+    private String line3;
+
+    @ApiModelProperty(value = "地址行4", example = "District 5")
+    private String line4;
+
+    @ApiModelProperty(value = "国家", example = "CN")
+    private String country;
+
+    @ApiModelProperty(value = "邮政编码", example = "100000")
+    private String postalCode;
+
+    @ApiModelProperty(value = "是否为默认", example = "Y/N")
+    private String preferred;
+
+    @ApiModelProperty(value = "处理类型", example = "UPDATE")
+    private String dealType;
+
+    @Override
+    public String toString() {
+        return ToStringUtil.toStringHelper(this)
+                .add("uniqueKey", uniqueKey)
+                .add("addressType", addressType)
+                .add("line1", line1)
+                .add("line2", line2)
+                .add("line3", line3)
+                .add("line4", line4)
+                .add("country", country)
+                .add("postalCode", postalCode)
+                .add("preferred", preferred)
+                .add("dealType", dealType)
+                .toString();
+    }
+}
+```
+
+### 示例：VO类（包含BaseCustomerColInfoVO包装类型）
+```java
+package com.ocft.iic.uaw.server.modules.transaction.core.changecontactinfo.pojo.vo;
+
+import com.ocft.iic.uaw.server.modules.transaction.support.utils.ToStringUtil;
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.io.Serializable;
+
+/**
+ * 联系信息变更-地址详情VO
+ * VO类名必须以`VO`为后缀
+ * @author {当前用户账号}
+ * @date {生成当天日期}
+ */
+@Data
+@ApiModel(description = "联系信息变更-地址详情VO")
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class ChangeAddressDetailVO implements Serializable {
+
+    private static final long serialVersionUID = 1L;
+
+    @ApiModelProperty(value = "唯一key", example = "unique_key_123")
+    private String uniqueKey;
+
+    @ApiModelProperty(value = "地址类型", example = "HOME")
+    private BaseCustomerColInfoVO addressType;
+
+    @ApiModelProperty(value = "地址行1", example = "123 Main Street")
+    private BaseCustomerColInfoVO line1;
+
+    @ApiModelProperty(value = "地址行2", example = "Apt 4B")
+    private BaseCustomerColInfoVO line2;
+
+    @ApiModelProperty(value = "地址行3", example = "Building A")
+    private BaseCustomerColInfoVO line3;
+
+    @ApiModelProperty(value = "地址行4", example = "District 5")
+    private BaseCustomerColInfoVO line4;
+
+    @ApiModelProperty(value = "国家", example = "CN")
+    private BaseCustomerColInfoVO country;
+
+    @ApiModelProperty(value = "邮政编码", example = "100000")
+    private BaseCustomerColInfoVO postalCode;
+
+    @ApiModelProperty(value = "是否为默认", example = "Y/N")
+    private BaseCustomerColInfoVO preferred;
+
+    @ApiModelProperty(value = "处理类型", example = "UPDATE")
+    private String dealType;
+
+    @Override
+    public String toString() {
+        return ToStringUtil.toStringHelper(this)
+                .add("uniqueKey", uniqueKey)
+                .add("addressType", addressType)
+                .add("line1", line1)
+                .add("line2", line2)
+                .add("line3", line3)
+                .add("line4", line4)
+                .add("country", country)
+                .add("postalCode", postalCode)
+                .add("preferred", preferred)
+                .add("dealType", dealType)
+                .toString();
+    }
+}
+```
+
+### 示例：BaseCustomerColInfoVO类（VO包装类型）
+```java
+package com.ocft.iic.uaw.server.modules.transaction.core.changecontactinfo.pojo.vo;
+
+import com.ocft.iic.uaw.server.modules.transaction.support.utils.ToStringUtil;
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.io.Serializable;
+
+/**
+ * 客户列信息VO
+ * VO类名必须以`VO`为后缀
+ * @author {当前用户账号}
+ * @date {生成当天日期}
+ */
+@Data
+@ApiModel(description = "客户列信息VO")
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class BaseCustomerColInfoVO implements Serializable {
+
+    private static final long serialVersionUID = 1L;
+
+    @ApiModelProperty(value = "原始值", example = "old_value_123")
+    private String oldValue;
+
+    @ApiModelProperty(value = "新值", example = "new_value_456")
+    private String newValue;
+
+    @ApiModelProperty(value = "处理类型", example = "UPDATE")
+    private String dealType;
+
+    @Override
+    public String toString() {
+        return ToStringUtil.toStringHelper(this)
+                .add("oldValue", oldValue)
+                .add("newValue", newValue)
+                .add("dealType", dealType)
+                .toString();
+    }
+}
+```
+
+## VO基类说明
+
+### VO基类属性修饰符规范
+- **VO基类属性必须使用protected修饰符**：所有VO基类（如BaseTransactionVO、BaseChangeCusInfoVO等）中的属性应使用protected修饰符，以便子类继承访问
+- **VO子类属性默认使用private修饰符**：VO子类的自有属性应使用private修饰符
+
+### BaseTransactionVO（VO基类示例）
+VO类默认继承此类，提供基础的事务对象功能，包含以下公共属性（均为protected修饰符）：
+- `requestToken`：前端防重提交token
+- `contactId`：联系人ID
+- `customerId`：客户ID
+- `transactionType`：交易类型
+
+### BaseChangeCusInfoVO（VO基类示例）
+当VO类需要变更客户信息时的公共属性时，继承此类，提供以下公共字段（均为protected修饰符）：
+- `uniqueKey`：唯一键
+- `dealType`：处理类型（ADD、MODIFY、DELETE、NONE）
+- `changeId`：变更ID
+- `preferred`：是否为默认值
+
+# 包路径规范
 * VO类：`com.ocft.iic.uaw.server.modules.transaction.core.{模块名}.pojo.vo`，类名必须以`VO`为后缀
 
 ### 示例1:VO类
@@ -406,3 +885,6 @@ private String uniqueKey;
 6. **重要**：使用 `@ApiModel` 和 `@ApiModelProperty` 注解描述类和属性
 7. **重要**：非基本类型属性必须使用对应的VO类型
 8. **重要**：禁止在VO类中使用Entity类型、BO类型、DTO类型或内部类
+9. **重要**：VO基类（例如：BaseTransactionVO、BaseChangeCusInfoVO）的属性必须使用protected修饰符；VO子类的自有属性默认使用private修饰符；子类重写toString方法时，必须显式包含父类的所有属性
+10. **重要**：新建或修改VO类后，需检查代码，确保满足上述属性修饰符与toString规范
+ 
