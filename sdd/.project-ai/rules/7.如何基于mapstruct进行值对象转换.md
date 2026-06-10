@@ -3,9 +3,9 @@
 
 # 背景
 ## 背景1
-  - 项目技术栈：Java 1.8、SpringBoot 2.6.6、MySQL
-  - 用户输入: {业务描述}
-  - 用户输入: {包路径}
+- 项目技术栈：Java 1.8、SpringBoot 2.7.18、MySQL
+- 用户输入: {业务描述}
+- 用户输入: {包路径}
 
 ## 背景2
   - 转换类接口: 创建业务对象转换类接口，继承BaseTransactionConverter
@@ -27,6 +27,7 @@ import {源对象包路径};
 import {目标对象包路径};
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.factory.Mappers;
 
 /**
  * @author {当前登录域账号}
@@ -35,6 +36,11 @@ import org.mapstruct.Mapping;
  */
 @Mapper(componentModel = "spring")
 public interface {业务名称}Converter extends BaseTransactionConverter {
+
+    /**
+     * 静态实例方式（非Spring管理）
+     */
+    {业务名称}Converter INSTANCE = Mappers.getMapper({业务名称}Converter.class);
 
     /**
      * {源对象} 转换为 {目标对象}
@@ -52,6 +58,20 @@ public interface {业务名称}Converter extends BaseTransactionConverter {
 }
 ```
 
+## 使用方式
+在Service层可通过以下两种方式使用：
+
+**方式1：Spring注入（推荐）**
+```java
+@Autowired
+private {业务名称}Converter {业务名称}Converter;
+```
+
+**方式2：静态实例方式（非Spring管理）**
+```java
+{业务名称}Converter converter = {业务名称}Converter.INSTANCE;
+```
+
 ## 示例2 联系信息变更对象转换（实际项目示例）
 ```
 package com.ocft.iic.uaw.server.modules.transaction.core.changecontactinfo.service.assembler;
@@ -67,6 +87,7 @@ import com.ocft.iic.uaw.server.modules.transaction.support.utils.JsonUtil;
 import com.ocft.iic.uaw.server.modules.transaction.support.utils.MyStringUtil;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.factory.Mappers;
 
 /**
  * @author EX-LUOBING002
@@ -75,6 +96,11 @@ import org.mapstruct.Mapping;
  */
 @Mapper(componentModel = "spring")
 public interface ChangeContactInfoConverter extends BaseTransactionConverter {
+
+    /**
+     * 静态实例方式（非Spring管理）
+     */
+    ChangeContactInfoConverter INSTANCE = Mappers.getMapper(ChangeContactInfoConverter.class);
 
     /**
      * changeContactInfoBO 转换为 ChangeContactInfo
@@ -145,8 +171,10 @@ public interface ChangeContactInfoConverter extends BaseTransactionConverter {
 }
 ```
 
-# 使用方式
-在Service层通过@Autowired注入使用：
+## 使用方式
+在Service层可通过以下两种方式使用：
+
+**方式1：Spring注入（推荐）**
 ```java
 @Autowired
 private ChangeContactInfoConverter changeContactInfoConverter;
@@ -156,13 +184,23 @@ ChangeContactInfo changeContactInfo = changeContactInfoConverter.toChangeContact
 Transaction transaction = changeContactInfoConverter.toTransaction(changeContactInfoBO, transactionId);
 ```
 
+**方式2：静态实例方式（非Spring管理）**
+```java
+ChangeContactInfoConverter converter = ChangeContactInfoConverter.INSTANCE;
+
+// 调用转换方法
+ChangeContactInfo changeContactInfo = converter.toChangeContactInfo(changeContactInfoBO, transactionId, changeId);
+Transaction transaction = converter.toTransaction(changeContactInfoBO, transactionId);
+```
+
 # 要求
-  - 生成的文件放到对应目录，windows系统，没有则创建
-  - 转换类接口放到 {包路径}/service/assembler 目录下
-  - 文件命名规范：{业务名称}Converter.java
-  - 包路径规范：{包路径}.service.assembler
-  - 必须继承 BaseTransactionConverter 接口
-  - 使用 @Mapper(componentModel = "spring") 注解
-  - 方法命名规范：使用驼峰命名，格式为 {源对象}To{目标对象}
+- 生成的文件放到对应目录，windows系统，没有则创建
+- 转换类接口放到 {包路径}/service/assembler 目录下
+- 文件命名规范：{业务名称}Converter.java
+- 包路径规范：{包路径}.service.assembler
+- 必须继承 BaseTransactionConverter 接口
+- 使用 @Mapper(componentModel = "spring") 注解
+- 方法命名规范：使用驼峰命名，格式为 {源对象}To{目标对象}
+- 必须包含 INSTANCE 静态实例定义：{业务名称}Converter INSTANCE = Mappers.getMapper({业务名称}Converter.class);
 
  
