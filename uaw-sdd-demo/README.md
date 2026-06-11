@@ -74,3 +74,19 @@ Content-Type: application/json
   "requester": "alice"
 }
 ```
+
+Create an I need document work order:
+
+```http
+POST /api/work-orders/i-need-document
+Content-Type: application/json
+
+{
+  "policyNo": "P-30001",
+  "customerName": "Mary",
+  "requestType": "SEND_DOCUMENT",
+  "documentTypes": ["policy schedule", "statement"],
+  "deliveryEmail": "customer@example.com",
+  "requester": "agent01"
+}
+```
