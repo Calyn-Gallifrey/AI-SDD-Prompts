@@ -15,8 +15,8 @@
 - 对应 spec：`./spec.md`
 - 对应 design：`./design.md`
 - tasks 文件路径：`./tasks.md`
-- 执行模式：standard / fast-lane
-- 当前状态：draft / executing / code-review / auto-fix / unit-test / approved / archived / blocked
+- 执行模式：standard
+- 当前状态：draft / confirmed / executing / review / fix / unit-test / archived / blocked
 
 ---
 
@@ -38,8 +38,9 @@
 
 ## enhancement / refactor 额外确认
 
-- [ ] 已读取 archive.md
-- [ ] 已识别历史资产与当前 Git 差异
+- [ ] 已扫描当前代码工程中的既有实现
+- [ ] 如用户提供或当前任务依赖参考资产，已读取相关参考资产
+- [ ] 已识别参考资产与当前 Git 实物基线差异
 
 ---
 
@@ -363,60 +364,16 @@ Tasks 文件中的所有检查项都必须经过实际检查，不允许保留�
 
 ---
 
-# 7. Fast Lane（小需求快速模式）
+# 7. 流程模式约束
 
-适用：
+当前 SDD2.0 标准流程只允许 `standard` 模式。
 
-- 小字段调整
-- 单点 bugfix
-- 小返回字段变更
-- 无复杂设计变化
+规则：
 
-Fast Lane 是简化版 SDD，不是直接实现模式。
-
-## 7.1 Fast Lane 强制流程
-
-Fast Lane 必须按以下顺序执行：
-
-1. Fast Lane Proposal 已存在。
-2. Fast Lane Mini Spec 已生成。
-3. Fast Lane Mini Tasks 已生成。
-4. Mini Spec / Mini Tasks 已人工确认。
-5. Code Implementation。
-6. `Entry Mode: SDD_TASK_CODE_REVIEW`。
-7. Review-driven Auto-fix。
-8. Unit Test Generation。
-9. Unit Test Summary。
-10. Archive / archive-lite。
-
-## 7.2 Fast Lane 禁止事项
-
-- 禁止从 Fast Lane Proposal 直接生成代码。
-- 禁止跳过 Fast Lane Mini Spec。
-- 禁止跳过 Fast Lane Mini Tasks。
-- 禁止 Mini Spec / Mini Tasks 未确认就进入 Code Implementation。
-- 禁止跳过 SDD_TASK_CODE_REVIEW。
-- 禁止跳过 Review-driven Auto-fix。
-- 禁止跳过 Unit Test Generation / Unit Test Summary。
-- 禁止在 Code Review / Auto-fix / Unit Test Summary 完成前生成 archive-lite。
-- 禁止借小需求偷做大改动。
-
-## 7.3 Fast Lane 最低记录要求
-
-Mini Spec / Mini Tasks 至少记录：
-
-- 本次改动目标
-- 允许修改文件
-- 禁止修改文件
-- 边界约束
-- 测试要求
-- 不走完整 design 的理由
-- 人工确认记录
-
-原则：
-
-- 流程简化，不降低质量。
-- 产物可以精简，但阶段闸门不能消失。
+1. 不得默认启用 Fast Lane、mini-spec、mini-tasks 或 archive-lite。
+2. tasks 必须承接已确认的 `spec.md` 和 `design.md`。
+3. 不得从 proposal-input 或 spec 直接进入代码实现。
+4. 若未来版本需要轻量模式，必须先在体系规则中正式定义输入、产物、审核点、质量闸门和归档规则。
 
 ---
 

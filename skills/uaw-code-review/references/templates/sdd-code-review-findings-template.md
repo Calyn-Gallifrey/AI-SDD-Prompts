@@ -70,7 +70,15 @@
 - 测试补充要求：
 - 不修复项及原因：
 
-# 8. Unit Test 交接
+# 8. Post Auto-fix Verification
+
+- Recheck Result：passed / failed / not yet run
+- Rechecked Issues：
+- Remaining P0 / P1 / Blocking P2：
+- Archive allowed after Auto-fix：yes / no / not yet
+- Next Gate：
+
+# 9. Unit Test 交接
 
 - Selected Testing Profile：
 - Unit Test Required：yes / no
@@ -78,7 +86,7 @@
 - 可不覆盖场景及原因：
 - 实际验证方式要求：
 
-# 9. 结论
+# 10. 结论
 
 - 是否允许进入 Auto-fix：
 - 是否允许进入 Unit Test：

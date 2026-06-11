@@ -22,7 +22,24 @@ Map the brief design to proposal fields:
 | Sprint（迭代） | sprint |
 | Open Questions（待确认问题） | 风险提醒 / 待确认 |
 
-If `Feature Type（功能类型）` is `enhancement` or `refactor`, require historical feature asset path when the task depends on previous SDD assets. If the user does not know it, scan likely `sdd2-features/` directories before asking.
+Reference assets are optional context, not required brief-design fields.
+
+For `enhancement` or `refactor`, use the current codebase as the primary baseline. Only use prior SDD feature assets when the user explicitly provides them, names a previous feature, or the current codebase is insufficient to identify the existing behavior. If prior assets may be needed, scan the configured feature workspace before asking the user to provide a path.
+
+## Feature Workspace Root
+
+SDD2.x feature assets use one stable workspace root:
+
+```text
+sdd2-features/<SprintN>/<feature-name>/
+```
+
+Rules:
+
+1. `sdd2-features` represents the SDD major version line, not the exact minor version.
+2. Do not create `sdd2.1-features`, `sdd2.2-features`, or other minor-version roots.
+3. If SDD2.1 changes rules, keep writing feature assets under `sdd2-features` and record the executed Skill version inside the generated assets.
+4. A new root for a future major version requires an explicit migration decision, not an automatic naming change.
 
 ## Stage Flow
 
@@ -63,6 +80,7 @@ Do not ask the user to repeat unit-test inputs in SDD mode. Derive test targets 
 The feature asset directory must contain:
 
 ```text
+brief-design.md
 proposal-input.md
 spec.md
 design.md
@@ -81,8 +99,12 @@ Process Audit Trail
 Phase Review records
 ```
 
+`brief-design.md` is the persisted user entry input. If the brief design came only from chat, capture the confirmed brief design into `brief-design.md` before assembling `proposal-input.md`.
+
 ## SDD2.0 Overrides
 
 If bundled SDD reference content say that developers fill `proposal-input.md`, treat that as outdated. In SDD2.0, developers provide `Brief Design（人工简要设计）`; the skill assembles `proposal-input.md`.
 
 If bundled SDD reference content contain Code Review or Unit Test implementation details, keep the workflow gate in this skill but delegate execution to `uaw-code-review` and `uaw-unit-test`.
+
+Fast Lane, mini-spec, mini-tasks, and archive-lite are not part of the active SDD2.0 standard flow. Do not use them unless a later approved SDD version defines them explicitly.

@@ -68,7 +68,7 @@
 - `skills/uaw-sdd-ai-coding/references/context/...`
 - `skills/uaw-sdd-ai-coding/references/rules/...`
 - `user-provided-reference-docs/...`
-- `sdd2-features/...`
+- `sdd2-features/...`（SDD2.x 主版本线功能资产根目录）
 
 说明：
 
@@ -305,32 +305,16 @@ Design 阶段不得违反：
 
 ---
 
-# 16. Fast Lane 判断（小需求快速模式）
+# 16. 流程模式约束
 
-若同时满足以下条件，可走 Fast Lane：
+当前 SDD2.0 标准流程只允许 `standard` 模式。
 
-- 单点小改动
-- 无复杂设计变化
-- 无高风险依赖
-- 可快速验证
+规则：
 
-Fast Lane 是简化版 SDD，不是直接实现模式。
-
-Fast Lane 必须遵守以下流程：
-
-`Fast Lane Proposal → Fast Lane Mini Spec → Fast Lane Mini Tasks → 人工确认 → Code Implementation → SDD_TASK_CODE_REVIEW → Review-driven Auto-fix → Unit Test Generation → Unit Test Summary → Archive / archive-lite`
-
-Fast Lane 规则：
-
-1. 禁止从 Fast Lane Proposal 直接生成代码。
-2. 禁止跳过 Fast Lane Mini Spec。
-3. 禁止跳过 Fast Lane Mini Tasks。
-4. Mini Spec / Mini Tasks 未人工确认前，禁止进入 Code Implementation。
-5. Fast Lane 可以省略完整 design，但必须在 Mini Spec / Mini Tasks 中写清范围、边界、允许修改文件、禁止修改文件、测试要求。
-6. Fast Lane 仍必须执行 SDD 内部 Code Review、Review-driven Auto-fix、Unit Test Generation、Unit Test Summary。
-7. Code Review 和 Unit Test Summary 完成前，禁止生成 Archive / archive-lite。
-
-若走 Fast Lane，spec 中必须明确标注原因、风险等级和不适用完整 design 的理由。
+1. 不得默认启用 Fast Lane、mini-spec、mini-tasks 或 archive-lite。
+2. 不得省略 design 阶段。
+3. 不得省略 spec / design / tasks / phase / archive 的人工审核节点。
+4. 若未来版本需要轻量模式，必须先在体系规则中正式定义输入、产物、审核点、质量闸门和归档规则。
 
 ---
 

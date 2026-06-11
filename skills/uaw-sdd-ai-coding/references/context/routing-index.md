@@ -80,15 +80,23 @@ skills/uaw-unit-test/references/java/
 
 ## 3. Runtime Feature Assets
 
-SDD2.0 运行时功能资产默认输出到当前代码工程内：
+SDD2.x 运行时功能资产默认输出到当前代码工程内：
 
 ```text
 sdd2-features/<SprintN>/<feature-name>/
 ```
 
+目录规则：
+
+1. `sdd2-features` 是 SDD2.x 主版本线的功能资产根目录。
+2. SDD2.1 / SDD2.2 等小版本升级不得新增 `sdd2.1-features` 或类似目录。
+3. 小版本差异必须记录在功能资产内容中，而不是通过拆分根目录表达。
+4. 未来大版本是否更换功能资产根目录，必须通过独立迁移规则决定。
+
 功能资产目录必须包含：
 
 ```text
+brief-design.md
 proposal-input.md
 spec.md
 design.md

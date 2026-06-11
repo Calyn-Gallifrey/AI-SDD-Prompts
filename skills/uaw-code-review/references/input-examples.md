@@ -23,7 +23,7 @@ Exclude Merge Commits（排除合并提交）：yes
 
 Exclude Generated Files（排除生成文件）：yes
 
-Report Output Directory（报告输出目录）：sdd2-features/sprint6/demo/reports/code-review/2026-06-09/
+Report Output Directory（报告输出目录）：reports/code-review/2026-06-09/
 
 Report Output Date（报告输出日期）：2026-06-09
 ```
@@ -43,7 +43,7 @@ Baseline（基准）：current HEAD
 
 Formal Merge Gate（是否正式合并门禁）：no
 
-Report Output Directory（报告输出目录）：sdd2-features/sprint6/demo/reports/code-review/2026-06-09/
+Report Output Directory（报告输出目录）：reports/code-review/2026-06-09/
 
 Report Output Date（报告输出日期）：2026-06-09
 ```

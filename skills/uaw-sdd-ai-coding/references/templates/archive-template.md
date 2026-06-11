@@ -9,6 +9,7 @@
 # 1. 基本信息
 
 - 功能名称：
+- SDD Version：
 - 功能类型：query / submit / edit / enhancement / refactor / fix
 - 所属模块：
 - 所在 sprint：
@@ -22,15 +23,18 @@
 # 2. 对应资产文件
 
 - proposal：`./proposal-input.md`（如有）
+- brief design：`./brief-design.md`
 - spec：`./spec.md`
 - design：`./design.md`
 - tasks：`./tasks.md`
 - code review findings：`./code-review-findings.md`
+- auto-fix summary：`./auto-fix-summary.md`
+- unit test summary：`./unit-test-summary.md`
 
 说明：
 
 - 若文件不存在，必须说明原因
-- 若采用 Fast Lane，可替换为 mini-spec / archive-lite
+- SDD2.0 标准流程不使用 Fast Lane、mini-spec 或 archive-lite
 
 ---
 

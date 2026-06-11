@@ -6,6 +6,10 @@ Developers do not manually fill this template.
 
 ## 1. Task Basic Information
 
+SDD Version（SDD版本）：SDD2.0
+
+Feature Workspace Root（功能资产根目录）：sdd2-features
+
 Feature Name（功能名称）：
 
 Feature Type（功能类型）：

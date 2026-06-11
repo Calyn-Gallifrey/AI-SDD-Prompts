@@ -276,11 +276,15 @@ Desktop/
 
 独立模式必须根据用户指定的 `Report Output Directory` 输出报告。
 
+Standalone 模式不属于 SDD 流程，不得默认创建 SDD feature directory；只有用户明确指定时，才允许输出到 `sdd2-features/.../reports/code-review/...`。
+
 推荐路径：
 
 ```text
-sdd2-features/<SprintN>/<feature-name>/reports/code-review/YYYY-MM-DD/
+reports/code-review/YYYY-MM-DD/
 ```
+
+说明：`sdd2-features` 是 SDD2.x 主版本线默认功能资产根目录，小版本升级不得自动改成 `sdd2.1-features` 等新目录。Standalone code review 默认不依赖该目录。
 
 如用户指定其他内网目录，也可使用，但必须明确记录。
 
@@ -325,7 +329,7 @@ Base branch: origin/develop
 Target branch: HEAD
 Exclude merge commits: yes
 Exclude generated files: yes
-Report Output Directory: sdd2-features/sprint6/demo/reports/code-review/2026-06-09/
+Report Output Directory: reports/code-review/2026-06-09/
 Report Output Date: 2026-05-27
 ```
 
@@ -348,7 +352,7 @@ Commit hashes:
 - abc123
 - def456
 Exclude generated files: yes
-Report Output Directory: sdd2-features/sprint6/demo/reports/code-review/2026-06-09/
+Report Output Directory: reports/code-review/2026-06-09/
 Report Output Date: 2026-05-27
 ```
 
@@ -370,7 +374,7 @@ End time: 2026-05-27 23:59:59
 Target branch: develop
 Exclude merge commits: yes
 Exclude generated files: yes
-Report Output Directory: sdd2-features/sprint6/demo/reports/code-review/2026-06-09/
+Report Output Directory: reports/code-review/2026-06-09/
 Report Output Date: 2026-05-27
 ```
 

@@ -95,7 +95,8 @@
 
 推荐：
 
-- `sdd2-features/<SprintN>/<feature-name>/reports/code-review/YYYY-MM-DD/`
+- `reports/code-review/YYYY-MM-DD/`
+- `sdd2-features/<SprintN>/<feature-name>/reports/code-review/YYYY-MM-DD/`（仅限用户明确要求输出到 SDD 功能目录）
 
 ## Report Output Date
 
