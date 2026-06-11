@@ -44,9 +44,15 @@ Assumptions（推断信息）：
 
 Open Questions（待确认问题）：
 
-## 4. Historical Feature Reference
+## 4. Reference Basis
 
-Historical Feature Directory（历史功能目录）：
+Reference Assets（参考资产）：
+
+Reference Notes（参考说明）：
+
+Rules:
+- 仅记录当前 SDD2.0 资产、当前代码工程资产或用户明确指定的参考资料。
+- 禁止默认引用旧版 SDD 目录或未被用户指定的历史路径。
 
 ## 5. SDD Execution Requirements
 

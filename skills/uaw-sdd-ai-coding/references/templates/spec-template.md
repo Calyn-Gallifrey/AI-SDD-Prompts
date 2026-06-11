@@ -58,7 +58,7 @@
 
 ## Conditional Context（按任务命中的上下文）
 
-- 历史功能资产：
+- 参考资产：
 - 外部依赖背景：
 - 兼容性背景：
 - 特殊领域知识：
@@ -73,7 +73,8 @@
 说明：
 
 - 若未说明引用来源，后续 AI 容易自由发挥
-- enhancement / refactor 场景下，必须显式列出历史资产来源
+- enhancement / refactor 场景下，必须显式列出参考资产来源
+- 禁止默认引用旧版 SDD 目录或未被用户指定的历史路径
 
 ---
 
@@ -94,9 +95,9 @@
 
 ---
 
-# 5. 历史功能资产（仅 enhancement / refactor）
+# 5. 参考资产（仅 enhancement / refactor）
 
-## 引用目录
+## 引用路径
 
 - `sdd2-features/.../`
 

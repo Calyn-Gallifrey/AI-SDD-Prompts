@@ -662,6 +662,27 @@ Code Review 后必须执行本 Gate。
 - 未修复问题及原因：
 - 是否需要重新 Code Review：yes / no
 
+## 16.4 Auto-fix 后复核
+
+Auto-fix 完成后，必须执行一次轻量复核，确认 `code-review-findings.md` 中所有阻塞 Archive 的问题都已经处理。
+
+复核规则：
+
+1. 必须区分 Code Review 原始结论与 Auto-fix 后最终闸门结论。
+2. 不得把修复前的 `Archive allowed: no` 直接作为 Archive 阻断依据继续保留到最终状态。
+3. 必须在 `code-review-findings.md` 或 `auto-fix-summary.md` 中记录 `Post Auto-fix Verification`。
+4. 存在未修复 P0 / P1 时，禁止进入 Unit Test 和 Archive。
+5. 存在未修复且影响验收的 P2 时，禁止 Archive，必须说明处理策略。
+6. 复核通过后，才能进入 Unit Test Gate。
+
+`Post Auto-fix Verification` 至少包含：
+
+- Recheck Result：passed / failed
+- Rechecked Issues：
+- Remaining P0 / P1 / Blocking P2：
+- Archive allowed after Auto-fix：yes / no
+- Next Gate：
+
 ---
 
 # 17. Unit Test Gate（强制）

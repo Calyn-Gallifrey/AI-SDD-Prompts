@@ -199,6 +199,20 @@ Code Review 完成后必须进入 Review-driven Auto-fix。
 7. 修复后必须输出 Auto-fix Summary。
 8. Auto-fix 后必须进入 Unit Test Generation / Unit Test Summary。
 9. Auto-fix Summary 必须回写到 `tasks.md` 和 `archive.md`，并与 `code-review-findings.md` 的问题编号一致。
+10. Auto-fix 后必须执行一次轻量复核，明确区分修复前 Code Review 闸门结论与修复后最终 Archive 闸门结论。
+11. 复核结果必须记录为 `Post Auto-fix Verification`，写入 `code-review-findings.md` 或 `auto-fix-summary.md`。
+12. 存在未修复 P0 / P1，或仍影响验收的 P2 时，禁止进入 Archive。
+
+`Post Auto-fix Verification` 必须包含：
+
+```text
+Post Auto-fix Verification:
+- Recheck Result: passed / failed
+- Rechecked Issues:
+- Remaining P0 / P1 / Blocking P2:
+- Archive allowed after Auto-fix: yes / no
+- Next Gate:
+```
 
 ## 3.9 Auto-fix Summary 格式
 

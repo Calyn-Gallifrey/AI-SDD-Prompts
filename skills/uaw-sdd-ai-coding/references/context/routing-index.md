@@ -119,7 +119,7 @@ Phase Review records
 
 按任务条件装配：
 
-- enhancement / refactor 场景的历史功能资产。
+- enhancement / refactor 场景的参考资产；不得默认引用旧版 SDD 目录或未被用户指定的历史路径。
 - 用户提供的外部参考设计文档。
 - 业务域词典和特殊集成规则。
 - Code Review 和 Unit Test 的交接规则。
