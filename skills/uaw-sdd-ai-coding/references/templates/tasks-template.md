@@ -557,6 +557,7 @@ SDD 内部 Code Review 是流程质量闸门，不是 HTML 报告生成任务。
 - Fix Scope
 - Files allowed to modify
 - Files forbidden to modify
+- Untracked files reviewed
 - Unit tests required
 - Archive allowed
 - Findings 明细
