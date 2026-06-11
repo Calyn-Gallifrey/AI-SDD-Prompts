@@ -4,7 +4,7 @@
 
 Entry Mode：SDD_UNIT_TEST
 
-Test Time：2026-06-11 14:42
+Test Time：2026-06-11 14:43
 
 Project Root：`uaw-sdd-demo`
 
@@ -26,6 +26,31 @@ Actual Test Entry：`mvn test`
 | Test Framework | JUnit4 + MockitoJUnitRunner + JUnit Vintage |
 | Existing Test Style | Legacy-Mockito |
 | UAW Utility Dependency | No-UAW-Util |
+
+## Selected Testing Profile
+
+Selected Testing Profile：`Legacy-Mockito`
+
+Selection rationale：
+- `pom.xml` 使用 Spring Boot 3.3.5，测试依赖包含 JUnit Vintage。
+- 既有测试以 JUnit4 `@RunWith(MockitoJUnitRunner.class)` 和 Mockito 为主。
+- 本次新增测试延续既有 Legacy-Mockito 风格，避免在同一 demo 工程内混用测试风格。
+
+Not Applicable Rules：
+- UAW 测试工具类规则不适用，当前 demo 未引入 UAW 单元测试工具类。
+- JUnit5-only 规则不适用，当前工程以 JUnit4 + Vintage 兼容模式运行。
+
+Test Framework Risks：
+- JUnit Vintage 兼容模式可运行当前测试，但长期应在真实项目中统一 JUnit4 / JUnit5 策略。
+- Byte Buddy 在新 JDK 下存在 `sun.misc.Unsafe` warning，当前未导致测试失败。
+
+Additional Dependencies Required：no
+
+## Test Files Added / Updated
+
+- `uaw-sdd-demo/src/test/java/com/example/uawsdddemo/service/INeedDocumentWorkOrderServiceTest.java`
+- `uaw-sdd-demo/src/test/java/com/example/uawsdddemo/controller/INeedDocumentWorkOrderControllerTest.java`
+- `uaw-sdd-demo/src/test/java/com/example/uawsdddemo/repository/InMemoryINeedDocumentWorkOrderRepositoryTest.java`
 
 ## Test Result
 
@@ -52,6 +77,12 @@ Actual Test Entry：`mvn test`
 ## Warnings
 
 测试运行中仍存在 Byte Buddy 使用 `sun.misc.Unsafe` 的 JVM warning。该 warning 未导致测试失败。
+
+## Remaining Test Risks
+
+- 当前 demo 下游平台为 in-memory client，未覆盖真实 HTTP 协议、认证、超时、重试、错误码和幂等。
+- 当前 demo 未接入真实保单归属、客户身份或坐席权限校验。
+- 文档类型暂按字符串处理，真实项目应接入枚举、配置或下游字典。
 
 ## Unit Test Gate
 

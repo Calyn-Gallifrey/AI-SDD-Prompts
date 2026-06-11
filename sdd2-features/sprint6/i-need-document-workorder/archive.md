@@ -66,6 +66,24 @@ Final Status：archived
 - Errors：0
 - Skipped：0
 
+## Unit Test Profile
+
+Selected Testing Profile：`Legacy-Mockito`
+
+Selection rationale：
+- 既有 demo 测试以 JUnit4 `@RunWith(MockitoJUnitRunner.class)` 和 Mockito 为主。
+- `pom.xml` 通过 JUnit Vintage 支持 JUnit4 测试执行。
+- 当前 demo 未引入 UAW 单元测试工具类，按 No-UAW-Util 处理。
+
+Not Applicable Rules：
+- UAW 测试工具类规则不适用。
+- JUnit5-only 规则不适用。
+
+Remaining Test Risks：
+- 当前 demo 下游平台为 in-memory client，未覆盖真实 HTTP 协议、认证、超时、重试、错误码和幂等。
+- 当前 demo 未校验真实保单归属、客户身份或坐席权限。
+- 文档类型暂按字符串处理，真实项目应接入枚举、配置或下游字典。
+
 ## Changed Files
 
 ### Code
@@ -128,6 +146,8 @@ Last Completed Step：archive review passed
 
 Next Required Step：无
 
+Blocked Reason：无
+
 Human Confirmation Required：no
 
 Allowed Next Action：start a new approved SDD feature
@@ -147,5 +167,5 @@ Updated At：2026-06-11 14:43
 | 2026-06-11 14:40 | implementation | Implemented code and tests | tasks.md | demo code and tests | completed | code review |
 | 2026-06-11 14:41 | code-review | Generated findings | implementation diff | code-review-findings.md | one P2 | auto-fix |
 | 2026-06-11 14:41 | auto-fix | Fixed CR-P2-001 | code-review-findings.md | auto-fix-summary.md | completed | unit test |
-| 2026-06-11 14:42 | unit-test | Ran validation | mvn test | unit-test-summary.md | passed | archive |
+| 2026-06-11 14:43 | unit-test | Ran validation | mvn test | unit-test-summary.md | passed | archive |
 | 2026-06-11 14:43 | archive | Generated archive.md | all SDD assets | archive.md | archived | none |

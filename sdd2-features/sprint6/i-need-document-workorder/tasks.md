@@ -92,12 +92,15 @@ Auto-fix Summary：`auto-fix-summary.md`
 Unit Test Summary：`unit-test-summary.md`
 
 - Entry Mode：SDD_UNIT_TEST
+- Selected Testing Profile：`Legacy-Mockito`
+- Selection rationale：既有测试以 JUnit4 `@RunWith(MockitoJUnitRunner.class)` 和 Mockito 为主，`pom.xml` 通过 JUnit Vintage 支持执行。
 - Actual Test Entry：`mvn test`
 - Result：SUCCESS
 - Tests run：36
 - Failures：0
 - Errors：0
 - Skipped：0
+- Remaining test risks：真实下游平台协议、认证、超时、重试、错误码、幂等、保单归属、客户身份和坐席权限未在 demo 中覆盖。
 
 ## Process Status
 
@@ -121,5 +124,5 @@ Blocked Reason：无
 | 2026-06-11 14:40 | unit-test-implementation | AI implemented Phase 3 tests | completed | code review |
 | 2026-06-11 14:41 | code-review | SDD_TASK_CODE_REVIEW generated code-review-findings.md | one P2 found | auto-fix |
 | 2026-06-11 14:41 | auto-fix | AI fixed CR-P2-001 | completed | unit test |
-| 2026-06-11 14:42 | unit-test | mvn test | passed, 36 tests | archive |
+| 2026-06-11 14:43 | unit-test | mvn test | passed, 36 tests | archive |
 | 2026-06-11 14:43 | archive | AI generated archive.md | completed | archived |

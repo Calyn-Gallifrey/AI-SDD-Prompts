@@ -111,6 +111,21 @@ demo 实现：`InMemoryINeedDocumentWorkOrderRepository`
 
 Testing Profile：`Legacy-Mockito`
 
+选择依据：
+- 既有 demo 测试以 JUnit4 `@RunWith(MockitoJUnitRunner.class)` 和 Mockito 为主。
+- `pom.xml` 通过 JUnit Vintage 支持 JUnit4 测试执行。
+- 当前 demo 未引入 UAW 单元测试工具类，按 No-UAW-Util 处理。
+
+不适用规则：
+- UAW 测试工具类规则不适用。
+- JUnit5-only 规则不适用。
+
+测试框架风险：
+- JUnit Vintage 可支撑当前测试，但真实项目应统一测试框架策略。
+- 新 JDK 下 Mockito / Byte Buddy 可能出现兼容 warning，需要在 Unit Test Summary 中记录。
+
+是否需要补充依赖：no
+
 覆盖：
 - Service 成功提交 QUERY_DOCUMENT 工单。
 - Service 成功提交 SEND_DOCUMENT 工单并归一化邮箱。
