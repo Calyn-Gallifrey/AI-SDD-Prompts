@@ -1,6 +1,7 @@
 package com.example.uawsdddemo.controller;
 
 import com.example.uawsdddemo.model.dto.CreatePolicyBeneficiaryChangeWorkOrderRequest;
+import com.example.uawsdddemo.model.dto.CreatePolicyBeneficiaryEmailChangeWorkOrderRequest;
 import com.example.uawsdddemo.model.dto.PolicyBeneficiaryChangeWorkOrderResponse;
 import com.example.uawsdddemo.service.PolicyBeneficiaryChangeWorkOrderService;
 import jakarta.validation.Valid;
@@ -26,5 +27,12 @@ public class PolicyBeneficiaryChangeWorkOrderController {
     public PolicyBeneficiaryChangeWorkOrderResponse create(
             @Valid @RequestBody CreatePolicyBeneficiaryChangeWorkOrderRequest request) {
         return service.create(request);
+    }
+
+    @PostMapping("/email")
+    @ResponseStatus(HttpStatus.CREATED)
+    public PolicyBeneficiaryChangeWorkOrderResponse createEmailChange(
+            @Valid @RequestBody CreatePolicyBeneficiaryEmailChangeWorkOrderRequest request) {
+        return service.createEmailChange(request);
     }
 }

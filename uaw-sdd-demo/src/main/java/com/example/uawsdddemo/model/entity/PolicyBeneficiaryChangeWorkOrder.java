@@ -15,6 +15,7 @@ public class PolicyBeneficiaryChangeWorkOrder {
     private final String beneficiaryIdNo;
     private final BeneficiaryRelationType beneficiaryRelation;
     private final Integer benefitRatio;
+    private final String beneficiaryEmail;
     private final String requester;
     private final WorkOrderStatus status;
     private final Instant createdAt;
@@ -26,6 +27,7 @@ public class PolicyBeneficiaryChangeWorkOrder {
             String beneficiaryIdNo,
             BeneficiaryRelationType beneficiaryRelation,
             Integer benefitRatio,
+            String beneficiaryEmail,
             String requester,
             WorkOrderStatus status,
             Instant createdAt) {
@@ -35,6 +37,7 @@ public class PolicyBeneficiaryChangeWorkOrder {
         this.beneficiaryIdNo = beneficiaryIdNo;
         this.beneficiaryRelation = beneficiaryRelation;
         this.benefitRatio = benefitRatio;
+        this.beneficiaryEmail = beneficiaryEmail;
         this.requester = requester;
         this.status = status;
         this.createdAt = createdAt;
@@ -54,6 +57,26 @@ public class PolicyBeneficiaryChangeWorkOrder {
                 beneficiaryIdNo,
                 beneficiaryRelation,
                 benefitRatio,
+                null,
+                requester,
+                WorkOrderStatus.SUBMITTED,
+                Instant.now());
+    }
+
+    public static PolicyBeneficiaryChangeWorkOrder submittedEmailChange(
+            String policyNo,
+            String beneficiaryName,
+            String beneficiaryIdNo,
+            String beneficiaryEmail,
+            String requester) {
+        return new PolicyBeneficiaryChangeWorkOrder(
+                UUID.randomUUID().toString(),
+                policyNo,
+                beneficiaryName,
+                beneficiaryIdNo,
+                null,
+                null,
+                beneficiaryEmail,
                 requester,
                 WorkOrderStatus.SUBMITTED,
                 Instant.now());
@@ -81,6 +104,10 @@ public class PolicyBeneficiaryChangeWorkOrder {
 
     public Integer getBenefitRatio() {
         return benefitRatio;
+    }
+
+    public String getBeneficiaryEmail() {
+        return beneficiaryEmail;
     }
 
     public String getRequester() {

@@ -13,6 +13,7 @@ public class PolicyBeneficiaryChangeWorkOrderResponse {
     private String beneficiaryIdNoMasked;
     private BeneficiaryRelationType beneficiaryRelation;
     private Integer benefitRatio;
+    private String beneficiaryEmail;
     private String requester;
     private WorkOrderStatus status;
     private Instant createdAt;
@@ -63,6 +64,14 @@ public class PolicyBeneficiaryChangeWorkOrderResponse {
 
     public void setBenefitRatio(Integer benefitRatio) {
         this.benefitRatio = benefitRatio;
+    }
+
+    public String getBeneficiaryEmail() {
+        return beneficiaryEmail;
+    }
+
+    public void setBeneficiaryEmail(String beneficiaryEmail) {
+        this.beneficiaryEmail = beneficiaryEmail;
     }
 
     public String getRequester() {

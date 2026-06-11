@@ -38,6 +38,18 @@ public class InMemoryPolicyBeneficiaryChangeWorkOrderRepositoryTest {
         assertTrue(secondSaved.isPresent());
     }
 
+    @Test
+    public void testSaveSubmittedIfAbsent_duplicateSubmittedEmailChange_expectEmpty() {
+        PolicyBeneficiaryChangeWorkOrder first = buildEmailWorkOrder("P-20001", "1234567890");
+        PolicyBeneficiaryChangeWorkOrder duplicate = buildEmailWorkOrder("P-20001", "1234567890");
+
+        Optional<PolicyBeneficiaryChangeWorkOrder> firstSaved = repository.saveSubmittedIfAbsent(first);
+        Optional<PolicyBeneficiaryChangeWorkOrder> duplicateSaved = repository.saveSubmittedIfAbsent(duplicate);
+
+        assertTrue(firstSaved.isPresent());
+        assertFalse(duplicateSaved.isPresent());
+    }
+
     private PolicyBeneficiaryChangeWorkOrder buildWorkOrder(String policyNo, String beneficiaryIdNo) {
         return PolicyBeneficiaryChangeWorkOrder.submitted(
                 policyNo,
@@ -45,6 +57,15 @@ public class InMemoryPolicyBeneficiaryChangeWorkOrderRepositoryTest {
                 beneficiaryIdNo,
                 BeneficiaryRelationType.CHILD,
                 50,
+                "alice");
+    }
+
+    private PolicyBeneficiaryChangeWorkOrder buildEmailWorkOrder(String policyNo, String beneficiaryIdNo) {
+        return PolicyBeneficiaryChangeWorkOrder.submittedEmailChange(
+                policyNo,
+                "Bob",
+                beneficiaryIdNo,
+                "bob@example.com",
                 "alice");
     }
 }
