@@ -1,10 +1,10 @@
 # 功能级 Spec 模板
 
-> 本文件用于定义“本次任务到底要做什么、边界是什么、如何验收、哪些不能碰”。
+> 本文件用于定义本次任务的需求目标、范围边界、验收标准和禁止变更项。
 > 本文件是 `proposal-input.md` 进入工程链路后的第一核心产物。
 > 后续 `design.md`、`tasks.md`、implementation 都必须以本文件为边界依据。
-> 本文件不是设计文档，不回答详细实现方式。
-> 本文件不是施工清单，不拆编码步骤。
+> 详细实现方式在 `design.md` 中定义。
+> 编码步骤在 `tasks.md` 中定义。
 
 ---
 
@@ -72,7 +72,7 @@
 
 说明：
 
-- 若未说明引用来源，后续 AI 容易自由发挥
+- 若未说明引用来源，后续规则装配缺少可追溯依据
 - enhancement / refactor 场景下，必须显式列出参考资产来源
 - 禁止默认引用旧版 SDD 目录或未被用户指定的历史路径
 
@@ -363,7 +363,7 @@ Tasks 阶段必须承接以下约束：
 规则：
 
 1. 进入下一阶段前，必须先更新当前文件的 Process Status 和 Process Audit Trail。
-2. 未更新状态区块，不允许进入下一阶段。
+2. 未更新状态区块时，不得进入下一阶段。
 3. 如果某阶段被跳过或不适用，必须写明原因，禁止静默跳过。
 4. 生成 archive.md 前，proposal-input.md、spec.md、design.md、tasks.md 均必须处于最终可归档状态。
 5. Process Status 生命周期必须遵守 `skills/uaw-sdd-ai-coding/references/process-control.md`。

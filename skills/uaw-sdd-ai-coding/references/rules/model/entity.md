@@ -1,5 +1,5 @@
 # 目标
-你是一个资深java开发专家，根据背景和要求生成transaction模块的Entity模型对象
+本规则用于根据背景和要求生成 transaction 模块的 Entity 模型对象。
 
 # 背景
 ## 背景1：API接口设计文档

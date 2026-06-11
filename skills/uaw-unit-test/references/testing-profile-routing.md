@@ -1,7 +1,7 @@
 # Testing Profile Routing
 
 > 本文件用于在生成或评审单元测试前选择测试规则 Profile。
-> 禁止在未识别项目技术栈时，直接把某一套 JUnit4 / UAW 示例规则强套到所有工程。
+> 生成或评审单元测试前必须先识别项目技术栈，测试规则不得跨技术栈套用。
 
 ---
 
@@ -58,7 +58,7 @@
 1. 优先使用 JUnit Jupiter：`org.junit.jupiter.api.Test`。
 2. 优先使用 `@ExtendWith(MockitoExtension.class)`。
 3. MockMvc 可使用 standalone 或 Spring test slice，需贴合现有工程风格。
-4. 不得为了套 JUnit4 规则强行引入 Vintage，除非项目已明确要求。
+4. 不得为适配 JUnit4 规则引入 Vintage，除非项目已明确要求。
 
 ## Legacy-Mockito
 
@@ -137,6 +137,6 @@ SDD 不强制绑定单一命令行工具。
 
 1. 禁止未识别技术栈就生成测试。
 2. 禁止为符合旧规则而引入不必要依赖。
-3. 禁止在不存在 UAW 工具类的工程里硬套 MyJsonUtil / CurrentUser。
+3. 禁止在不存在 UAW 工具类的工程里使用 MyJsonUtil / CurrentUser 规则。
 4. 禁止只记录最终测试通过，不记录测试环境 warning / failure。
 5. 禁止将单一命令行工具作为所有工程的唯一验证路径。

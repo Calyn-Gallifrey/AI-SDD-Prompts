@@ -2,7 +2,7 @@
 
 本文件定义 `uaw-sdd-ai-coding` 的上下文装配、知识路由和阶段交接规则。
 
-本文件是 Skill 内部参考资料，不是 `proposal-input.md`、`spec.md`、`design.md`、`tasks.md` 或 `archive.md`。
+本文件是 Skill 内部参考资料，不作为 `proposal-input.md`、`spec.md`、`design.md`、`tasks.md` 或 `archive.md` 输出。
 
 ## 1. Entry
 
@@ -164,7 +164,7 @@ SDD 流程内代码实现完成后，必须自动调用：
 uaw-code-review / SDD_TASK_CODE_REVIEW
 ```
 
-SDD 模式下不要求用户填写 Code Review 输入，不读取 HTML 模板，不生成 HTML 报告，只在当前功能资产目录生成：
+SDD 模式下 Code Review 输入由流程上下文提供；该模式不读取 HTML 模板，不生成 HTML 报告，只在当前功能资产目录生成：
 
 ```text
 code-review-findings.md
@@ -185,7 +185,7 @@ Review-driven Auto-fix 完成后，必须自动调用：
 uaw-unit-test / SDD mode
 ```
 
-SDD 模式下不要求用户重复填写单元测试输入。测试目标、变更文件、测试框架和验证方式优先从 SDD 资产、代码变更和项目文件中自动识别。
+SDD 模式下单元测试输入由流程上下文提供。测试目标、变更文件、测试框架和验证方式优先从 SDD 资产、代码变更和项目文件中自动识别。
 
 Unit Test Summary 必须按以下模板生成或更新：
 

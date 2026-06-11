@@ -1,12 +1,6 @@
 # Input Examples
 
-All standalone human input examples must use:
-
-```text
-English Field（中文字段）：example value
-```
-
-SDD mode is automatically triggered by `uaw-sdd-ai-coding`; it does not require user input.
+本文件提供 uaw-code-review Standalone 模式的输入样例。SDD 模式由 `uaw-sdd-ai-coding` 触发，评审输入由 SDD 流程上下文提供。
 
 ## Standalone Git Range Review（独立 Git 范围评审）
 

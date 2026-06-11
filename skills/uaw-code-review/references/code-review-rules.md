@@ -7,19 +7,19 @@
 > - `STANDALONE_GIT_RANGE_REVIEW`：独立 Git 范围评审入口。用于人工指定 branch / commit / date range 做独立代码检查与审核。**不遵守 SDD 阶段闸门，不自动修复代码，必须按 HTML 模板生成报告。**
 > - `STANDALONE_WORKTREE_SNAPSHOT_REVIEW`：独立工作区快照评审入口。仅用于未提交的新工程、临时 demo、迁移前代码盘点等无法提供 Git range 的场景。**必须显式记录 Target Path 与 Scope Deviation，必须生成 HTML 报告，但不得作为正式合并闸门。**
 
-> 如果用户要求“评审整个工程 / 目录 / 未提交 demo”，不得静默伪装成 `STANDALONE_GIT_RANGE_REVIEW`。必须改用 `STANDALONE_WORKTREE_SNAPSHOT_REVIEW`，并在报告中标明“非 Git range，只代表当前工作区快照”。
+> 如果用户要求“评审整个工程 / 目录 / 未提交 demo”，必须使用 `STANDALONE_WORKTREE_SNAPSHOT_REVIEW`，并在报告中标明“非 Git range，只代表当前工作区快照”。
 
 ---
 
-# 1. 角色定位
+# 1. 职责定位
 
-你是 UAW 项目的 AI 代码评审代理。
+本文件适用于 UAW 项目的 AI 代码评审代理。
 
-你的任务不是重新设计需求，不是随意重构项目，也不是扩大实现范围。你的任务是根据调用上下文执行代码检查与审核，并按对应入口要求输出可追溯结果。
+代码评审职责是根据调用上下文执行代码检查与审核，并按对应入口要求输出可追溯结果。评审过程不得重新设计需求、扩大实现范围或引入无关重构。
 
 入口由调用上下文确定：
 
-1. 当本文件被 SDD 流程中的 `tasks.md` 在代码实现后调用时，默认进入 `SDD_TASK_CODE_REVIEW` 模式。该模式不需要用户额外提供输入格式，当前功能目录、SDD 产物和实现范围由 SDD 流程上下文提供。
+1. 当本文件被 SDD 流程中的 `tasks.md` 在代码实现后调用时，默认进入 `SDD_TASK_CODE_REVIEW` 模式。当前功能目录、SDD 产物和实现范围由 SDD 流程上下文提供。
 2. 当用户单独发起代码评审任务，并显式指定 Git 范围时，进入 `STANDALONE_GIT_RANGE_REVIEW` 模式。该模式必须提供独立评审输入参数。
 3. 当用户单独发起代码评审任务，只指定工程目录 / 模块目录 / 未提交工作区时，进入 `STANDALONE_WORKTREE_SNAPSHOT_REVIEW` 模式。该模式必须记录目标路径和范围偏差。
 
@@ -33,7 +33,7 @@
 |---|---|---|---|
 | 使用场景 | SDD 的 tasks 生成代码后自动触发 | 人工指定 Git 范围单独评审 | 人工指定未提交工程目录 / 模块目录快照 |
 | 是否遵守 SDD 体系 | 是 | 否 | 否 |
-| 是否读取 proposal/spec/design/tasks | 必须读取 | 不需要，除非用户明确要求 | 不需要，除非用户明确要求 |
+| 是否读取 proposal/spec/design/tasks | 必须读取 | 默认不读取，除非用户明确要求 | 默认不读取，除非用户明确要求 |
 | 是否执行 SDD 阶段闸门 | 必须执行 | 不执行 | 不执行 |
 | 是否生成 HTML 报告 | 不生成 | 必须生成 | 必须生成 |
 | 是否读取 HTML 模板 | 不读取 | 必须读取 | 必须读取 |
@@ -50,7 +50,7 @@
 4. 在 SDD 模式下读取 HTML 模板。
 5. 在独立模式下强制读取 SDD 产物或执行 SDD 阶段闸门。
 6. 用 Standalone 报告替代 SDD 内部 `code-review-findings.md`。
-7. 把未提交目录快照静默伪装为 Git range。
+7. 把未提交目录快照标记为 Git range。
 
 ---
 
@@ -64,9 +64,9 @@
 
 该模式下：
 
-1. 不要求用户填写 `Entry Mode`。
-2. 不要求用户填写 Feature Directory。
-3. 不要求用户重复列出 SDD Artifacts。
+1. `Entry Mode` 由 SDD 流程上下文提供。
+2. Feature Directory 由 SDD 流程上下文提供。
+3. SDD Artifacts 由当前功能资产目录提供。
 4. 默认当前工作目录就是对应功能资产目录。
 5. 默认 `proposal-input.md`、`spec.md`、`design.md`、`tasks.md` 与当前任务处于同一功能目录。
 6. 评审结果必须写入当前功能目录的 `code-review-findings.md`，并进入 Review-driven Auto-fix 和 Unit Test。
@@ -110,7 +110,7 @@ skills/uaw-code-review/references/templates/personal-report-template.html
 
 ## 3.4 评审范围确定
 
-SDD 模式不要求人工指定 branch / commit / date range。
+SDD 模式的评审范围来自当前功能资产目录和本次实现变更，不使用人工指定的 branch / commit / date range。
 
 必须基于以下信息确定本次实现变更范围：
 
@@ -253,10 +253,10 @@ Report Output Date: YYYY-MM-DD
 
 规则：
 
-1. 不要求读取 `proposal-input.md`、`spec.md`、`design.md`、`tasks.md`。
+1. 默认不读取 `proposal-input.md`、`spec.md`、`design.md`、`tasks.md`。
 2. 不执行 SDD 阶段闸门。
 3. 不检查 SDD 流程状态。
-4. 不要求 Auto-fix。
+4. Auto-fix 不属于 Standalone 模式默认动作。
 5. Standalone 模式不得自动修改代码，除非用户另行明确要求。
 6. 必须按指定 Git 范围做代码检查与审核。
 7. 必须按 HTML 模板生成总览报告和个人报告。
@@ -404,7 +404,7 @@ git show --unified=80 --find-renames <commit-hash>
 3. 读取上下文只是为了理解本次变更，不得把未修改的历史代码直接当成本次问题输出。
 4. 如果问题来自历史代码，但本次变更触发、放大或依赖了该问题，必须标记为“历史问题，本次变更相关”。
 5. 自动生成文件、格式化调整、版本号调整、纯注释调整必须单独标记，避免误判。
-6. 不得为了凑问题数量制造低价值问题。
+6. 输出问题必须具备明确影响和可追溯依据。
 
 ---
 
@@ -454,7 +454,7 @@ SDD 模式下如发现类似异常，只作为 Code Review Finding 记录，不�
 2. 如果存在对应的模块结构规范文档，必须读取并作为评审依据。
 3. 如果 `design.md` 明确规定了新增类、包、层级或落位，必须优先以 `design.md` 为准。
 4. 如果是独立 Git 范围评审或工作区快照评审且没有 SDD 产物，则以当前代码仓库中同类模块的既有结构为主要依据。
-5. 不得仅凭通用分层模型强行要求所有模块都使用同一种目录结构。
+5. 不得仅凭通用分层模型要求所有模块使用同一种目录结构。
 
 ### 7.1.2 通用模块分层检查
 
@@ -756,7 +756,7 @@ skills/uaw-unit-test/references/testing-profile-routing.md
 9. Mock 是否合理。
 10. 测试命名是否清晰。
 11. 不适用单元测试时是否说明原因。
-12. 是否强行引入不必要的 JUnit Vintage / UAW 工具类依赖。
+12. 是否引入不必要的 JUnit Vintage / UAW 工具类依赖。
 
 ## 7.9 外部接口与远程调用
 
@@ -852,7 +852,7 @@ skills/uaw-unit-test/references/testing-profile-routing.md
 | 外部接口与配置风险 | 5 |
 | 事务、幂等与重复提交 | 5 |
 
-扣分必须能对应具体问题，不能只给分不解释。
+扣分必须能对应具体问题，不得只给分不解释。
 
 ---
 
@@ -1163,20 +1163,20 @@ SDD_TASK_CODE_REVIEW 模式禁止执行本节，禁止读取 HTML 模板，禁�
 
 ---
 
-# 12. 重要执行纪律
+# 12. 执行约束
 
-1. 不要创造性扩展代码评审流程。
-2. 不要发明新的 UAW 代码评审体系。
-3. 不要混用三个入口模式。
-4. SDD 模式不要生成 HTML 报告。
-5. SDD 模式不要读取 HTML 模板。
+1. 代码评审流程以本文件定义的三个入口模式为准。
+2. UAW 代码评审体系以本文件和引用模板为准。
+3. 三个入口模式的输入、流程和输出不得混用。
+4. SDD 模式输出 `code-review-findings.md`，不生成 HTML 报告。
+5. SDD 模式不读取 HTML 模板。
 6. SDD 模式必须直接进入 Review-driven Auto-fix。
-7. Standalone 模式不要执行 SDD 阶段闸门。
+7. Standalone 模式不执行 SDD 阶段闸门。
 8. Standalone 模式必须按两个 HTML 模板生成报告。
 9. Worktree Snapshot 模式必须标明 Scope Deviation，且不得作为正式合并闸门。
-10. 不要把历史代码问题强行算作本次变更问题。
-11. 不要为了输出“完整报告”制造低价值问题。
-12. 不要把某一个模块案例硬编码成全项目架构规则。
+10. 历史代码问题只有在本次变更触发、放大或依赖时，才纳入本次变更问题。
+11. 输出问题必须具备明确影响、证据和修复建议。
+12. 单一模块案例不得扩展为全项目通用架构规则。
 13. 每个架构问题必须基于当前模块已有结构、设计约束或明确项目规范。
 
 每一项问题、评分和结论都必须能对应到 Git Diff、SDD 产物、项目规则或明确工程风险。

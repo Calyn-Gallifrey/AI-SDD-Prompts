@@ -1,5 +1,5 @@
 # 目标
-   你是一个资深java开发专家，学习背景内容，参考示例，创建单元测试类，并放到指定位置
+本规则用于根据背景内容和参考示例创建单元测试类，并放到指定位置。
 
 # 背景
 
@@ -11,7 +11,7 @@
 5、设计覆盖较全的场景案例，及对应的输入数据和返回值，以及对边界值的考虑等各种场景的测试案例
 6、 使用断言,校验预期行为,预期返回值等
 7、 只针对目标类本身进行测试，不对引用类生成单元测试
-8、 import时，不要用import * 的方式导入引用文件
+8、 import 时不得使用 import * 的方式导入引用文件
 9、 不用创建model实体类对象，引用已有的实体类对象
 
 ## 背景2 Service类Mock规则
@@ -480,7 +480,7 @@ public class GeneralInformationServiceImplTest {
 ```
 
 ## 背景3：特殊Mock处理
-1、对于converter类型的字段，不能使用mock，需要使用真实的实现类
+1、对于 converter 类型的字段，不得使用 mock，需要使用真实的实现类
 2、对于strategyMap等复杂字段，可以使用反射注入
 3、参考如下示例
 ```特殊Mock处理示例
@@ -511,9 +511,9 @@ try {
 
 ## 背景4：Converter为单例模式的处理
 当converter字段使用 `@Autowired` 注解注入，且其实现类为单例模式（如 `Mappers.getMapper(Converter.class)`）时，在单元测试中：
-1. **不需要 mock converter**
+1. **converter 无需 mock**
 2. 使用反射注入 converter 的 `INSTANCE` 单例
-3. 不需要对 converter 的方法进行 mock
+3. converter 方法无需 mock
 
 **参考示例：**
 ```java
@@ -575,9 +575,9 @@ public class MyDocumentServiceImplTest {
 ```
 
 ## 背景5：静态方法的处理
-对于静态方法（如 MyDocumentHelper.buildDocumentInformationDTO()），**不能使用 Mockito 进行 mock**。需要直接调用真实方法或重构代码为实例方法。
+对于静态方法（如 MyDocumentHelper.buildDocumentInformationDTO()），**不得使用 Mockito 进行 mock**。需要直接调用真实方法或重构代码为实例方法。
 
-**错误示例（不能这样做）：**
+**错误示例（不适用写法）：**
 ```java
 // 这是错误的！静态方法无法被 mock
 Mockito.mockStatic(MyDocumentHelper.class);
@@ -653,13 +653,13 @@ public class MyDocumentServiceImplTest {
 1、根据用户输入的类 或者 选中的代码，生成单元测试
 2、用单元测试对原代码进行单元测试覆盖
 3、对于service类的公共方法进行单元测试
-4、import时，不要用import * 的方式导入引用文件
-5、不需要mock converter，例如：private final MeetingContactInfoConverter converter = Mappers.getMapper(MeetingContactInfoConverter.class);
+4、import 时不得使用 import * 的方式导入引用文件
+5、converter 无需 mock，例如：private final MeetingContactInfoConverter converter = Mappers.getMapper(MeetingContactInfoConverter.class);
 6、service功能代码变更频繁，单元测试代码需要Mockito.verify断言，验证方法调用次数
-7、不能mock项目的工具类，例如：MyStringUtil、MyJsonUtil、MyListUtil、MyDateUtil、MyCollectionUtil
+7、不得 mock 项目的工具类，例如：MyStringUtil、MyJsonUtil、MyListUtil、MyDateUtil、MyCollectionUtil
 8、对于strategyMap等复杂字段，可以使用反射注入
-9、对于静态方法（如 MyDocumentHelper.buildDocumentInformationDTO()），不能使用 Mockito 进行 mock
-10、当使用 INSTANCE 单例模式的 converter 时，不需要 mock，但需要 import 对应的类
-11、如果出现 "UnnecessaryStubbingException" 错误，检查是否对不需要 mock 的对象进行了 mock，或是否正确使用了反射注入
+9、对于静态方法（如 MyDocumentHelper.buildDocumentInformationDTO()），不得使用 Mockito 进行 mock
+10、当使用 INSTANCE 单例模式的 converter 时，无需 mock，但需要 import 对应的类
+11、如果出现 "UnnecessaryStubbingException" 错误，检查是否对无需 mock 的对象进行了 mock，或是否正确使用了反射注入
 12、import 语句需要完整，包括所有使用的类和静态方法（如 when、doNothing、doThrow、verify、times、anyList 等）
 ```

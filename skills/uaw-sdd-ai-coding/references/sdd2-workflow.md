@@ -4,7 +4,7 @@
 
 SDD2.0 starts from `Brief Design（人工简要设计）`.
 
-Do not ask developers to fill `proposal-input.md`. Generate `proposal-input.md` internally after parsing the brief design and collecting missing required fields.
+`proposal-input.md` is generated internally after parsing the brief design and collecting missing required fields.
 
 ## Proposal Assembly
 
@@ -37,7 +37,7 @@ sdd2-features/<SprintN>/<feature-name>/
 Rules:
 
 1. `sdd2-features` represents the SDD major version line, not the exact minor version.
-2. Do not create `sdd2.1-features`, `sdd2.2-features`, or other minor-version roots.
+2. `sdd2.1-features`, `sdd2.2-features`, and other minor-version roots are not used.
 3. If SDD2.1 changes rules, keep writing feature assets under `sdd2-features` and record the executed Skill version inside the generated assets.
 4. A new root for a future major version requires an explicit migration decision, not an automatic naming change.
 
@@ -69,11 +69,11 @@ Brief Design
 
 After code implementation is complete, automatically invoke `uaw-code-review` in `SDD_TASK_CODE_REVIEW` mode.
 
-Do not ask the user for Code Review input in SDD mode. The SDD context provides the feature directory, SDD artifacts, implementation scope, and expected output.
+In SDD mode, Code Review input is provided by SDD context, including feature directory, SDD artifacts, implementation scope, and expected output.
 
 After Code Review and Auto-fix are complete, automatically invoke `uaw-unit-test` in SDD mode.
 
-Do not ask the user to repeat unit-test inputs in SDD mode. Derive test targets from code changes, design, tasks, findings, and Auto-fix Summary.
+In SDD mode, unit-test inputs are derived from code changes, design, tasks, findings, and Auto-fix Summary.
 
 ## Required Output Assets
 
@@ -103,8 +103,8 @@ Phase Review records
 
 ## SDD2.0 Overrides
 
-If bundled SDD reference content say that developers fill `proposal-input.md`, treat that as outdated. In SDD2.0, developers provide `Brief Design（人工简要设计）`; the skill assembles `proposal-input.md`.
+If bundled SDD reference content states that developers fill `proposal-input.md`, the SDD2.0 workflow contract takes precedence. In SDD2.0, developers provide `Brief Design（人工简要设计）`; the skill assembles `proposal-input.md`.
 
 If bundled SDD reference content contain Code Review or Unit Test implementation details, keep the workflow gate in this skill but delegate execution to `uaw-code-review` and `uaw-unit-test`.
 
-Fast Lane, mini-spec, mini-tasks, and archive-lite are not part of the active SDD2.0 standard flow. Do not use them unless a later approved SDD version defines them explicitly.
+Fast Lane, mini-spec, mini-tasks, and archive-lite are outside the active SDD2.0 standard flow. They are only available when a later approved SDD version defines them explicitly.

@@ -1,14 +1,10 @@
 # Input Examples
 
-All human input examples must use:
-
-```text
-English Field（中文字段）：example value
-```
+本文件提供 SDD2.0 人工输入样例，覆盖 Brief Design、缺失字段补充和人工审核输入。
 
 ## Brief Design（人工简要设计）
 
-Require developers to use this format when starting SDD2.0.
+开发启动 SDD2.0 时使用以下结构填写 Brief Design。
 
 ```text
 # Brief Design（人工简要设计）
@@ -75,7 +71,7 @@ Open Questions（待确认问题）：
 
 ## Missing Required Fields（缺失字段补充）
 
-When required fields are missing, ask only for the missing fields. Do not continue until they are supplied.
+缺失必填字段时，只补充缺失项；补齐前流程停留在 Brief Design 校验阶段。
 
 ```text
 Feature Type（功能类型）：enhancement
@@ -89,7 +85,7 @@ Forbidden Changes（禁止变更）：无
 
 ## Human Review（人工审核）
 
-Use this format for spec, design, tasks, phase-review, implementation, unit-test-summary, and archive review.
+以下结构用于 spec、design、tasks、phase-review、implementation、unit-test-summary 和 archive 等审核输入。
 
 ```text
 Review Stage（审核阶段）：spec

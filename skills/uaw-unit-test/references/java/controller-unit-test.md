@@ -1,5 +1,5 @@
 # 目标
-你是一个资深java开发专家，根据背景和要求实现单元测试编写任务
+本规则用于根据背景和要求实现单元测试编写任务。
 
 # 背景
 
@@ -356,7 +356,7 @@ public class PageWorkOrderListControllerTest {
 对于非REST接口（如文件下载、文件上传、WebSocket等），需要特殊处理：
 
 ### 文件下载接口测试规范
-1. 由于这类接口通常不返回JSON响应，而是直接操作HttpServletResponse写入数据，因此不能使用MockMvc进行测试
+1. 由于这类接口通常不返回JSON响应，而是直接操作HttpServletResponse写入数据，因此不得使用MockMvc进行测试
 2. 应该使用传统的Mockito方式，mock HttpServletRequest和HttpServletResponse对象
 3. 需要模拟HttpServletResponse的各种方法返回值，如getWriter()、getOutputStream()等
 4. 测试时应验证核心业务逻辑是否正确执行，如Command的execute方法是否被调用
@@ -390,7 +390,7 @@ void downloadTemplateTest() {
         
         @Override
         public void setWriteListener(WriteListener writeListener) {
-            // 不需要实现
+            // 无需实现
         }
         
         @Override
@@ -408,7 +408,7 @@ void downloadTemplateTest() {
 ```
 
 ## 要求
-1、先搜索目标Controller是否已经单元测试，如果已经存在单元测试类，则不需要生成单元测试
+1、先搜索目标Controller是否已经存在单元测试；如果已经存在单元测试类，则无需生成单元测试
 2、按照背景生成准确Controller单元测试代码
 3、根据Controller类上的@RequestMapping注解的路径常量值反思检查生成的单元测试代码中MockMvcRequestBuilders生成的接口路径地址是否正确
 4、根据Controller入参的Form的构造，反思生成单元测试代码中的，form参数准备的set字段设置是否有遗漏，字段类型是否正确，测试值参考form对象的@Schema示例

@@ -1,5 +1,5 @@
 # 目标
-你是一个资深java开发专家，根据背景和要求生成transaction模块的VO模型对象
+本规则用于根据背景和要求生成 transaction 模块的 VO 模型对象。
 
 # 背景
 ## 背景1：API接口设计文档
@@ -794,12 +794,12 @@ public class WrongVO implements Serializable {
 @Data
 @ApiModel(description = "一般信息请求参数VO")
 public class EnquiryInformationVO implements Serializable {
-    
+
     private static final long serialVersionUID = 1L;
 
     @ApiModelProperty(value = "协议列表")  // 非基本类型属性需有 value 说明，不需example 示例值
     private List<AgreementVO> agreements;
-    
+
     @ApiModelProperty(value = "品牌", example = "Greenlight") // 基本类型属性需有 value 说明 和 example 示例值
     private String brand;
 
@@ -839,10 +839,10 @@ public class EnquiryInformationVO implements Serializable {
 // 错误：缺少 @ApiModel 注解
 @Data
 public class WrongVO implements Serializable {
-    
+
     // 错误：缺少 @ApiModelProperty 注解
     private String brand;
-    
+
     // 错误：缺少 example 属性
     @ApiModelProperty(value = "操作标志")
     private String operateFlag;
@@ -887,4 +887,4 @@ private String uniqueKey;
 8. **重要**：禁止在VO类中使用Entity类型、BO类型、DTO类型或内部类
 9. **重要**：VO基类（例如：BaseTransactionVO、BaseChangeCusInfoVO）的属性必须使用protected修饰符；VO子类的自有属性默认使用private修饰符；子类重写toString方法时，必须显式包含父类的所有属性
 10. **重要**：新建或修改VO类后，需检查代码，确保满足上述属性修饰符与toString规范
- 
+

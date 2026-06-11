@@ -7,12 +7,12 @@ description: Review UAW code changes in standalone HTML report mode or SDD findi
 
 ## Core Contract
 
-Use this skill for UAW code review. It has two operating families:
+This skill performs UAW code review in two operating families:
 
-- Standalone mode: user directly asks for code review and provides Git range or worktree snapshot input. Generate HTML reports.
-- SDD mode: `uaw-sdd-ai-coding` automatically invokes this skill after tasks implementation. Generate `code-review-findings.md`; do not generate HTML.
+- Standalone mode: the user requests code review directly and provides Git range or worktree snapshot input. The output is HTML reports.
+- SDD mode: `uaw-sdd-ai-coding` invokes this skill after tasks implementation. The output is `code-review-findings.md`.
 
-Always read `references/input-examples.md` before requesting standalone input. All user-facing input examples must use `English Field（中文字段）：示例值`.
+Read `references/input-examples.md` before requesting standalone input. The examples define the expected standalone review input structures.
 
 ## Mode Selection
 
@@ -34,10 +34,10 @@ If the user asks for standalone review without a Git range or worktree path, ask
 
 In SDD mode:
 
-- Do not ask the user for Entry Mode, Feature Directory, SDD Artifacts, or report output directory.
-- Do not generate HTML reports.
-- Do not read HTML report templates.
-- Do not create `reports/code-review/YYYY-MM-DD/`.
+- Entry Mode, Feature Directory, SDD Artifacts, and report output directory are provided by SDD context.
+- HTML reports are not generated.
+- HTML report templates are not used.
+- `reports/code-review/YYYY-MM-DD/` is not created.
 - Output only `code-review-findings.md` in the current feature asset directory.
 - Return the Findings to `uaw-sdd-ai-coding` for Review-driven Auto-fix.
 
@@ -45,11 +45,11 @@ In SDD mode:
 
 In standalone mode:
 
-- Do not execute SDD stage gates.
-- Do not require `proposal-input.md`, `spec.md`, `design.md`, or `tasks.md` unless the user explicitly asks to include them.
+- SDD stage gates are not executed.
+- `proposal-input.md`, `spec.md`, `design.md`, and `tasks.md` are optional unless the user explicitly asks to include them.
 - Generate `代码评审统计报告.html` and `{开发者姓名}_代码评审报告.html`.
 - For worktree snapshot review, mark the report as `Scope Deviation: worktree snapshot, not Git range`.
-- Do not auto-fix code unless the user starts a separate explicit fix task.
+- Code fixes require a separate explicit fix request.
 
 ## References
 

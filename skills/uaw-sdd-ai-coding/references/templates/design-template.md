@@ -1,7 +1,7 @@
 # 功能级 Design 模板
 
-> 本文件承接已确认的 spec，回答“如何实现”。  
-> 本文件不是 spec 的复述，也不是 tasks 的施工清单。  
+> 本文件承接已确认的 spec，用于定义实现方案。
+> 需求边界以 `spec.md` 为准，施工任务以 `tasks.md` 为准。
 > 本文件负责输出可被 tasks 直接承接的实现设计。
 
 ---
@@ -214,7 +214,7 @@
 
 - 使用 mapstruct 的场景：
 - 使用手工转换的场景：
-- 不能直接复用的场景：
+- 不可直接复用的场景：
 
 ---
 
@@ -282,7 +282,7 @@ Design 必须显式考虑测试，不得把测试完全甩给 tasks。
 规则：
 
 1. 必须先读取 `skills/uaw-unit-test/references/testing-profile-routing.md`。
-2. 不得为了套用旧规则而强行引入不必要依赖。
+2. 不得为套用旧规则引入不必要依赖。
 3. 不得把本机命令行工具可用性作为唯一验证路径。
 
 ---
@@ -309,7 +309,7 @@ Tasks 必须承接以下约束：
 
 - 必须先生成 / 修改的对象：
 - 必须后置处理的部分：
-- 不能跳过的依赖：
+- 必须保留的依赖：
 - 必须执行的自检项：
 - 必须补齐的测试：
 - 必须输出的实施摘要：
@@ -370,7 +370,7 @@ Code Review 必须重点核对：
 规则：
 
 1. 进入下一阶段前，必须先更新当前文件的 Process Status 和 Process Audit Trail。
-2. 未更新状态区块，不允许进入下一阶段。
+2. 未更新状态区块时，不得进入下一阶段。
 3. 如果某阶段被跳过或不适用，必须写明原因，禁止静默跳过。
 4. 生成 archive.md 前，proposal-input.md、spec.md、design.md、tasks.md 均必须处于最终可归档状态。
 5. Process Status 生命周期必须遵守 `skills/uaw-sdd-ai-coding/references/process-control.md`。

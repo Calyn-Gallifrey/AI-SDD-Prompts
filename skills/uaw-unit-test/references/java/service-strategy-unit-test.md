@@ -33,9 +33,9 @@ Service/Strategy 类是业务服务类，通常用于处理业务逻辑。这些
 2. 依赖的 Spring Bean 组件（如 Mapper、Converter 等）需要进行 mock
 3. 如果使用字段注入，需要在 `setUp()` 中通过反射注入 mock 对象
 4. 如果使用构造函数注入，需要在 `setUp()` 中通过构造函数注入 mock 对象
-5. 每个测试都需要模拟用户登录（除非测试场景明确不需要）
-6. 不能 mock 项目的工具类，例如：MyStringUtil、MyJsonUtil、MyListUtil、MyDateUtil、MyCollectionUtil
-7. 不能 mock 任何静态方法（除了用户登录模拟）
+5. 每个测试都需要模拟用户登录（除非测试场景明确无需模拟）
+6. 不得 mock 项目的工具类，例如：MyStringUtil、MyJsonUtil、MyListUtil、MyDateUtil、MyCollectionUtil
+7. 不得 mock 任何静态方法（除了用户登录模拟）
 8. 使用 `@DisplayName` 梳理测试场景的中文描述
 9. 保持测试代码简洁、可读性强，符合团队编码规范
 

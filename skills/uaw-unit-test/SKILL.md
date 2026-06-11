@@ -7,15 +7,15 @@ description: Generate, repair, and summarize Java-focused UAW unit tests. Use wh
 
 ## Core Contract
 
-Use this skill to generate or validate UAW unit tests and produce Unit Test Summary. Java and Spring Boot are the primary target.
+This skill generates or validates UAW unit tests and produces Unit Test Summary. Java and Spring Boot are the primary target.
 
-Always read `references/input-examples.md` before requesting standalone input. All user-facing input examples must use `English Field（中文字段）：示例值`.
+Read `references/input-examples.md` before requesting standalone input. The examples define the expected Java unit-test input structure.
 
-Always read `references/templates/unit-test-summary-template.md` before producing or updating Unit Test Summary.
+Read `references/templates/unit-test-summary-template.md` before producing or updating Unit Test Summary.
 
 ## Input Policy
 
-Keep standalone user input minimal. Ask the user only for information that cannot be reliably scanned from the project.
+Standalone input is limited to information that cannot be reliably scanned from project files.
 
 Required standalone inputs:
 
@@ -36,11 +36,11 @@ Automatically scan and record:
 
 ## SDD Mode
 
-When invoked by `uaw-sdd-ai-coding`, do not ask the user to repeat unit-test inputs. Derive target files, test scope, and validation expectations from `proposal-input.md`, `spec.md`, `design.md`, `tasks.md`, `code-review-findings.md`, Auto-fix Summary, and current code changes.
+When invoked by `uaw-sdd-ai-coding`, unit-test inputs are derived from `proposal-input.md`, `spec.md`, `design.md`, `tasks.md`, `code-review-findings.md`, Auto-fix Summary, and current code changes.
 
 ## Output Requirements
 
-Always output or update Unit Test Summary by following `references/templates/unit-test-summary-template.md`.
+Unit Test Summary must follow `references/templates/unit-test-summary-template.md`.
 
 Required fields:
 
@@ -54,9 +54,9 @@ Required fields:
 - warning / failure / skipped notes
 - Remaining test risks
 
-Do not omit template sections. If a section is not applicable, mark it as `not applicable` and explain why.
+Template sections must be retained. Sections that do not apply are marked as `not applicable` with a reason.
 
-Do not force local `mvn` or `gradle` availability as a prerequisite. IDE, Wrapper, Local CLI, CI, Script, Manual, and Other are all valid validation methods when recorded honestly.
+Local `mvn` or `gradle` availability is not a prerequisite. IDE, Wrapper, Local CLI, CI, Script, Manual, and Other are valid validation methods when recorded with evidence.
 
 ## References
 

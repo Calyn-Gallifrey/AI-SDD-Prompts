@@ -103,7 +103,7 @@ public void testGetSplitFlag_NeedSplit() {
 ```
 
 ## 背景3-1 依赖字段初始化的链式调用处理
-当工具类方法之间存在链式调用关系时，需要确保每个方法调用前都已初始化依赖字段。**特别注意：** `getSplitFlag` 方法内部会调用 `getUniqueBrands` 方法，因此在调用 `getSplitFlag` 前不需要预先设置 `uniqueBrands` 字段，但如果 `getUniqueBrands` 方法本身依赖 DTO 的字段（如 agreements、brand），则需要确保这些字段已正确设置。
+当工具类方法之间存在链式调用关系时，需要确保每个方法调用前都已初始化依赖字段。**特别注意：** `getSplitFlag` 方法内部会调用 `getUniqueBrands` 方法，因此在调用 `getSplitFlag` 前无需预先设置 `uniqueBrands` 字段；如果 `getUniqueBrands` 方法本身依赖 DTO 的字段（如 agreements、brand），则需要确保这些字段已正确设置。
 
 **AgreementInformationHelper 链式调用示例：**
 ```java
@@ -158,7 +158,7 @@ public void testGetSplitFlag_NeedSplit() {
 ```
 
 ## 背景4 集合初始化规范
-为避免使用 Java 8 的 Collectors API（某些项目可能不支持），请使用以下方式初始化集合：
+为避免使用 Java 8 的 Collectors API（某些项目可能不支持），使用以下方式初始化集合：
 1. 使用 `new HashSet<>(Arrays.asList(...))` 替代 `java.util.stream.Collectors.toSet()`
 2. 使用 `new ArrayList<>()` 替代 `Arrays.asList()` 直接作为字段值
 3. 使用 `new HashSet<>()` 替代 `java.util.HashSet<>`
@@ -177,7 +177,7 @@ agreements.add(agreement1);
 3. 每个测试方法应包含：准备测试数据、执行测试、断言结果三个步骤
 4. 对于可能抛出异常的场景，应使用 try-catch 捕获并验证异常
 5. 对于依赖 DTO 字段的工具类方法，需先初始化相关字段，确保测试正常运行
-6. 集合初始化请使用标准方式（`new HashSet<>(Arrays.asList(...))`、`new ArrayList<>()`），避免使用 Java 8 的 Collectors API
+6. 集合初始化使用标准方式（`new HashSet<>(Arrays.asList(...))`、`new ArrayList<>()`），避免使用 Java 8 的 Collectors API
 
 ## 背景6 空值处理注意事项
 某些工具类方法在处理 null 参数时会将 null 添加到返回的列表中（如 `resultList.add(null)`），此时测试断言应为：

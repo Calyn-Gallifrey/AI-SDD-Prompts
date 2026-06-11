@@ -352,7 +352,7 @@ Archive 文件中的所有 `[ ]` 检查项在正式归档前必须经过实际�
 
 ## 16.2 归档质量自检
 
-请确认：
+确认项：
 
 - [ ] 基于最终确认版本编写
 - [ ] 与当前 Git 代码一致
@@ -361,7 +361,7 @@ Archive 文件中的所有 `[ ]` 检查项在正式归档前必须经过实际�
 - [ ] 已记录实施结果、风险、遗留问题
 - [ ] 已记录是否回写 rules / context / index / templates
 - [ ] 已给出下一次阅读顺序
-- [ ] 后续人员无需翻聊天记录即可接手
+- [ ] 后续人员不依赖聊天记录即可接手
 
 结论：
 
@@ -464,6 +464,6 @@ Archive 文件中的所有 `[ ]` 检查项在正式归档前必须经过实际�
 
 1. 进入下一阶段前，必须先更新当前文件的 Process Status 和 Process Audit Trail。
 2. 未更新状态区块，不允许进入下一阶段。
-3. 如果某阶段被跳过或不适用，必须写明原因，禁止静默跳过。
+3. 如果某阶段被跳过或不适用，必须写明原因。
 4. 生成 archive.md 前，proposal-input.md、spec.md、design.md、tasks.md 均必须处于最终可归档状态。
 5. Process Status 生命周期、归档前状态同步和验证方式记录必须遵守 `skills/uaw-sdd-ai-coding/references/process-control.md`。

@@ -1,5 +1,5 @@
 # 目标
-你是一个资深java开发专家，根据背景和要求实现获取当前用户ID的任务
+本规则用于根据背景和要求实现当前用户 ID 获取逻辑。
 
 # 背景
 ## 背景1：获取当前用户ID
@@ -114,14 +114,14 @@ public class ChangeContactInfoServiceImpl implements ChangeContactInfoService {
     public void submitOrCancel(ChangeContactInfoBO changeContactInfoBO) {
         // 获取当前用户ID
         String userId = UserContext.getUserId();
-        
+
         // 转换BO为DTO
         ChangeContactInfoDTO changeContactInfoDTO = changeContactInfoConverter.convertBoToDto(changeContactInfoBO);
-        
+
         // 设置创建人和更新人
         changeContactInfoDTO.setCreatedBy(userId);
         changeContactInfoDTO.setUpdatedBy(userId);
-        
+
         // 业务逻辑处理
         // ...
     }
@@ -218,4 +218,4 @@ public class ChangeContactInfoHelper {
 2. 在 MapStruct Converter 中，需继承 `BaseTransactionConverter` 接口，使用 `currentUser()` 方法
 3. 在 Service 层中，直接使用 `UserContext.getUserId()` 获取用户ID
 4. 在 Helper 工具类中，使用 `UserContext.getCurrentUser().getUserId()` 获取用户ID
- 
+

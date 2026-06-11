@@ -1,9 +1,9 @@
 # 功能级 Tasks 模板
 
-> 本文件承接已确认的 `spec.md + design.md`，用于输出可直接执行的施工任务。  
-> 本文件回答的是：做什么、先做什么、后做什么、交付什么、如何自检、何时归档。  
-> 本文件不是 spec，不重新定义需求。  
-> 本文件不是 design，不重新讨论方案。
+> 本文件承接已确认的 `spec.md + design.md`，用于输出可直接执行的实施任务。
+> 本文件定义实施顺序、交付物、自检要求和归档条件。
+> 需求范围以 `spec.md` 为准。
+> 技术方案以 `design.md` 为准。
 
 ---
 
@@ -101,14 +101,14 @@
 5. 每阶段完成后必须自检并完成 Phase Review
 6. 如需突破边界，必须回到 spec / design 重审
 7. 当前 Git 代码与文档冲突时，以代码为准并记录差异
-8. 若 design 未明确某类对象 / 流程 / 调用方式，不得自行脑补施工，必须先回 design 澄清
+8. 若 design 未明确某类对象、流程或调用方式，必须先回到 design 澄清，不得补写未经确认的实施内容
 
 ---
 
 
 ## 5.1 检查项执行标记规则（强制）
 
-Tasks 文件中的所有检查项都必须经过实际检查，不允许保留未检查状态。
+Tasks 文件中的所有检查项都必须经过实际检查，不得保留未检查状态。
 
 ### 标记规则
 
@@ -130,14 +130,14 @@ Tasks 文件中的所有检查项都必须经过实际检查，不允许保留�
 ### 示例
 
 ```markdown
-- [✓] design.md 已确认  
-  问题：design.md 仍处于 draft 状态，未满足进入 tasks 执行条件。  
+- [✓] design.md 已确认
+  问题：design.md 仍处于 draft 状态，未满足进入 tasks 执行条件。
   下一步：等待人工确认 design.md。
 
-- [x] 当前模块代码  
+- [x] 当前模块代码
   已检查，当前模块代码可作为实施基线。
 
-- [x] config / script（如适用）  
+- [x] config / script（如适用）
   不适用：本次变更不涉及配置或脚本。
 ```
 
@@ -164,7 +164,7 @@ Tasks 文件中的所有检查项都必须经过实际检查，不允许保留�
 3. `Next Phase Allowed` 为 `no` 时，禁止进入下一 Phase。
 4. 有条件通过必须写明条件、修复范围和验证方式。
 5. 驳回必须回到对应 Phase 修复，并追加新的 Phase Review 记录。
-6. 如果由 AI 代理人工审核，必须如实记录审核角色，不得伪装为真实人员审批。
+6. 如果由 AI 代理人工审核，必须如实记录审核角色，不得记录为真实人员审批。
 
 # 6. Phase 拆解（Standard Mode）
 
@@ -381,12 +381,12 @@ Tasks 文件中的所有检查项都必须经过实际检查，不允许保留�
 
 默认顺序：
 
-对象层  
-→ 数据层  
-→ 业务层  
-→ 接口层  
-→ 集成层（如有）  
-→ 测试层  
+对象层
+→ 数据层
+→ 业务层
+→ 接口层
+→ 集成层（如有）
+→ 测试层
 → 交付整理
 
 允许特例：
@@ -470,18 +470,18 @@ Tasks 文件中的所有检查项都必须经过实际检查，不允许保留�
 - 可复用资产
 - 下一次 enhancement 阅读顺序
 
-归档内容必须基于 `archive-template.md`，不得自行简化为几行空壳结论。
+归档内容必须基于 `archive-template.md`，并完整保留必填结论、依据和风险项。
 
 ---
 
 # 13. 状态流转
 
-draft  
-→ executing  
-→ code-review  
-→ auto-fix（如需）  
-→ unit-test  
-→ approved  
+draft
+→ executing
+→ code-review
+→ auto-fix（如需）
+→ unit-test
+→ approved
 → archived
 
 ---
@@ -503,7 +503,7 @@ draft
 
 SDD 流程内必须使用 `SDD_TASK_CODE_REVIEW`。
 
-该入口由 SDD 流程内部调用，不要求用户手动填写 Entry Mode、Feature Directory 或 SDD Artifacts。流程上下文必须能够等价提供以下信息：
+该入口由 SDD 流程内部调用，Entry Mode、Feature Directory 和 SDD Artifacts 由流程上下文提供。流程上下文必须能够等价提供以下信息：
 
 ```text
 Entry Mode: SDD_TASK_CODE_REVIEW
@@ -517,7 +517,7 @@ SDD Artifacts:
 
 ## 15.2 SDD 内部 Code Review 输出规则
 
-SDD 内部 Code Review 是流程质量闸门，不是 HTML 报告生成任务。
+SDD 内部 Code Review 是流程质量闸门，输出形式为 Markdown Findings。
 
 必须遵守：
 
@@ -547,7 +547,7 @@ SDD 内部 Code Review 是流程质量闸门，不是 HTML 报告生成任务。
 - 引用位置：`tasks.md`、`archive.md`
 - 产物类型：SDD 内部 Markdown 质量闸门产物
 - HTML 报告：不生成
-- Standalone 报告替代：不允许
+- Standalone 报告替代：不得使用
 
 `code-review-findings.md` 必须至少包含：
 
@@ -744,7 +744,7 @@ Review-driven Auto-fix 完成后，必须进入 Unit Test Gate。
 规则：
 
 1. 进入下一阶段前，必须先更新当前文件的 Process Status 和 Process Audit Trail。
-2. 未更新状态区块，不允许进入下一阶段。
+2. 未更新状态区块时，不得进入下一阶段。
 3. 如果某阶段被跳过或不适用，必须写明原因，禁止静默跳过。
 4. 生成 archive.md 前，proposal-input.md、spec.md、design.md、tasks.md 均必须处于最终可归档状态。
 5. Process Status 生命周期、Phase Review 和验证方式记录必须遵守 `skills/uaw-sdd-ai-coding/references/process-control.md`。
