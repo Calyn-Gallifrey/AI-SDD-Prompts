@@ -93,7 +93,7 @@ Unit Test Summary：`unit-test-summary.md`
 
 Current Stage：archive
 
-Stage Status：closed
+Stage Status：archived
 
 Last Completed Step：archive completed
 
@@ -112,4 +112,5 @@ Blocked Reason：无
 | 2026-06-11 12:46 | code-review | SDD_TASK_CODE_REVIEW generated code-review-findings.md | one P2 found | auto-fix |
 | 2026-06-11 12:47 | auto-fix | AI fixed CR-P2-001 | completed | unit test |
 | 2026-06-11 12:49 | unit-test | mvn test | passed, 27 tests | archive |
-| 2026-06-11 12:50 | archive | AI generated archive.md | completed | closed |
+| 2026-06-11 12:50 | archive | AI generated archive.md | completed | archived |
+| 2026-06-11 12:54 | consistency-audit | AI fixed post-run process and environment inconsistencies, then reran mvn test | passed, 27 tests | archived |

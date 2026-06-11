@@ -118,7 +118,7 @@ policyNo + beneficiaryIdNo + status SUBMITTED
 
 Current Stage：archive
 
-Stage Status：closed
+Stage Status：archived
 
 Last Completed Step：archive completed
 
@@ -132,4 +132,4 @@ Blocked Reason：无
 |---|---|---|---|---|
 | 2026-06-11 12:41 | design | AI generated design.md | draft completed | human review |
 | 2026-06-11 12:42 | design-review | AI-as-human-reviewer reviewed design.md | passed | generate tasks.md |
-| 2026-06-11 12:50 | archive-sync | AI synchronized final process status | closed | none |
+| 2026-06-11 12:50 | archive-sync | AI synchronized final process status | archived | none |

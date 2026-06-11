@@ -4,11 +4,15 @@
 
 Archive Time：2026-06-11 12:50
 
+Last Updated：2026-06-11 12:54
+
+SDD Version：SDD2.0
+
 Archive Result：completed
 
 Final Stage：archive
 
-Final Status：closed
+Final Status：archived
 
 ## Feature Delivered
 
@@ -67,6 +71,7 @@ Final Status：closed
 ### Code
 
 - `uaw-sdd-demo/README.md`
+- `uaw-sdd-demo/pom.xml`
 - `uaw-sdd-demo/src/main/java/com/example/uawsdddemo/controller/PolicyBeneficiaryChangeWorkOrderController.java`
 - `uaw-sdd-demo/src/main/java/com/example/uawsdddemo/model/dto/CreatePolicyBeneficiaryEmailChangeWorkOrderRequest.java`
 - `uaw-sdd-demo/src/main/java/com/example/uawsdddemo/model/dto/PolicyBeneficiaryChangeWorkOrderResponse.java`
@@ -96,7 +101,33 @@ Final Status：closed
 - 当前 demo 未接入真实 UAW 数据库、用户上下文、权限校验或外部系统，只验证 SDD2.0 流程和代码生成闭环。
 - 真实项目中，受益人身份校验、保单归属校验、邮箱变更字段落库和工单类型并发策略需要接入现有业务规则。
 - Maven 测试可在当前本机环境运行；在公司内网 AI 环境中，应由 Skill 先扫描可用构建入口，再选择命令行、IDE 或流水线入口。
+- 当前 demo 已通过 Surefire 参数消除动态 agent loading warning；新 JDK 下仍可能出现 Byte Buddy 使用 `sun.misc.Unsafe` 的兼容提示，该提示未导致测试失败。
 
 ## Final Conclusion
 
 SDD2.0 流程已从人工简要设计、proposal-input 自动组装、spec、design、tasks、代码实现、SDD 模式 Code Review、Auto-fix、Unit Test Summary 到 Archive 全链路跑通。
+
+## Process Status
+
+Current Stage：archive
+
+Stage Status：archived
+
+Last Completed Step：consistency audit completed
+
+Next Required Step：无
+
+Human Confirmation Required：yes
+
+Allowed Next Action：human archive review
+
+Forbidden Next Action：continue implementation without new approved tasks
+
+Updated At：2026-06-11 12:54
+
+## Process Audit Trail
+
+| Time | Stage | Action | Input | Output | Result | Next Gate |
+|---|---|---|---|---|---|---|
+| 2026-06-11 12:50 | archive | Generated archive.md | completed SDD artifacts and code changes | archive.md | completed | archive review |
+| 2026-06-11 12:54 | consistency-audit | Fixed post-run consistency issues and reran validation | SDD2.0 Skill rules and process artifacts | updated archive/process records | passed | human archive review |

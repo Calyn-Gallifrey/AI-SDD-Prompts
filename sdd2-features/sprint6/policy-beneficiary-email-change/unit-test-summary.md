@@ -4,7 +4,7 @@
 
 Entry Mode：SDD_UNIT_TEST
 
-Test Time：2026-06-11 12:49
+Test Time：2026-06-11 12:54
 
 Project Root：`uaw-sdd-demo`
 
@@ -47,7 +47,7 @@ Actual Test Entry：`mvn test`
 
 ## Warnings
 
-测试运行中存在 Byte Buddy 动态 agent 和 `sun.misc.Unsafe` 相关 JVM warning。该 warning 已在当前 demo 的 README 中说明，未导致测试失败。
+测试运行中仍存在 Byte Buddy 使用 `sun.misc.Unsafe` 的 JVM warning。动态 agent loading warning 已通过 Surefire 参数修复；剩余 warning 未导致测试失败。
 
 ## Unit Test Gate
 

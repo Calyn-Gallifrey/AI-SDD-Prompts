@@ -10,6 +10,10 @@ Auto-fix Result：completed
 
 Archive Gate After Auto-fix：allowed after Unit Test Summary passed
 
+Post Auto-fix Verification：passed
+
+Archive allowed after Auto-fix：yes
+
 ## Fixed Issues
 
 | Issue ID | Severity | Fix Result | Notes |

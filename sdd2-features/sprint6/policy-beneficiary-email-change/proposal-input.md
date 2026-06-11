@@ -4,6 +4,10 @@
 
 ## 1. Task Basic Information
 
+SDD Version（SDD版本）：SDD2.0
+
+Feature Workspace Root（功能资产根目录）：sdd2-features
+
 Feature Name（功能名称）：policy-beneficiary-email-change
 
 Feature Type（功能类型）：enhancement
@@ -98,7 +102,7 @@ proposal-input.md → spec.md → design.md → tasks.md → implementation → 
 
 Current Stage：archive
 
-Stage Status：closed
+Stage Status：archived
 
 Last Completed Step：archive completed
 
@@ -112,4 +116,4 @@ Blocked Reason：无
 |---|---|---|---|---|
 | 2026-06-11 12:39 | brief-design | AI parsed required fields | passed | assemble proposal-input.md |
 | 2026-06-11 12:40 | proposal | AI-as-human-reviewer confirmed proposal input | passed | generate spec.md |
-| 2026-06-11 12:50 | archive-sync | AI synchronized final process status | closed | none |
+| 2026-06-11 12:50 | archive-sync | AI synchronized final process status | archived | none |

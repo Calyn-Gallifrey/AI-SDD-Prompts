@@ -7,7 +7,7 @@ Spring Boot + Maven demo project for validating the UAW-SDD workflow.
 - Java 17+ for compilation
 - Maven 3.9+
 
-Current local Maven runs on Java 26. The `maven-surefire-plugin` configuration enables Byte Buddy experimental mode so Mockito-based tests can run in this environment.
+The `maven-surefire-plugin` configuration enables dynamic agent loading and Byte Buddy experimental mode so Mockito-based tests can run on newer local JDKs while compiling with Java 17 target compatibility. Newer JDKs may still print Byte Buddy `sun.misc.Unsafe` compatibility warnings; they do not fail the current test suite.
 
 ## Run Tests
 

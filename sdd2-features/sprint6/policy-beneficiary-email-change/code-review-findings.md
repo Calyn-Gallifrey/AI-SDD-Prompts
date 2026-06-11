@@ -82,3 +82,18 @@ API 层和 Service 层行为不一致。直接调用 Service 可以接受并归�
 在 `CreatePolicyBeneficiaryEmailChangeWorkOrderRequest.setBeneficiaryEmail(...)` 中对非 null 输入执行 trim，使 Controller validation 和 Service normalization 顺序一致；补充 Controller 测试覆盖带空格和大小写混合的邮箱输入。
 
 是否阻塞 Archive：yes
+
+## Post Auto-fix Verification
+
+Recheck Time：2026-06-11 12:50
+
+Recheck Result：passed
+
+Rechecked Issues：
+- `CR-P2-001` fixed. `beneficiaryEmail` now trims in DTO setter before Controller validation, and Controller regression test covers email input with leading/trailing spaces.
+
+Remaining P0 / P1 / Blocking P2：0
+
+Archive allowed after Auto-fix：yes
+
+Next Gate：Unit Test Summary
