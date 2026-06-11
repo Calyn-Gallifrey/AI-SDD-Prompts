@@ -42,7 +42,7 @@ If any required field is missing, stop and ask only for the missing fields using
 10. Automatically invoke `uaw-code-review` in `SDD_TASK_CODE_REVIEW` mode. Do not ask the user for Code Review input in SDD mode.
 11. Apply Review-driven Auto-fix according to `code-review-findings.md`.
 12. Automatically invoke `uaw-unit-test` in SDD mode after Auto-fix. Do not ask the user to repeat unit-test inputs when SDD context is available.
-13. Generate Unit Test Summary.
+13. Generate Unit Test Summary using `skills/uaw-unit-test/references/templates/unit-test-summary-template.md`.
 14. Sync Process Status and Process Audit Trail.
 15. Generate `archive.md`; wait for final human review.
 

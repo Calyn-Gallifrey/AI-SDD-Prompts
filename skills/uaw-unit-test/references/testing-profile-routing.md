@@ -89,6 +89,12 @@
 
 # 3. 输出要求
 
+生成或更新 Unit Test Summary 时，必须使用：
+
+```text
+skills/uaw-unit-test/references/templates/unit-test-summary-template.md
+```
+
 在 `design.md`、`tasks.md`、`code-review-findings.md` 或 Archive 中必须记录：
 
 - Selected Testing Profile：

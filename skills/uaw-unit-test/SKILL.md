@@ -11,6 +11,8 @@ Use this skill to generate or validate UAW unit tests and produce Unit Test Summ
 
 Always read `references/input-examples.md` before requesting standalone input. All user-facing input examples must use `English Field（中文字段）：示例值`.
 
+Always read `references/templates/unit-test-summary-template.md` before producing or updating Unit Test Summary.
+
 ## Input Policy
 
 Keep standalone user input minimal. Ask the user only for information that cannot be reliably scanned from the project.
@@ -38,7 +40,9 @@ When invoked by `uaw-sdd-ai-coding`, do not ask the user to repeat unit-test inp
 
 ## Output Requirements
 
-Always output or update Unit Test Summary with:
+Always output or update Unit Test Summary by following `references/templates/unit-test-summary-template.md`.
+
+Required fields:
 
 - Selected Testing Profile
 - Selection rationale
@@ -50,10 +54,13 @@ Always output or update Unit Test Summary with:
 - warning / failure / skipped notes
 - Remaining test risks
 
+Do not omit template sections. If a section is not applicable, mark it as `not applicable` and explain why.
+
 Do not force local `mvn` or `gradle` availability as a prerequisite. IDE, Wrapper, Local CLI, CI, Script, Manual, and Other are all valid validation methods when recorded honestly.
 
 ## References
 
 - `references/input-examples.md`: concise Java input example.
 - `references/testing-profile-routing.md`: profile selection and validation rules.
+- `references/templates/unit-test-summary-template.md`: required Unit Test Summary output template.
 - `references/java/`: detailed Java test generation rules for methods, services, static methods, controllers, and ServiceStrategy.

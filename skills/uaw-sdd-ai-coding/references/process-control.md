@@ -36,7 +36,31 @@
 4. `Process Audit Trail` 记录关键阶段流转，不记录无价值流水账。
 5. 如果某阶段被跳过或不适用，必须写明原因和批准角色。
 
-## 1.3 Archive 前状态同步
+## 1.3 Process Status 字段口径
+
+`Process Status` 必须至少包含以下字段：
+
+- Current Stage
+- Stage Status
+- Last Completed Step
+- Next Required Step
+- Blocked Reason
+
+可按流程需要补充以下字段：
+
+- Human Confirmation Required
+- Allowed Next Action
+- Forbidden Next Action
+- Updated At
+
+规则：
+
+1. 核心判断以必填字段和 `Process Audit Trail` 为准。
+2. 模板可以提供扩展字段，但扩展字段缺失不单独构成流程阻塞。
+3. `archive.md` 建议保留扩展字段，用于明确归档后的允许动作和禁止动作。
+4. 如果 `Stage Status=blocked`，`Blocked Reason` 必须写明阻塞原因、责任角色和恢复条件。
+
+## 1.4 Archive 前状态同步
 
 生成 `archive.md` 前，必须完成状态同步：
 

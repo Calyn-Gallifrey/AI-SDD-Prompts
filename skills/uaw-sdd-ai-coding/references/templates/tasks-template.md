@@ -657,6 +657,10 @@ Review-driven Auto-fix 完成后，必须进入 Unit Test Gate。
 
 `skills/uaw-unit-test/references/testing-profile-routing.md`
 
+生成 Unit Test Summary 前必须读取：
+
+`skills/uaw-unit-test/references/templates/unit-test-summary-template.md`
+
 并记录：
 
 - Selected Testing Profile：
@@ -680,6 +684,8 @@ Review-driven Auto-fix 完成后，必须进入 Unit Test Gate。
 - 是否影响 archive：
 
 ## 17.3 Unit Test Summary
+
+必须按 `skills/uaw-unit-test/references/templates/unit-test-summary-template.md` 生成或更新 `unit-test-summary.md`。
 
 - Validation Method：IDE / Wrapper / Local CLI / CI / Script / Manual / Other
 - Execution Environment：本机 / CI / 开发容器 / IDE / 其他

@@ -75,6 +75,7 @@ skills/uaw-code-review/references/templates/personal-report-template.html
 ```text
 skills/uaw-unit-test/SKILL.md
 skills/uaw-unit-test/references/testing-profile-routing.md
+skills/uaw-unit-test/references/templates/unit-test-summary-template.md
 skills/uaw-unit-test/references/java/
 ```
 
@@ -153,7 +154,7 @@ Phase Review records
 | Service | `skills/uaw-sdd-ai-coding/references/rules/backend/transaction-package-structure.md` |
 | DB / Mapper | `skills/uaw-sdd-ai-coding/references/rules/backend/create-table.md`, `skills/uaw-sdd-ai-coding/references/rules/backend/mybatis-orm.md` |
 | Model | `skills/uaw-sdd-ai-coding/references/rules/model/` |
-| Test | `skills/uaw-unit-test/references/testing-profile-routing.md` |
+| Test | `skills/uaw-unit-test/references/testing-profile-routing.md`, `skills/uaw-unit-test/references/templates/unit-test-summary-template.md` |
 
 ## 6. Code Review Routing
 
@@ -185,6 +186,12 @@ uaw-unit-test / SDD mode
 ```
 
 SDD 模式下不要求用户重复填写单元测试输入。测试目标、变更文件、测试框架和验证方式优先从 SDD 资产、代码变更和项目文件中自动识别。
+
+Unit Test Summary 必须按以下模板生成或更新：
+
+```text
+skills/uaw-unit-test/references/templates/unit-test-summary-template.md
+```
 
 ## 8. Archive Gate
 
