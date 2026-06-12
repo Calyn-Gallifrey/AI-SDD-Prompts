@@ -11,7 +11,9 @@ This skill runs the SDD2.0 backend feature delivery workflow from `Brief Design�
 
 `Brief Design（人工简要设计）` is the user-facing entry. `proposal-input.md` is an internal SDD asset assembled by the skill after required brief fields are available.
 
-Read `references/input-examples.md` before requesting human input. The examples define the expected field structure for brief design and review input.
+Read `references/input-examples.md` before requesting human input. The file defines input structure templates for brief design and review input.
+
+Input templates are not business requirements. Placeholder text, template field descriptions, and illustrative wording must not be copied into `brief-design.md`, `proposal-input.md`, feature directory names, API paths, field names, business logic, code, tests, or archive assets unless the user explicitly provides the same content as part of the real requirement.
 
 ## Required Brief Fields
 
@@ -27,6 +29,13 @@ Required fields in `Brief Design（人工简要设计）`:
 - `Forbidden Changes（禁止变更）`
 
 If a required field is missing, request only the missing field by using the missing-field example in `references/input-examples.md`. Required fields must come from confirmed user input.
+
+## Generalization Rules
+
+- Feature assets must be named from the confirmed `Feature Name（功能名称）` in the current Brief Design only.
+- For enhancements to existing functionality, identify the existing API, class, method, response model, mapper, or logic first, then keep the SDD scope to the confirmed delta.
+- If the requirement is limited to adding one response field to an existing query, the SDD scope must not expand into a new work order, new submit flow, new table, or unrelated module unless explicitly confirmed.
+- Template placeholders and historical examples are reference material only; they are never fallback values for missing requirement information.
 
 ## Workflow
 
@@ -56,7 +65,7 @@ If a required field is missing, request only the missing field by using the miss
 
 ## References
 
-- `references/input-examples.md`: required human input examples.
+- `references/input-examples.md`: required human input structure templates.
 - `references/sdd2-workflow.md`: SDD2.0 workflow, proposal assembly, and skill invocation contract.
 - `references/process-control.md`: status, audit trail, review, validation, and archive gates.
 - `references/templates/`: internal proposal/spec/design/tasks/archive templates.

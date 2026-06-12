@@ -1,6 +1,10 @@
 # 目标
 本规则用于根据背景和要求开发 OM API 防腐层代码。
 
+## 示例边界
+
+本文件中的代码片段、类名、包名、字段名、外部接口对象和业务名仅用于说明防腐层结构和转换写法，不是当前任务的默认业务内容。生成代码时，必须基于当前 Brief Design、当前代码和已确认外部接口信息替换所有示例业务信息。
+
 # 背景
 ## 背景1：API接口设计文档
 + 用户输入：{包路径}
@@ -331,4 +335,4 @@ public class RemoteResultUtil {
 9. 对于可能为null的对象，使用Optional.empty()或Optional.ofNullable()包装
 10. 对于集合对象，为空时返回Collections.emptyList()或Lists.newArrayList()
 11. 放到对应位置，如果没有则新建，windows系统
- 
+

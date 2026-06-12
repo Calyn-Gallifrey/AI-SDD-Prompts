@@ -6,6 +6,14 @@ SDD2.0 starts from `Brief Design（人工简要设计）`.
 
 `proposal-input.md` is generated internally after parsing the brief design and collecting missing required fields.
 
+## Generalization Contract
+
+1. SDD2.0 system files define workflow, gates, templates, routing, and engineering constraints; they do not define default business features.
+2. Input templates and reference examples are never requirements. They must not be copied into feature names, output directories, API paths, field names, business logic, implementation code, tests, or archive content unless the same values are explicitly provided by the user as current requirement content.
+3. Missing requirement information must be requested from the user or recorded as an open question. It must not be filled from examples, historical demo assets, or unrelated reference cases.
+4. For enhancement and refactor work, the current codebase is the primary baseline. The generated SDD assets must describe the confirmed delta against existing behavior.
+5. If the confirmed requirement is a minimal change to an existing query, such as adding a response field, the SDD scope must remain minimal and must not create a new submit flow, work order process, table, or module unless explicitly confirmed.
+
 ## Proposal Assembly
 
 Map the brief design to proposal fields:
@@ -40,6 +48,8 @@ Rules:
 2. `sdd2.1-features`, `sdd2.2-features`, and other minor-version roots are not used.
 3. If SDD2.1 changes rules, keep writing feature assets under `sdd2-features` and record the executed Skill version inside the generated assets.
 4. A new root for a future major version requires an explicit migration decision, not an automatic naming change.
+5. `<feature-name>` must come from the confirmed current Brief Design. It must not be copied from input templates, reference examples, previous demo features, or historical process assets.
+6. If `Feature Name（功能名称）` is missing or too generic, request confirmation before creating the feature asset directory.
 
 ## Stage Flow
 

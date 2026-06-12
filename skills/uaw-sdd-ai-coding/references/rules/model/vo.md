@@ -1,6 +1,10 @@
 # 目标
 本规则用于根据背景和要求生成 transaction 模块的 VO 模型对象。
 
+## 示例边界
+
+本文件中的代码片段、类名、字段名、注解值、示例值和业务名仅用于说明 VO 模型结构和写法，不是当前任务的默认业务内容。生成 VO 时，必须基于当前 Brief Design、当前代码和已确认接口契约替换所有示例业务信息。
+
 # 背景
 ## 背景1：API接口设计文档
 + 用户输入：{包路径}
@@ -887,4 +891,3 @@ private String uniqueKey;
 8. **重要**：禁止在VO类中使用Entity类型、BO类型、DTO类型或内部类
 9. **重要**：VO基类（例如：BaseTransactionVO、BaseChangeCusInfoVO）的属性必须使用protected修饰符；VO子类的自有属性默认使用private修饰符；子类重写toString方法时，必须显式包含父类的所有属性
 10. **重要**：新建或修改VO类后，需检查代码，确保满足上述属性修饰符与toString规范
-

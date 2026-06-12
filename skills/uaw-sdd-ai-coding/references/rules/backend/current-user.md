@@ -1,6 +1,10 @@
 # 目标
 本规则用于根据背景和要求实现当前用户 ID 获取逻辑。
 
+## 示例边界
+
+本文件中的代码片段、对象名、方法名、参数名和业务注释仅用于说明当前用户获取方式，不是当前任务的默认业务内容。生成代码时，必须基于当前 Brief Design、当前代码和已确认需求替换所有示例业务信息。
+
 # 背景
 ## 背景1：获取当前用户ID
 
@@ -218,4 +222,3 @@ public class ChangeContactInfoHelper {
 2. 在 MapStruct Converter 中，需继承 `BaseTransactionConverter` 接口，使用 `currentUser()` 方法
 3. 在 Service 层中，直接使用 `UserContext.getUserId()` 获取用户ID
 4. 在 Helper 工具类中，使用 `UserContext.getCurrentUser().getUserId()` 获取用户ID
-

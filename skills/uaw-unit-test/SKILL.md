@@ -9,7 +9,9 @@ description: Generate, repair, and summarize Java-focused UAW unit tests. Use wh
 
 This skill generates or validates UAW unit tests and produces Unit Test Summary. Java and Spring Boot are the primary target.
 
-Read `references/input-examples.md` before requesting standalone input. The examples define the expected Java unit-test input structure.
+Read `references/input-examples.md` before requesting standalone input. The file defines the expected Java unit-test input structure.
+
+Input templates are not default test targets. Placeholder paths, test class names, commands, and validation entries must be replaced by project-scanned or user-confirmed values.
 
 Read `references/templates/unit-test-summary-template.md` before producing or updating Unit Test Summary.
 
@@ -60,7 +62,7 @@ Local `mvn` or `gradle` availability is not a prerequisite. IDE, Wrapper, Local 
 
 ## References
 
-- `references/input-examples.md`: concise Java input example.
+- `references/input-examples.md`: concise Java input structure template.
 - `references/testing-profile-routing.md`: profile selection and validation rules.
 - `references/templates/unit-test-summary-template.md`: required Unit Test Summary output template.
 - `references/java/`: detailed Java test generation rules for methods, services, static methods, controllers, and ServiceStrategy.

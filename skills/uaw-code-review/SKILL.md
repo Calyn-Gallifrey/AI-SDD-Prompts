@@ -12,7 +12,9 @@ This skill performs UAW code review in two operating families:
 - Standalone mode: the user requests code review directly and provides Git range or worktree snapshot input. The output is HTML reports.
 - SDD mode: `uaw-sdd-ai-coding` invokes this skill after tasks implementation. The output is `code-review-findings.md`.
 
-Read `references/input-examples.md` before requesting standalone input. The examples define the expected standalone review input structures.
+Read `references/input-examples.md` before requesting standalone input. The file defines the expected standalone review input structures.
+
+Input templates are not default review ranges. Placeholder branch names, paths, dates, and output directories must be replaced by user-confirmed review scope.
 
 ## Mode Selection
 
@@ -53,7 +55,7 @@ In standalone mode:
 
 ## References
 
-- `references/input-examples.md`: standalone review input examples.
+- `references/input-examples.md`: standalone review input structure templates.
 - `references/code-review-rules.md`: detailed UAW review rules and severity model.
 - `references/templates/sdd-code-review-findings-template.md`: SDD findings output template.
 - `references/templates/standalone-review-input-template.md`: standalone input source template.

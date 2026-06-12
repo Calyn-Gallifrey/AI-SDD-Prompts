@@ -1,6 +1,10 @@
 # 目标
 本规则用于根据背景内容和参考示例生成对象转换代码，并放到指定位置。
 
+## 示例边界
+
+本文件中的代码片段、类名、包名、字段名和业务名仅用于说明 MapStruct 转换结构和写法，不是当前任务的默认业务内容。生成转换代码时，必须基于当前 Brief Design、当前代码和已确认对象模型替换所有示例业务信息。
+
 # 背景
 ## 背景1
 - 项目技术栈：Java 1.8、SpringBoot 2.7.18、MySQL
@@ -203,4 +207,4 @@ Transaction transaction = converter.toTransaction(changeContactInfoBO, transacti
 - 方法命名规范：使用驼峰命名，格式为 {源对象}To{目标对象}
 - 必须包含 INSTANCE 静态实例定义：{业务名称}Converter INSTANCE = Mappers.getMapper({业务名称}Converter.class);
 
- 
+
