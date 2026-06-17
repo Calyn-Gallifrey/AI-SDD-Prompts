@@ -35,16 +35,16 @@ public class PolicyInfoChangeWorkOrderService {
             throw new BadRequestException("submitted duplicate policy info change work order exists");
         }
 
-        return toResponse(repository.save(workOrder));
+        return toResponse(repository.save(workOrder), false);
     }
 
     public PolicyInfoChangeWorkOrderResponse get(String workOrderId) {
         PolicyInfoChangeWorkOrder workOrder = repository.findById(workOrderId)
                 .orElseThrow(() -> new NotFoundException("policy info change work order not found"));
-        return toResponse(workOrder);
+        return toResponse(workOrder, true);
     }
 
-    private PolicyInfoChangeWorkOrderResponse toResponse(PolicyInfoChangeWorkOrder workOrder) {
+    private PolicyInfoChangeWorkOrderResponse toResponse(PolicyInfoChangeWorkOrder workOrder, boolean includeChangeSummary) {
         PolicyInfoChangeWorkOrderResponse response = new PolicyInfoChangeWorkOrderResponse();
         response.setWorkOrderId(workOrder.getWorkOrderId());
         response.setPolicyNo(workOrder.getPolicyNo());
@@ -54,6 +54,13 @@ public class PolicyInfoChangeWorkOrderService {
         response.setRequester(workOrder.getRequester());
         response.setStatus(workOrder.getStatus());
         response.setCreatedAt(workOrder.getCreatedAt());
+        if (includeChangeSummary) {
+            response.setChangeSummary(formatChangeSummary(workOrder));
+        }
         return response;
+    }
+
+    private String formatChangeSummary(PolicyInfoChangeWorkOrder workOrder) {
+        return workOrder.getChangeFieldType() + ": " + workOrder.getOldValue() + " -> " + workOrder.getNewValue();
     }
 }

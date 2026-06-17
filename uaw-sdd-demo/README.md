@@ -44,6 +44,8 @@ Get a policy info change work order:
 GET /api/work-orders/policy-info-change/{workOrderId}
 ```
 
+The response includes `changeSummary`, a read-only summary derived from `changeFieldType`, `oldValue`, and `newValue`.
+
 Create a policy beneficiary change work order:
 
 ```http

@@ -1,5 +1,6 @@
 package com.example.uawsdddemo.model.dto;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.example.uawsdddemo.model.enums.ChangeFieldType;
 import com.example.uawsdddemo.model.enums.WorkOrderStatus;
 
@@ -15,6 +16,8 @@ public class PolicyInfoChangeWorkOrderResponse {
     private String requester;
     private WorkOrderStatus status;
     private Instant createdAt;
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private String changeSummary;
 
     public String getWorkOrderId() {
         return workOrderId;
@@ -78,5 +81,13 @@ public class PolicyInfoChangeWorkOrderResponse {
 
     public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public String getChangeSummary() {
+        return changeSummary;
+    }
+
+    public void setChangeSummary(String changeSummary) {
+        this.changeSummary = changeSummary;
     }
 }

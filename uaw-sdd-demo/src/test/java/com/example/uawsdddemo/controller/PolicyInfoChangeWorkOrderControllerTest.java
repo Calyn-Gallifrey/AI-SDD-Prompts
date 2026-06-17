@@ -51,7 +51,7 @@ public class PolicyInfoChangeWorkOrderControllerTest {
     @Test
     public void testCreate_success_expectCreatedResponse() throws Exception {
         CreatePolicyInfoChangeWorkOrderRequest request = buildRequest();
-        Mockito.when(service.create(any(CreatePolicyInfoChangeWorkOrderRequest.class))).thenReturn(buildResponse());
+        Mockito.when(service.create(any(CreatePolicyInfoChangeWorkOrderRequest.class))).thenReturn(buildResponse(false));
 
         mockMvc.perform(MockMvcRequestBuilders.post("/api/work-orders/policy-info-change")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -59,7 +59,8 @@ public class PolicyInfoChangeWorkOrderControllerTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.workOrderId", Matchers.is("WO-10001")))
                 .andExpect(jsonPath("$.policyNo", Matchers.is("P-10001")))
-                .andExpect(jsonPath("$.status", Matchers.is("SUBMITTED")));
+                .andExpect(jsonPath("$.status", Matchers.is("SUBMITTED")))
+                .andExpect(jsonPath("$.changeSummary").doesNotExist());
 
         Mockito.verify(service, times(1)).create(any(CreatePolicyInfoChangeWorkOrderRequest.class));
     }
@@ -95,12 +96,13 @@ public class PolicyInfoChangeWorkOrderControllerTest {
 
     @Test
     public void testGet_success_expectOkResponse() throws Exception {
-        Mockito.when(service.get("WO-10001")).thenReturn(buildResponse());
+        Mockito.when(service.get("WO-10001")).thenReturn(buildResponse(true));
 
         mockMvc.perform(MockMvcRequestBuilders.get("/api/work-orders/policy-info-change/WO-10001"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.workOrderId", Matchers.is("WO-10001")))
-                .andExpect(jsonPath("$.policyNo", Matchers.is("P-10001")));
+                .andExpect(jsonPath("$.policyNo", Matchers.is("P-10001")))
+                .andExpect(jsonPath("$.changeSummary", Matchers.is("HOLDER_PHONE: 13800000000 -> 13900000000")));
 
         Mockito.verify(service, times(1)).get("WO-10001");
     }
@@ -115,7 +117,7 @@ public class PolicyInfoChangeWorkOrderControllerTest {
         return request;
     }
 
-    private PolicyInfoChangeWorkOrderResponse buildResponse() {
+    private PolicyInfoChangeWorkOrderResponse buildResponse(boolean includeChangeSummary) {
         PolicyInfoChangeWorkOrderResponse response = new PolicyInfoChangeWorkOrderResponse();
         response.setWorkOrderId("WO-10001");
         response.setPolicyNo("P-10001");
@@ -125,6 +127,9 @@ public class PolicyInfoChangeWorkOrderControllerTest {
         response.setRequester("alice");
         response.setStatus(WorkOrderStatus.SUBMITTED);
         response.setCreatedAt(Instant.parse("2026-05-28T08:00:00Z"));
+        if (includeChangeSummary) {
+            response.setChangeSummary("HOLDER_PHONE: 13800000000 -> 13900000000");
+        }
         return response;
     }
 }

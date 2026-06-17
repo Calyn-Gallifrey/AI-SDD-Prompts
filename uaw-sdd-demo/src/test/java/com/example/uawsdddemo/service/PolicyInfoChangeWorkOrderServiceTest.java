@@ -17,6 +17,7 @@ import java.util.Optional;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
@@ -47,6 +48,7 @@ public class PolicyInfoChangeWorkOrderServiceTest {
         assertEquals(ChangeFieldType.HOLDER_PHONE, response.getChangeFieldType());
         assertEquals("13800000000", response.getOldValue());
         assertEquals("13900000000", response.getNewValue());
+        assertNull(response.getChangeSummary());
         verify(repository, times(1)).existsSubmittedDuplicate(any(PolicyInfoChangeWorkOrder.class));
         verify(repository, times(1)).save(any(PolicyInfoChangeWorkOrder.class));
     }
@@ -88,6 +90,7 @@ public class PolicyInfoChangeWorkOrderServiceTest {
         assertNotNull(response);
         assertEquals(workOrder.getWorkOrderId(), response.getWorkOrderId());
         assertEquals("P-10001", response.getPolicyNo());
+        assertEquals("HOLDER_PHONE: 13800000000 -> 13900000000", response.getChangeSummary());
         verify(repository, times(1)).findById(workOrder.getWorkOrderId());
     }
 
