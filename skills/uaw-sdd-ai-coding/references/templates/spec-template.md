@@ -364,6 +364,6 @@ Tasks 阶段必须承接以下约束：
 
 1. 进入下一阶段前，必须先更新当前文件的 Process Status 和 Process Audit Trail。
 2. 未更新状态区块时，不得进入下一阶段。
-3. 如果某阶段被跳过或不适用，必须写明原因，禁止静默跳过。
+3. 核心流程闸门不得跳过或标记为不适用；仅实施子 Phase 可在 design 明确不涉及对应层级时标记为不适用，并必须写明原因。
 4. 生成 archive.md 前，proposal-input.md、spec.md、design.md、tasks.md 均必须处于最终可归档状态。
 5. Process Status 生命周期必须遵守 `skills/uaw-sdd-ai-coding/references/process-control.md`。

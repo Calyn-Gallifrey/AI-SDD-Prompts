@@ -187,6 +187,8 @@ uaw-unit-test / SDD mode
 
 SDD 模式下单元测试输入由流程上下文提供。测试目标、变更文件、测试框架和验证方式优先从 SDD 资产、代码变更和项目文件中自动识别。
 
+Unit Test Summary 生成前，必须先新增或修改单元测试源码文件。无法生成或更新测试源码文件时，Unit Test Gate 必须为 blocked，不得进入 Archive。
+
 Unit Test Summary 必须按以下模板生成或更新：
 
 ```text
@@ -200,6 +202,6 @@ skills/uaw-unit-test/references/templates/unit-test-summary-template.md
 - `spec.md`、`design.md`、`tasks.md` 已通过人工审核。
 - tasks Phase Review 已完成。
 - `code-review-findings.md` 已生成。
-- Review-driven Auto-fix 已完成或明确不适用。
-- Unit Test Summary 已完成或明确不适用原因。
+- Review-driven Auto-fix 已完成，并已输出 `auto-fix-summary.md`；无修复项时也必须记录“不需要修复”的原因。
+- Unit Test Summary 已完成，且记录新增或修改的单元测试源码文件。
 - Process Status 和 Process Audit Trail 已同步。

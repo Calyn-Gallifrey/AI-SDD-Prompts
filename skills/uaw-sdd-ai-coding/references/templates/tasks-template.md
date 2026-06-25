@@ -154,7 +154,7 @@ Tasks 文件中的所有检查项都必须经过实际检查，不得保留未�
 | Phase 3：业务层施工 |  |  | 通过 / 有条件通过 / 驳回 / 不适用 |  |  | yes / no |
 | Phase 4：接口层施工 |  |  | 通过 / 有条件通过 / 驳回 / 不适用 |  |  | yes / no |
 | Phase 5：集成层施工 |  |  | 通过 / 有条件通过 / 驳回 / 不适用 |  |  | yes / no |
-| Phase 6：测试层施工 |  |  | 通过 / 有条件通过 / 驳回 / 不适用 |  |  | yes / no |
+| Phase 6：测试层施工 |  |  | 通过 / 有条件通过 / 驳回 / blocked |  |  | yes / no |
 | Phase 7：交付整理 |  |  | 通过 / 有条件通过 / 驳回 / 不适用 |  |  | yes / no |
 
 规则：
@@ -165,6 +165,7 @@ Tasks 文件中的所有检查项都必须经过实际检查，不得保留未�
 4. 有条件通过必须写明条件、修复范围和验证方式。
 5. 驳回必须回到对应 Phase 修复，并追加新的 Phase Review 记录。
 6. 如果由 AI 代理人工审核，必须如实记录审核角色，不得记录为真实人员审批。
+7. 存在生产代码变更时，Phase 6 不得标记为不适用；无法生成或更新测试源码文件时必须记录为 blocked。
 
 # 6. Phase 拆解（Standard Mode）
 
@@ -322,6 +323,12 @@ Tasks 文件中的所有检查项都必须经过实际检查，不得保留未�
 
 - 测试代码
 
+### 不可跳过规则
+
+- 只要本次任务产生或修改生产代码，Phase 6 不得标记为不适用。
+- 测试层必须新增或修改至少一个单元测试源码文件。
+- 若因项目不可读、测试目标无法识别或测试框架无法确认而无法生成测试代码，必须停止在 Unit Test Gate 的 blocked 状态，不得进入 Archive。
+
 ### 覆盖场景
 
 - 正常路径
@@ -347,7 +354,7 @@ Tasks 文件中的所有检查项都必须经过实际检查，不得保留未�
 
 #### Unit Test Summary 引用
 
-- pass / fail / not applicable
+- pass / fail / blocked / not run
 - 说明：正式测试结论以第 17.3 节 Unit Test Summary 为准。
 
 #### 已知问题
@@ -419,7 +426,7 @@ Tasks 文件中的所有检查项都必须经过实际检查，不得保留未�
 
 ## 质量层
 
-- [ ] Unit Test Summary 已输出或明确不适用原因
+- [ ] Unit Test Summary 已输出，且已记录新增或修改的测试源码文件
 - [ ] 无明显回归问题
 
 ---
@@ -449,7 +456,7 @@ Tasks 文件中的所有检查项都必须经过实际检查，不得保留未�
 - [ ] 代码实施已完成
 - [ ] Code Review 已完成
 - [ ] Review-driven Auto-fix 已完成，或明确记录不需要修复
-- [ ] Unit Test Generation 已完成，或明确记录不适用原因
+- [ ] Unit Test Generation 已完成，并产生新增或修改的测试源码文件
 - [ ] Unit Test Summary 已输出
 - [ ] 人工最终审核通过
 
@@ -553,12 +560,13 @@ SDD 内部 Code Review 是流程质量闸门，输出形式为 Markdown Findings
 
 - Code Review Conclusion
 - P0 / P1 / P2 / Suggestion 数量
-- Review-driven Auto-fix Required
+- Review-driven Auto-fix Gate Required: yes
+- Code Fix Required
 - Fix Scope
 - Files allowed to modify
 - Files forbidden to modify
 - Untracked files reviewed
-- Unit tests required
+- Unit tests required: yes
 - Archive allowed
 - Findings 明细
 
@@ -570,24 +578,25 @@ SDD 内部 Code Review 是流程质量闸门，输出形式为 Markdown Findings
 
 ## 15.6 Code Review 结果
 
-- Code Review 结论：拒绝通过 / 有条件通过 / 通过
+- Code Review 结论：blocked / 拒绝通过 / 有条件通过 / 通过
 - P0 数量：
 - P1 数量：
 - P2 数量：
 - Suggestion 数量：
-- 是否需要 Review-driven Auto-fix：yes / no
+- Review-driven Auto-fix Gate Required：yes
+- 是否需要代码修复：yes / no
 - Fix Scope：
 - Files allowed to modify：
 - Files forbidden to modify：
-- Unit tests required：yes / no
+- Unit tests required：yes
 - Archive allowed：yes / no
 
 规则：
 
 1. 存在 P0：拒绝通过，必须先 Auto-fix，禁止进入 Archive。
 2. 存在 P1：有条件通过，必须完成修复计划后才能 Archive。
-3. 无 P0/P1：允许进入 Unit Test Generation。
-4. Archive 必须等待 Code Review、Auto-fix、Unit Test Summary 全部完成。
+3. 无 P0/P1 且无 Blocking P2 时，仍必须先完成 Auto-fix Gate 和 Post Auto-fix Verification，才能进入 Unit Test Generation。
+4. Archive 必须等待 Code Review、Auto-fix Summary、单元测试源码生成、Unit Test Summary 全部完成。
 
 # 16. Review-driven Auto-fix Gate（强制）
 
@@ -671,15 +680,17 @@ Review-driven Auto-fix 完成后，必须进入 Unit Test Gate。
 
 ## 17.2 单元测试要求
 
+- [ ] 已新增或修改至少一个单元测试源码文件
 - [ ] 核心业务路径已覆盖
 - [ ] 异常路径已覆盖
 - [ ] 边界条件已覆盖
 - [ ] Code Review 修复点已覆盖
 - [ ] 测试命名、Mock、断言符合 testing 规则
 
-如单元测试不适用，必须写明：
+如无法新增或修改单元测试源码文件，必须停止在 blocked 状态，并写明：
 
-- 不适用原因：
+- 阻塞原因：
+- 缺失信息：
 - 替代验证方式：
 - 是否影响 archive：
 
@@ -696,13 +707,14 @@ Review-driven Auto-fix 完成后，必须进入 Unit Test Gate。
 - 覆盖场景：
 - 未覆盖场景及原因：
 - warning / failure / skipped 说明：
-- 测试结论：pass / fail / not applicable
+- 测试结论：pass / fail / blocked / not run
 
 规则：
 
 1. 不强制要求本机安装 `mvn` 或其他命令行工具。
 2. 可以记录 IDE 内置 Maven / Gradle、Wrapper、CI、脚本或手工验证结果。
 3. 如无法执行自动化测试，必须写明原因、替代验证方式和是否影响 Archive。
+4. 无论是否能够执行测试，都必须先生成或更新单元测试源码文件；无法生成或更新时，Unit Test Gate 为 blocked。
 
 ---
 
@@ -717,7 +729,7 @@ Review-driven Auto-fix 完成后，必须进入 Unit Test Gate。
 - [ ] code-review-findings.md 已生成
 - [ ] Code Review 已完成
 - [ ] Review-driven Auto-fix 已完成或明确不需要
-- [ ] Unit Test Summary 已完成或明确不适用原因
+- [ ] Unit Test Summary 已完成，且记录新增或修改的测试源码文件
 
 禁止在 Code Review 或 Unit Test 之前生成 archive。
 
@@ -745,6 +757,6 @@ Review-driven Auto-fix 完成后，必须进入 Unit Test Gate。
 
 1. 进入下一阶段前，必须先更新当前文件的 Process Status 和 Process Audit Trail。
 2. 未更新状态区块时，不得进入下一阶段。
-3. 如果某阶段被跳过或不适用，必须写明原因，禁止静默跳过。
+3. 核心流程闸门不得跳过或标记为不适用；仅实施子 Phase 可在 design 明确不涉及对应层级时标记为不适用，并必须写明原因。
 4. 生成 archive.md 前，proposal-input.md、spec.md、design.md、tasks.md 均必须处于最终可归档状态。
 5. Process Status 生命周期、Phase Review 和验证方式记录必须遵守 `skills/uaw-sdd-ai-coding/references/process-control.md`。

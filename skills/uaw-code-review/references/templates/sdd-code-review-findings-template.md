@@ -11,7 +11,7 @@
 - Feature Directory：
 - Review Time：
 - Reviewer Role：
-- Review Conclusion：拒绝通过 / 有条件通过 / 通过
+- Review Conclusion：blocked / 拒绝通过 / 有条件通过 / 通过
 
 # 2. 输入资产
 
@@ -48,11 +48,12 @@
 - P1 Count：
 - P2 Count：
 - Suggestion Count：
-- Review-driven Auto-fix Required：yes / no
+- Review-driven Auto-fix Gate Required：yes
+- Code Fix Required：yes / no
 - Fix Scope：
 - Files allowed to modify：
 - Files forbidden to modify：
-- Unit tests required：yes / no
+- Unit tests required：yes
 - Unit test focus：
 - Untracked files reviewed：
 - Archive allowed：yes / no
@@ -65,7 +66,8 @@
 
 # 7. Auto-fix 交接
 
-- Auto-fix Required：yes / no
+- Auto-fix Gate Required：yes
+- Code Fix Required：yes / no
 - Auto-fix Priority：
 - 修复边界：
 - 测试补充要求：
@@ -82,7 +84,7 @@
 # 9. Unit Test 交接
 
 - Selected Testing Profile：
-- Unit Test Required：yes / no
+- Unit Test Required：yes
 - 必须覆盖场景：
 - 可不覆盖场景及原因：
 - 实际验证方式要求：
@@ -93,3 +95,15 @@
 - 是否允许进入 Unit Test：
 - 是否允许进入 Archive：
 - 备注：
+
+---
+
+# Template Rules
+
+1. SDD Code Review Findings 是质量闸门产物，不是过程说明。
+2. 缺少 `proposal-input.md`、`spec.md`、`design.md`、`tasks.md`、实现变更范围或未跟踪文件清单时，`Review Conclusion` 必须为 `blocked`。
+3. 第 4 节必查项不得保留 `[ ]`；每项必须基于实际检查更新为已检查结果，并记录必要说明。
+4. `Unit tests required` 和 `Unit Test Required` 在 SDD 模式下固定为 `yes`。
+5. `Archive allowed` 只有在无 P0 / P1 / Blocking P2，且 Post Auto-fix Verification 通过后才能为 `yes`。
+6. 不得用 standalone HTML 报告替代本文件。
+7. Auto-fix Gate 在 SDD 模式下固定必走；没有代码修复项时，也必须输出 `auto-fix-summary.md` 并记录不需要修复的原因。

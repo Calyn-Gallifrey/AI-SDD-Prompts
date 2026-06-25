@@ -37,6 +37,31 @@ If a required field is missing, request only the missing field by using the miss
 - If the requirement is limited to adding one response field to an existing query, the SDD scope must not expand into a new work order, new submit flow, new table, or unrelated module unless explicitly confirmed.
 - Template placeholders and historical examples are reference material only; they are never fallback values for missing requirement information.
 
+## Hard Gate Protocol
+
+The hard gate protocol is an execution blocker. It takes precedence over the workflow list, templates, examples, and any model-generated plan.
+
+When a hard gate is reached, the assistant must stop after producing the current allowed artifact and must not generate downstream artifacts, edit code, run code implementation, invoke downstream skills, or create archive content until a valid human approval is received.
+
+Valid human approval must be a new user message after the gate is reached, explicitly approving the current stage. Existing files, prior demo records, historical approvals, generated Review Record sections, inferred approval, or model self-review are not valid approval sources.
+
+In real SDD execution, the assistant must not approve on behalf of the human reviewer. `AI-as-human-reviewer` is allowed only when the user explicitly asks to run a demo, validation drill, or simulation where AI must play the reviewer role.
+
+Hard gates:
+
+- After generating `spec.md`, stop and wait for explicit human spec approval. Do not generate `design.md`.
+- After generating `design.md`, stop and wait for explicit human design approval. Do not generate `tasks.md`.
+- After generating `tasks.md`, stop and wait for explicit human tasks approval. Do not edit or generate implementation code.
+- After each tasks Phase implementation, stop and wait for explicit Phase Review approval. Do not continue to the next Phase.
+- After implementation is complete, run only the required SDD Code Review sequence. Do not skip `code-review-findings.md`.
+- After Code Review, complete required Auto-fix before Unit Test. Do not skip Review-driven Auto-fix when findings require it.
+- After Unit Test Summary is generated, stop and wait for explicit Unit Test Summary approval before Archive.
+- After `archive.md` is generated, stop and wait for final human archive approval.
+
+Ambiguous user replies such as "continue", "next", "ok", or "go on" are not valid approvals unless they clearly name the current stage and approve it. If approval is ambiguous, ask for stage-specific approval and do not proceed.
+
+If downstream content or code is generated before the required approval, stop immediately, report the gate violation, and wait for user direction. Do not continue from the invalid state silently.
+
 ## Workflow
 
 1. Read `references/input-examples.md`.
@@ -50,8 +75,8 @@ If a required field is missing, request only the missing field by using the miss
 9. After confirmed `tasks.md`, implement code by tasks Phase and record Phase Review.
 10. Invoke `uaw-code-review` in `SDD_TASK_CODE_REVIEW` mode. SDD context provides Code Review inputs.
 11. Apply Review-driven Auto-fix according to `code-review-findings.md`.
-12. Invoke `uaw-unit-test` in SDD mode after Auto-fix. SDD context provides unit-test inputs when available.
-13. Generate Unit Test Summary using `skills/uaw-unit-test/references/templates/unit-test-summary-template.md`.
+12. Invoke `uaw-unit-test` in SDD mode after Auto-fix. SDD context must provide unit-test inputs from the approved SDD assets, implementation diff, Code Review Findings, and Auto-fix Summary.
+13. Invoke `uaw-unit-test` to generate or update unit test code, then generate Unit Test Summary using `skills/uaw-unit-test/references/templates/unit-test-summary-template.md`.
 14. Sync Process Status and Process Audit Trail.
 15. Generate `archive.md`; wait for final human review.
 
@@ -61,7 +86,8 @@ If a required field is missing, request only the missing field by using the miss
 - `tasks.md` is generated only after `design.md` is confirmed.
 - Code implementation starts only after `tasks.md` is confirmed.
 - The next tasks Phase starts only after the current Phase Review is approved.
-- Archive starts only after Code Review, Auto-fix, Unit Test Summary, and final human review are complete.
+- Archive starts only after Code Review, Auto-fix, unit test code generation, Unit Test Summary, and explicit Unit Test Summary approval are complete.
+- The flow is not complete until `archive.md` is generated and explicitly approved by the final human archive review.
 
 ## References
 

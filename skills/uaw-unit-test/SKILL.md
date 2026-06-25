@@ -1,13 +1,19 @@
 ---
 name: uaw-unit-test
-description: Generate, repair, and summarize Java-focused UAW unit tests. Use when the user asks to create or review unit tests, produce Unit Test Summary, validate Java/Spring Boot test profiles, or when the SDD AI coding skill automatically triggers unit testing after Code Review and Auto-fix.
+description: Generate, repair, and summarize Java-focused UAW unit test code. Use when the user asks to create, update, or review unit tests, produce Unit Test Summary, validate Java/Spring Boot test profiles, or when the SDD AI coding skill automatically triggers unit testing after Code Review and Auto-fix.
 ---
 
 # UAW Unit Test
 
 ## Core Contract
 
-This skill generates or validates UAW unit tests and produces Unit Test Summary. Java and Spring Boot are the primary target.
+This skill generates or updates UAW unit test source code and produces Unit Test Summary. Java and Spring Boot are the primary target.
+
+Every invocation must result in newly created or updated unit test code when project files are accessible and a test target can be identified. Producing only analysis, review comments, validation notes, or Unit Test Summary is not sufficient.
+
+Unit Test Summary is an audit artifact after test code generation. It must not replace unit test source code.
+
+Do not mark unit test code generation as not applicable. If the project cannot be read, the test target cannot be identified, or the test framework cannot be determined with available evidence, stop in `blocked` status and request the missing information. A blocked result must not be treated as a successful Unit Test Gate.
 
 Read `references/input-examples.md` before requesting standalone input. The file defines the expected Java unit-test input structure.
 
@@ -40,6 +46,8 @@ Automatically scan and record:
 
 When invoked by `uaw-sdd-ai-coding`, unit-test inputs are derived from `proposal-input.md`, `spec.md`, `design.md`, `tasks.md`, `code-review-findings.md`, Auto-fix Summary, and current code changes.
 
+SDD mode must generate or update unit test code for the implemented change before producing `unit-test-summary.md`. If no matching test file exists, create a new test file following the selected testing profile and the existing project test layout. If a matching test file exists, update it to cover the current change.
+
 ## Output Requirements
 
 Unit Test Summary must follow `references/templates/unit-test-summary-template.md`.
@@ -52,11 +60,13 @@ Required fields:
 - Validation Method
 - Execution Environment
 - Actual Test Entry
-- Test result: pass, fail, skipped, or not applicable
+- Test result: pass, fail, skipped, not run, or blocked
 - warning / failure / skipped notes
 - Remaining test risks
 
 Template sections must be retained. Sections that do not apply are marked as `not applicable` with a reason.
+
+`Test files added or updated` must contain at least one real unit test source file path. `none` is allowed only when the skill is blocked before code generation, and the Unit Test Gate result must then be `blocked`.
 
 Local `mvn` or `gradle` availability is not a prerequisite. IDE, Wrapper, Local CLI, CI, Script, Manual, and Other are valid validation methods when recorded with evidence.
 

@@ -59,10 +59,10 @@ Dependency Notes：{dependency-change-needed-or-none}
 ## Test Files Added / Updated
 
 Added：
-- `{test-file-path-or-none}`
+- `{added-test-file-path-or-none-if-updated-list-has-real-test-file}`
 
 Updated：
-- `{test-file-path-or-none}`
+- `{updated-test-file-path-or-none-if-added-list-has-real-test-file}`
 
 Existing Tests Referenced：
 - `{existing-test-file-path-or-none}`
@@ -83,7 +83,7 @@ Not Covered：
 
 | Metric | Result |
 |---|---|
-| Build | SUCCESS / FAILED / NOT_RUN / NOT_APPLICABLE |
+| Build | SUCCESS / FAILED / NOT_RUN / BLOCKED |
 | Tests Run | {number-or-not-run} |
 | Failures | {number-or-not-run} |
 | Errors | {number-or-not-run} |
@@ -123,7 +123,7 @@ Source Artifacts：
 
 ## Unit Test Gate
 
-Unit Test Gate Result：passed / blocked / conditional / not applicable
+Unit Test Gate Result：passed / blocked / conditional
 
 Archive allowed：yes / no / conditional
 
@@ -133,9 +133,10 @@ Gate Notes：{notes-or-none}
 
 # Template Rules
 
-1. 不得删除模板章节；不适用的章节必须写 `not applicable` 并说明原因。
+1. 不得删除模板章节；与当前入口无关的章节必须写 `not applicable` 并说明原因。
 2. 测试成功结果必须来自实际执行记录；未执行测试必须写明未执行原因、替代验证方式和归档影响。
 3. 必须记录 `Selected Testing Profile`、选择依据、不适用规则、测试框架风险和是否需要补充依赖。
-4. 必须记录新增或修改的测试文件；没有新增或修改时必须写明原因。
+4. 必须记录新增或修改的测试源码文件；没有新增或修改测试源码文件时，Unit Test Gate Result 必须为 `blocked`，不得视为通过。
 5. 必须记录 warning / failure / skipped，即使测试最终通过。
-6. SDD 模式下必须关联 `tasks.md`、`code-review-findings.md` 和 `auto-fix-summary.md`；如不适用必须说明原因。
+6. SDD 模式下必须关联 `proposal-input.md`、`spec.md`、`design.md`、`tasks.md`、`code-review-findings.md` 和 `auto-fix-summary.md`，不得标记为 `not applicable`。
+7. Standalone 模式下没有 SDD 资产时，Source Artifacts 可标记为 `not applicable`。

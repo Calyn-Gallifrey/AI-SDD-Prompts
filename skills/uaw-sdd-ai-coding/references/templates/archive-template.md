@@ -189,7 +189,7 @@
 
 ## Unit Test Summary
 
-- pass / fail / not applicable
+- pass / fail / blocked / not run
 - Validation Method：IDE / Wrapper / Local CLI / CI / Script / Manual / Other
 - Execution Environment：
 - Build Tool 或测试执行器：
@@ -436,7 +436,7 @@ Archive 文件中的所有 `[ ]` 检查项在正式归档前必须经过实际�
 - [ ] `code-review-findings.md` 已输出
 - [ ] code-review-findings.md 已生成并被 tasks.md / archive.md 引用
 - [ ] Auto-fix 已完成或明确不需要
-- [ ] Unit Test Summary 已完成或明确不适用
+- [ ] Unit Test Summary 已完成，且记录新增或修改的测试源码文件
 - [ ] 所有偏差已记录
 - [ ] proposal-input/spec/design/tasks 的 Process Status 已更新
 
@@ -464,6 +464,6 @@ Archive 文件中的所有 `[ ]` 检查项在正式归档前必须经过实际�
 
 1. 进入下一阶段前，必须先更新当前文件的 Process Status 和 Process Audit Trail。
 2. 未更新状态区块，不允许进入下一阶段。
-3. 如果某阶段被跳过或不适用，必须写明原因。
+3. 核心流程闸门不得跳过或标记为不适用；仅实施子 Phase 可在 design 明确不涉及对应层级时标记为不适用，并必须写明原因。
 4. 生成 archive.md 前，proposal-input.md、spec.md、design.md、tasks.md 均必须处于最终可归档状态。
 5. Process Status 生命周期、归档前状态同步和验证方式记录必须遵守 `skills/uaw-sdd-ai-coding/references/process-control.md`。

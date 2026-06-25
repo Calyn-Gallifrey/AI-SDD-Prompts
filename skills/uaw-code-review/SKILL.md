@@ -26,6 +26,8 @@ Use `SDD_TASK_CODE_REVIEW` when invoked from SDD context and the feature directo
 - `tasks.md`
 - implemented code changes
 
+If SDD context is detected but any required SDD artifact or implementation scope is missing, stop in `blocked` status and request the missing context. Do not downgrade the task to standalone review and do not generate HTML reports.
+
 Use `STANDALONE_GIT_RANGE_REVIEW` when the user provides a branch diff, commit list, or date range.
 
 Use `STANDALONE_WORKTREE_SNAPSHOT_REVIEW` when the user only provides a project/module path or asks to review uncommitted/demo code.
@@ -42,6 +44,9 @@ In SDD mode:
 - `reports/code-review/YYYY-MM-DD/` is not created.
 - Output only `code-review-findings.md` in the current feature asset directory.
 - Return the Findings to `uaw-sdd-ai-coding` for Review-driven Auto-fix.
+- Unit tests are always required after implementation. SDD Findings must set `Unit tests required` to `yes`.
+- Missing SDD artifacts, unresolved implementation scope, unchecked required review items, or unavailable diff/worktree evidence must produce a blocked SDD Code Review Gate.
+- SDD mode must not produce a pass conclusion until all required checklist items have been reviewed and recorded.
 
 ## Standalone Mode Rules
 

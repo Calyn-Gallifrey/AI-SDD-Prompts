@@ -155,16 +155,17 @@ SDD 模式不得生成 HTML 报告。
 `code-review-findings.md` 必须包含以下内容，作为后续 Review-driven Auto-fix 输入：
 
 ```text
-Code Review Conclusion: 拒绝通过 / 有条件通过 / 通过
+Code Review Conclusion: blocked / 拒绝通过 / 有条件通过 / 通过
 P0 Count:
 P1 Count:
 P2 Count:
 Suggestion Count:
-Review-driven Auto-fix Required: yes / no
+Review-driven Auto-fix Gate Required: yes
+Code Fix Required: yes / no
 Fix Scope:
 Files allowed to modify:
 Files forbidden to modify:
-Unit tests required: yes / no
+Unit tests required: yes
 Unit test focus:
 Archive allowed: yes / no
 ```
@@ -175,6 +176,10 @@ Archive allowed: yes / no
 2. `code-review-findings.md` 不得使用 HTML 报告模板。
 3. `code-review-findings.md` 不得放入 `reports/code-review/YYYY-MM-DD/` 目录。
 4. `tasks.md` 和 `archive.md` 必须引用该文件。
+5. SDD 模式下 `Unit tests required` 固定为 `yes`。
+6. 缺少 SDD 资产、实现范围、diff/worktree 证据或未跟踪文件清单时，必须将 Code Review Gate 置为 blocked，不得降级为 standalone 评审。
+7. 必查项未逐项完成时，不得输出通过结论。
+8. SDD 模式下 Review-driven Auto-fix Gate 固定必走；无代码修复项时也必须输出 Auto-fix Summary 并记录不需要修复的原因。
 
 ## 3.7 Code Review Findings 格式
 
@@ -204,7 +209,7 @@ Code Review 完成后必须进入 Review-driven Auto-fix。
 4. Suggestion 可不修复，但必须记录理由。
 5. 修复范围只能限于 Findings 指出的文件和为修复所需的测试文件。
 6. 禁止借修复扩大需求范围。
-7. 修复后必须输出 Auto-fix Summary。
+7. Auto-fix Gate 必须输出 Auto-fix Summary；如果没有代码修复项，Auto-fix Summary 必须记录不需要修复的原因。
 8. Auto-fix 后必须进入 Unit Test Generation / Unit Test Summary。
 9. Auto-fix Summary 必须回写到 `tasks.md` 和 `archive.md`，并与 `code-review-findings.md` 的问题编号一致。
 10. Auto-fix 后必须执行一次轻量复核，明确区分修复前 Code Review 闸门结论与修复后最终 Archive 闸门结论。
@@ -755,7 +760,7 @@ skills/uaw-unit-test/references/testing-profile-routing.md
 8. 是否存在只追求覆盖率、不验证业务结果的测试。
 9. Mock 是否合理。
 10. 测试命名是否清晰。
-11. 不适用单元测试时是否说明原因。
+11. 是否生成或更新单元测试源码文件；没有测试源码文件时必须标记为阻塞。
 12. 是否引入不必要的 JUnit Vintage / UAW 工具类依赖。
 
 ## 7.9 外部接口与远程调用

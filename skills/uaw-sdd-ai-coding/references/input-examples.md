@@ -89,7 +89,7 @@ Forbidden Changes（禁止变更）：<out-of-scope items or none>
 ```text
 Review Stage（审核阶段）：<spec | design | tasks | phase-review | implementation | code-review | unit-test-summary | archive>
 
-Review Result（审核结论）：<通过 | 有条件通过 | 驳回 | 不适用>
+Review Result（审核结论）：<通过 | 有条件通过 | 驳回 | blocked | 不适用>
 
 Review Comments（审核意见）：
 <review comments based on the current asset>
@@ -98,3 +98,7 @@ Required Fixes（需要修复）：<required fixes or none>
 
 Next Stage Allowed（是否允许进入下一阶段）：<yes | no | conditional>
 ```
+
+规则：
+- spec、design、tasks、code-review、unit-test-summary、archive 等核心流程闸门不得填写 `不适用`。
+- `不适用` 仅允许用于 design 已明确不涉及的实施子 Phase。

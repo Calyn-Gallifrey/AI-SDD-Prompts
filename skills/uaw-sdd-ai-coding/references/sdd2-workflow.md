@@ -75,6 +75,40 @@ Brief Design
 → final human archive review
 ```
 
+## Hard Gate Protocol
+
+The SDD2.0 workflow uses hard human-review gates. These gates are mandatory execution blockers, not documentation reminders.
+
+At every hard gate, the assistant must stop after the current artifact is produced. The assistant must not generate the next artifact, edit code, invoke a downstream skill, or archive the feature until a valid human approval message is received after that gate.
+
+Valid approval rules:
+
+1. Approval must come from a new user message after the current gate is reached.
+2. Approval must identify or clearly refer to the current stage being approved.
+3. Generated Review Record content inside SDD assets is not approval by itself.
+4. Historical demo assets, previous approvals, or inferred intent are not approval.
+5. The assistant must not self-approve in real SDD execution.
+6. `AI-as-human-reviewer` is only valid when the user explicitly requests a demo, validation run, or simulated review.
+
+Hard stop points:
+
+| Gate | Stop After Producing | Forbidden Until Approval | Required Approval |
+|---|---|---|---|
+| Spec Review Gate | `spec.md` | `design.md`, `tasks.md`, code changes | Human spec approval |
+| Design Review Gate | `design.md` | `tasks.md`, code changes | Human design approval |
+| Tasks Review Gate | `tasks.md` | implementation code changes | Human tasks approval |
+| Phase Review Gate | each implemented Phase | next Phase implementation | Human Phase Review approval |
+| Code Review Gate | `code-review-findings.md` | Auto-fix, Unit Test, `archive.md` | Valid SDD Findings with Review Conclusion |
+| Auto-fix Gate | `auto-fix-summary.md` and Post Auto-fix Verification | Unit Test, `archive.md` | No remaining P0 / P1 / Blocking P2 |
+| Unit Test Summary Gate | `unit-test-summary.md` | `archive.md` | Human Unit Test Summary approval |
+| Archive Review Gate | `archive.md` | marking flow complete | Final human archive approval |
+
+Ambiguous replies such as "continue", "next", "ok", or "go on" are not sufficient approval unless they clearly identify the current stage and approval result. When approval is ambiguous, the assistant must ask for explicit stage approval and remain stopped.
+
+If a downstream artifact or code change is produced before the required approval, the assistant must report a gate violation and wait for user direction. It must not silently continue or treat the generated downstream content as valid.
+
+Execution gates that do not require a human approval message still require their gate artifact and pass/block state. If `code-review-findings.md`, `auto-fix-summary.md`, generated/updated unit test code, or `unit-test-summary.md` is missing, the workflow must stop in `blocked` status and must not continue to Archive.
+
 ## Automatic Skill Calls
 
 After code implementation is complete, automatically invoke `uaw-code-review` in `SDD_TASK_CODE_REVIEW` mode.
@@ -84,6 +118,8 @@ In SDD mode, Code Review input is provided by SDD context, including feature dir
 After Code Review and Auto-fix are complete, automatically invoke `uaw-unit-test` in SDD mode.
 
 In SDD mode, unit-test inputs are derived from code changes, design, tasks, findings, and Auto-fix Summary.
+
+`uaw-unit-test` must generate or update unit test source code before producing Unit Test Summary. Unit Test Summary is not a substitute for test code. If test code cannot be generated or updated because the project, target, or framework cannot be identified, the Unit Test Gate is blocked and Archive is not allowed.
 
 ## Required Output Assets
 
@@ -96,14 +132,14 @@ spec.md
 design.md
 tasks.md
 code-review-findings.md
+auto-fix-summary.md
+unit-test-summary.md
 archive.md
 ```
 
 It must also contain or reference:
 
 ```text
-Auto-fix Summary
-Unit Test Summary
 Process Status
 Process Audit Trail
 Phase Review records

@@ -70,6 +70,11 @@ Required Flow（强制流程）：
 proposal-input.md → spec.md → design.md → tasks.md → implementation → code-review-findings.md → Auto-fix → Unit Test Summary → archive.md
 ```
 
+Rules:
+- Each arrow represents an ordered gate. A later asset must not be generated before the previous gate is complete.
+- `Auto-fix` must produce `auto-fix-summary.md`.
+- `Unit Test Summary` must be produced only after unit test source code is generated or updated.
+
 ## Process Status
 
 Current Stage：

@@ -31,10 +31,10 @@
 规则：
 
 1. 进入下一阶段前，当前阶段文件必须更新为可进入下一阶段的状态。
-2. 每次阶段确认、驳回、跳过、不适用、修复、测试、归档，都必须追加 `Process Audit Trail`。
+2. 每次阶段确认、驳回、修复、测试、归档，都必须追加 `Process Audit Trail`。
 3. `Process Status` 只记录当前文件在整条流程中的最新有效状态。
 4. `Process Audit Trail` 记录关键阶段流转，不记录无价值流水账。
-5. 如果某阶段被跳过或不适用，必须写明原因和批准角色。
+5. 核心流程闸门不得标记为跳过或不适用；仅实施子 Phase 可在 design 明确不涉及对应层级时标记为不适用，并必须写明原因和批准角色。
 
 ## 1.3 Process Status 字段口径
 
@@ -91,8 +91,14 @@
 
 1. 未通过人工审核的阶段不得进入下一阶段。
 2. 如果由 AI 代理人工审核，必须在功能资产中标明审核角色，不得记录为真实人员审批。
-3. 审核结论必须是：通过 / 有条件通过 / 驳回 / 不适用。
+3. 审核结论必须是：通过 / 有条件通过 / 驳回 / blocked / 不适用。
 4. 有条件通过必须记录条件、修复范围和后续验证方式。
+5. 真实 SDD 执行中，AI 不得自行给出人工审核通过结论；只有用户在当前审核点之后明确批准，才视为通过。
+6. `AI-as-human-reviewer` 仅允许用于用户明确要求的 demo、验证演练或模拟审核，不得用于真实内网执行流程。
+7. 模糊回复（如“继续”“下一步”“ok”）未明确指向当前审核阶段和通过结论时，不得视为审核通过，必须停留在当前审核点并要求补充明确审核结论。
+8. 若在缺少审核通过的情况下已经生成下游资产或代码，必须记录为 Gate Violation，并停止继续推进，等待用户处理指令。
+9. spec、design、tasks、Code Review、Unit Test Summary、Archive 是核心流程闸门，不得使用“不适用”作为通过结论；核心闸门无法完成时必须记录为 `blocked`。
+10. 实施子 Phase 只有在 design 已明确该层级无变更时才允许“不适用”；Phase 6 测试层在存在生产代码变更时不得标记为不适用。
 
 ## 2.2 Phase Review
 
@@ -134,7 +140,7 @@ SDD 不强制绑定单一验证命令或单一执行环境。
 - Execution Environment：本机 / CI / 开发容器 / IDE / 其他
 - Build Tool 或测试执行器
 - 实际执行入口：命令、IDE 配置名、CI Job、脚本路径或手工验证说明
-- 测试结果：pass / fail / not applicable
+- 测试结果：pass / fail / blocked / not run
 - 测试数量或覆盖场景
 - warning / failure / skipped 说明
 
@@ -144,6 +150,7 @@ SDD 不强制绑定单一验证命令或单一执行环境。
 2. 如当前环境无法执行命令，允许记录 IDE / CI / Wrapper / 手工验证作为实际验证方式。
 3. 无法自动验证时，必须说明原因、替代验证方式和归档影响。
 4. 验证记录不得替代 Code Review 和 Unit Test Summary。
+5. 验证记录不得替代单元测试源码生成；存在生产代码变更时，必须生成或更新单元测试源码文件。
 
 ---
 
@@ -165,6 +172,8 @@ SDD 内部 Code Review 必须输出 Markdown Findings 产物，不生成 HTML �
 4. Findings 完成后必须进入 Review-driven Auto-fix。
 5. Auto-fix 完成后必须进入 Unit Test Generation / Unit Test Summary。
 6. 独立 Git 范围评审和独立工作区快照评审仍按 `UAW-Code-Review.md` 的 standalone 规则生成 HTML 报告。
+7. SDD 内部 Code Review 缺少输入资产或实现范围时，必须停止在 `blocked` 状态，不得降级为 standalone 评审。
+8. SDD 内部 Code Review 不得输出空泛通过结论；必查项未逐项检查完成时，不得进入 Auto-fix、Unit Test 或 Archive。
 
 ---
 
@@ -174,7 +183,9 @@ SDD 内部 Code Review 必须输出 Markdown Findings 产物，不生成 HTML �
 2. 禁止跳过人工审核节点。
 3. 禁止跳过 Phase Review。
 4. 禁止跳过 SDD 内部 Code Review。
-5. 禁止在 Code Review / Auto-fix / Unit Test Summary 完成前生成 Archive。
+5. 禁止在 Code Review / Auto-fix / 单元测试源码生成 / Unit Test Summary 完成前生成 Archive。
 6. 禁止只扫描 SDD 资产目录而不扫描当前代码现状。
 7. 禁止把本地命令可用性作为唯一验证前置条件。
 8. 禁止在 SDD 内部 Code Review 中生成 HTML 报告。
+9. 禁止用 standalone code review HTML 报告替代 SDD 内部 `code-review-findings.md`。
+10. 禁止用 Unit Test Summary 替代单元测试源码文件。
