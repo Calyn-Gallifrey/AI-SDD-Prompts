@@ -1,5 +1,7 @@
 # Brief Design（人工简要设计）
 
+> HISTORICAL EXAMPLE ONLY (quarantined 2026-07-14): this file predates deterministic SDD2 control. Approval, reviewer, status, and business text below is legacy illustration, not valid gate evidence or reusable requirement input.
+
 Feature Name（功能名称）：policy-beneficiary-email-change
 
 Feature Type（功能类型）：enhancement
@@ -66,4 +68,3 @@ Open Questions（待确认问题）：
 - 真实 UAW 工程中 beneficiaryIdNo 是否应改由受益人唯一 ID 传入。
 - 真实 UAW 工程中邮箱是否需要额外做黑名单、域名或长度规则。
 - 真实 UAW 工程中是否允许同时存在“受益人信息变更”和“受益人邮箱变更”两个提交中工单。
-

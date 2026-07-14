@@ -17,12 +17,12 @@ Project Root（项目根目录）：<absolute-java-project-root>
 
 Test Target（测试目标）：<changed code, class, method, module, or feature under test>
 
-Validation Method（验证方式）：<IDE | Wrapper | Local CLI | CI | Script | Manual | Other>
+Validation Method（单元测试执行方式）：<IDE | Wrapper | Local CLI | CI | Script | pending>
 
 Actual Test Entry（实际执行入口）：<IDE run configuration, test class, command, CI job, script path, or pending>
 
 Special Notes（补充说明）：
-<special constraints, known risks, unavailable local tools, or none>
+<special constraints, supplemental manual checks, known risks, unavailable local tools, or none>
 ```
 
-无法提供 `Actual Test Entry（实际执行入口）` 时，可以先生成测试，并在 Unit Test Summary 中将执行状态记录为 pending；不得记录为已执行成功。
+无法提供 `Actual Test Entry（实际执行入口）` 时，可以先生成测试，并在 Unit Test Summary 中将执行状态记录为 `not-run`；不得记录为已执行成功。手工检查只能作为补充证据，不能通过 SDD Unit Test Gate。

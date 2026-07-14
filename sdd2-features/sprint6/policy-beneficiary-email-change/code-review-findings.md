@@ -1,5 +1,7 @@
 # code-review-findings.md - policy-beneficiary-email-change
 
+> HISTORICAL EXAMPLE ONLY (quarantined 2026-07-14): this file predates deterministic SDD2 control. Approval, reviewer, status, and business text below is legacy illustration, not valid gate evidence or reusable requirement input.
+
 ## Review Metadata
 
 Entry Mode：SDD_TASK_CODE_REVIEW

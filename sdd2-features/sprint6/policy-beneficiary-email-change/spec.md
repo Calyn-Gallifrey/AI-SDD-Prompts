@@ -1,5 +1,7 @@
 # spec.md - policy-beneficiary-email-change
 
+> HISTORICAL EXAMPLE ONLY (quarantined 2026-07-14): this file predates deterministic SDD2 control. Approval, reviewer, status, and business text below is legacy illustration, not valid gate evidence or reusable requirement input.
+
 ## 1. Overview
 
 本功能在现有 `uaw-sdd-demo` 的保单受益人变更工单能力上，新增“修改受益人邮箱”的工单入口。
@@ -57,7 +59,7 @@
 
 | Review Stage | Reviewer Role | Review Result | Review Comments | Required Fixes | Next Stage Allowed |
 |---|---|---|---|---|---|
-| spec | AI-as-human-reviewer | 通过 | 范围、非范围、验收标准和风险均清晰，可以进入 design。 | 无 | yes |
+| spec | legacy-simulated-reviewer (not valid approval) | 通过 | 范围、非范围、验收标准和风险均清晰，可以进入 design。 | 无 | yes |
 
 ## Process Status
 
@@ -76,5 +78,5 @@ Blocked Reason：无
 | Time | Stage | Action | Result | Next Step |
 |---|---|---|---|---|
 | 2026-06-11 12:40 | spec | AI generated spec.md | draft completed | human review |
-| 2026-06-11 12:41 | spec-review | AI-as-human-reviewer reviewed spec.md | passed | generate design.md |
+| 2026-06-11 12:41 | spec-review | legacy-simulated-reviewer (not valid approval) reviewed spec.md | passed | generate design.md |
 | 2026-06-11 12:50 | archive-sync | AI synchronized final process status | archived | none |

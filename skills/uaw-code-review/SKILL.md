@@ -1,68 +1,51 @@
 ---
 name: uaw-code-review
-description: Review UAW code changes in standalone HTML report mode or SDD findings mode. Use when the user asks for code review, branch diff review, commit/date range review, worktree snapshot review, project code audit, or when the SDD AI coding skill automatically triggers SDD_TASK_CODE_REVIEW after tasks implementation.
+description: "Review UAW changes in one of three explicit modes: SDD_TASK_CODE_REVIEW with fixed SDD2 scope and Markdown findings, standalone Git range review with HTML reports, or standalone worktree snapshot review with HTML reports. Use for SDD2 automatic review or direct branch, commit, date-range, project, directory, or uncommitted-code review requests."
 ---
 
 # UAW Code Review
 
-## Core Contract
+## Select Exactly One Mode
 
-This skill performs UAW code review in two operating families:
+- `SDD_TASK_CODE_REVIEW`: invoked by `uaw-sdd-ai-coding`; output only `code-review-findings.md`.
+- `STANDALONE_GIT_RANGE_REVIEW`: direct user request with an explicit Git range; output HTML summary and developer reports.
+- `STANDALONE_WORKTREE_SNAPSHOT_REVIEW`: direct user request for a directory/uncommitted snapshot; output HTML reports labeled non-merge-gate snapshot.
 
-- Standalone mode: the user requests code review directly and provides Git range or worktree snapshot input. The output is HTML reports.
-- SDD mode: `uaw-sdd-ai-coding` invokes this skill after tasks implementation. The output is `code-review-findings.md`.
+Read `references/code-review-rules.md` and follow the selected mode. Never mix inputs, gates, or outputs across modes.
 
-Read `references/input-examples.md` before requesting standalone input. The file defines the expected standalone review input structures.
+## SDD Mode
 
-Input templates are not default review ranges. Placeholder branch names, paths, dates, and output directories must be replaced by user-confirmed review scope.
+Require all of the following from SDD context:
 
-## Mode Selection
+- Feature directory and `.sdd2/feature-state.json`;
+- current approved `spec.md`, `design.md`, and `tasks.md`;
+- all required human Phase Reviews;
+- `.sdd2/implementation-scope.json` with a current frozen snapshot;
+- exact changed-file manifest and output path.
 
-Use `SDD_TASK_CODE_REVIEW` when invoked from SDD context and the feature directory contains or provides equivalent access to:
+Run the SDD2 control validator before review. Use only the frozen manifest and hashes as implementation scope; never infer it from upstream drift, `git status`, or the feature directory. Missing/stale input is `blocked`, not a reason to downgrade to standalone mode.
 
-- `proposal-input.md`
-- `spec.md`
-- `design.md`
-- `tasks.md`
-- implemented code changes
+Do not read HTML templates, create `reports/code-review`, fix code, or generate test/Archive content. Write immutable first-pass findings using `references/templates/sdd-code-review-findings-template.md`, then return control to `uaw-sdd-ai-coding` for Auto-fix.
 
-If SDD context is detected but any required SDD artifact or implementation scope is missing, stop in `blocked` status and request the missing context. Do not downgrade the task to standalone review and do not generate HTML reports.
+Every mandatory review category must contain evidence. Production changes always require unit-test source work downstream.
 
-Use `STANDALONE_GIT_RANGE_REVIEW` when the user provides a branch diff, commit list, or date range.
+## Standalone Modes
 
-Use `STANDALONE_WORKTREE_SNAPSHOT_REVIEW` when the user only provides a project/module path or asks to review uncommitted/demo code.
+Read `references/input-examples.md`. Ask only for required missing scope fields.
 
-If the user asks for standalone review without a Git range or worktree path, ask for the missing fields using `references/input-examples.md`.
+Git range mode freezes base/head commit IDs and a diff hash before review. Worktree mode freezes HEAD, target path, changed/untracked file hashes, and a snapshot hash. Do not silently expand either scope.
 
-## SDD Mode Rules
+Generate reports from:
 
-In SDD mode:
+- `references/templates/summary-report-template.html`
+- `references/templates/personal-report-template.html`
 
-- Entry Mode, Feature Directory, SDD Artifacts, and report output directory are provided by SDD context.
-- HTML reports are not generated.
-- HTML report templates are not used.
-- `reports/code-review/YYYY-MM-DD/` is not created.
-- Output only `code-review-findings.md` in the current feature asset directory.
-- Return the Findings to `uaw-sdd-ai-coding` for Review-driven Auto-fix.
-- Unit tests are always required after implementation. SDD Findings must set `Unit tests required` to `yes`.
-- Missing SDD artifacts, unresolved implementation scope, unchecked required review items, or unavailable diff/worktree evidence must produce a blocked SDD Code Review Gate.
-- SDD mode must not produce a pass conclusion until all required checklist items have been reviewed and recorded.
-
-## Standalone Mode Rules
-
-In standalone mode:
-
-- SDD stage gates are not executed.
-- `proposal-input.md`, `spec.md`, `design.md`, and `tasks.md` are optional unless the user explicitly asks to include them.
-- Generate `代码评审统计报告.html` and `{开发者姓名}_代码评审报告.html`.
-- For worktree snapshot review, mark the report as `Scope Deviation: worktree snapshot, not Git range`.
-- Code fixes require a separate explicit fix request.
+Standalone review does not execute SDD gates and never auto-fixes code unless the user separately requests implementation.
 
 ## References
 
-- `references/input-examples.md`: standalone review input structure templates.
-- `references/code-review-rules.md`: detailed UAW review rules and severity model.
-- `references/templates/sdd-code-review-findings-template.md`: SDD findings output template.
-- `references/templates/standalone-review-input-template.md`: standalone input source template.
-- `references/templates/summary-report-template.html`: standalone summary HTML template.
-- `references/templates/personal-report-template.html`: standalone personal HTML template.
+- `references/code-review-rules.md`: authoritative review modes, scope capture, checks, severity, and conclusions.
+- `references/input-examples.md`: standalone input structures.
+- `references/templates/sdd-code-review-findings-template.md`: SDD-only Markdown output.
+- `references/templates/standalone-review-input-template.md`: standalone scope normalization.
+- HTML templates: standalone outputs only.

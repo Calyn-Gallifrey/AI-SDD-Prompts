@@ -1,5 +1,7 @@
 # tasks.md - i-need-document-workorder
 
+> HISTORICAL EXAMPLE ONLY (quarantined 2026-07-14): this file predates deterministic SDD2 control. Approval, reviewer, status, and business text below is legacy illustration, not valid gate evidence or reusable requirement input.
+
 ## 1. Task Plan
 
 | Phase | Goal | Status |
@@ -66,16 +68,16 @@
 
 | Phase | Reviewer Role | Review Time | Result | Findings | Required Action | Next Phase Allowed |
 |---|---|---|---|---|---|---|
-| Phase 1 | AI-as-human-reviewer | 2026-06-11 14:38 | 通过 | SDD 过程文件已按顺序生成，brief-design/proposal/spec/design/tasks 均已审核。 | 无 | yes |
-| Phase 2 | AI-as-human-reviewer | 2026-06-11 14:40 | 通过 | 新增文件均在允许范围内，未改动现有工单接口。 | 无 | yes |
-| Phase 3 | AI-as-human-reviewer | 2026-06-11 14:40 | 通过 | Service、Controller、Repository 测试覆盖成功、validation 和业务异常路径。 | 无 | yes |
-| Phase 4 | AI-as-human-reviewer | 2026-06-11 14:43 | 通过 | Code Review 发现 1 个 P2 并完成自动修复；Unit Test Summary 通过；Archive 已完成。 | 无 | yes |
+| Phase 1 | legacy-simulated-reviewer (not valid approval) | 2026-06-11 14:38 | 通过 | SDD 过程文件已按顺序生成，brief-design/proposal/spec/design/tasks 均已审核。 | 无 | yes |
+| Phase 2 | legacy-simulated-reviewer (not valid approval) | 2026-06-11 14:40 | 通过 | 新增文件均在允许范围内，未改动现有工单接口。 | 无 | yes |
+| Phase 3 | legacy-simulated-reviewer (not valid approval) | 2026-06-11 14:40 | 通过 | Service、Controller、Repository 测试覆盖成功、validation 和业务异常路径。 | 无 | yes |
+| Phase 4 | legacy-simulated-reviewer (not valid approval) | 2026-06-11 14:43 | 通过 | Code Review 发现 1 个 P2 并完成自动修复；Unit Test Summary 通过；Archive 已完成。 | 无 | yes |
 
 ## 6. Human Review
 
 | Review Stage | Reviewer Role | Review Result | Review Comments | Required Fixes | Next Stage Allowed |
 |---|---|---|---|---|---|
-| tasks | AI-as-human-reviewer | 通过 | 任务拆分、允许修改范围、禁止修改范围和测试目标清晰，可以进入实现。 | 无 | yes |
+| tasks | legacy-simulated-reviewer (not valid approval) | 通过 | 任务拆分、允许修改范围、禁止修改范围和测试目标清晰，可以进入实现。 | 无 | yes |
 
 ## 7. Review-driven Auto-fix Summary
 
@@ -119,7 +121,7 @@ Blocked Reason：无
 | Time | Stage | Action | Result | Next Step |
 |---|---|---|---|---|
 | 2026-06-11 14:38 | tasks | AI generated tasks.md | draft completed | human review |
-| 2026-06-11 14:39 | tasks-review | AI-as-human-reviewer reviewed tasks.md | passed | implement Phase 2 |
+| 2026-06-11 14:39 | tasks-review | legacy-simulated-reviewer (not valid approval) reviewed tasks.md | passed | implement Phase 2 |
 | 2026-06-11 14:40 | implementation | AI implemented Phase 2 code changes | completed | phase review |
 | 2026-06-11 14:40 | unit-test-implementation | AI implemented Phase 3 tests | completed | code review |
 | 2026-06-11 14:41 | code-review | SDD_TASK_CODE_REVIEW generated code-review-findings.md | one P2 found | auto-fix |

@@ -1,392 +1,59 @@
-# 目标
-本规则用于根据背景和要求实现 transaction 模块 API 接口开发任务。
+# Backend API Rule
 
-## 示例边界
+## Trigger And Evidence
 
-本文件中的代码片段、类名、包名、字段名、接口路径、业务名和数据值仅用于说明结构、职责边界和写法，不是当前任务的默认业务内容。生成 SDD 资产或代码时，必须基于当前 Brief Design、当前代码和已确认需求替换所有示例业务信息。
+Use for a new/changed HTTP or service API. Before Design, inspect the current controller/service, response/error wrapper, validation, authorization, logging, package layout, and nearby tests in the target module. User-approved API contract and current module code take precedence over examples.
 
-# 项目技术栈
-- Java版本：Java 8
-- 框架：Spring Boot 2.6.6
-- 持久层：MyBatis
-- 数据库：MySQL
+## Responsibilities
 
-# 背景
-## 背景1：API接口设计文档
-+ 用户输入：{API接口所在业务包package位置}
-+ 用户输入：{API接口设计文档}
+| Layer | Owns | Must not own |
+|---|---|---|
+| Controller/entry | routing, binding, validation trigger, authorization handoff, response/error integration | business orchestration, persistence |
+| Service/application | business orchestration, transaction/idempotency boundary, gateway/repository calls | HTTP serialization details |
+| Strategy, if justified | one explicit variation selected deterministically | hidden global routing or duplicate keys |
+| Mapper/converter | explicit model mapping and defaults | remote/persistence calls |
+| Repository/gateway | persistence/external boundary | API response construction |
 
-## 背景2：请求参数设计规范
-* 所有API的入参都必须为BO（Business Object）对象，命名XxxBO，默认继承`BaseTransactionBO`
-* 当BO需要扩展时，由用户自行指定继承已有的BO类（如`EnquiryInformationBO`）
-* 在{API接口所在业务包package位置}的`pojo/bo`包下新增BO入参对象
-* 覆盖toString方法，使用`ToStringUtil.toStringHelper(this)`格式
-* 满足[BO 对象规则](../model/bo.md)的规范
-* 不使用内部类
+Create only layers/models needed for the approved delta. Reuse existing public API and symbols for enhancement work unless a breaking change is explicitly approved.
 
-## 背景3：响应结果规范
-* 返回值通常使用`IICResponseModel<VO>`类型，其中VO是自定义的响应对象
-* 如果没有特定返回值，可以使用`IICResponseModel<Void>`或简单返回成功消息
-* 在{API接口所在业务包package位置}的`pojo/vo`包下新增VO返回值对象
-* 覆盖toString方法，使用`ToStringUtil.toStringHelper(this)`格式
-* 满足[VO 对象规则](../model/vo.md)的规范
+## Contract Rules
 
+- Request/response types, wrapper, annotations, error mapping, and route style follow current target-module conventions.
+- Use BO/DTO/VO/Entity only at their owned boundaries; see model rules.
+- Validate at the boundary and enforce business invariants in the owning service/domain component.
+- Define null/empty/default and compatibility behavior for every changed field.
+- Authorization is explicit and deny-by-default for missing/invalid identity.
+- Do not log complete request/response objects when they may contain sensitive or high-volume data.
 
-## 背景4：Service层规范
-1. **Service接口**：在`service`包下定义Service接口，命名`XxxService`
-2. **Service实现**：在`service/impl`包下实现Service接口，命名`XxxServiceImpl`
-3. **策略模式**：使用策略模式处理不同transactionType的业务逻辑，策略类继承`BaseEnquiryInformationSaveStrategy<T>`
-   - 策略类必须使用`@Component`注解，且value值必须与对应的transactionType一致
-   - 策略类位于`service/strategy`包下
-   - 策略类需要注入Mapper和Converter，实现`saveDetailInformation`抽象方法
-4. **DTO对象**：在`pojo/dto`包下定义DTO对象，用于数据传输
-5. **Converter对象**：使用MapStruct定义Converter接口，用于BO、DTO、Entity之间的转换
-   - **Converter抽取规范**：service方法中涉及类型转换**没有逻辑处理**的（如简单的字段映射、PO/BO/DTO/VO之间的直接转换），要抽取到Converter类中处理
-   - **Helper抽取规范**：service方法中涉及类型转换**有逻辑处理**的（如条件判断、数据计算、格式化转换等），要抽取到Helper中处理
-6. **Helper工具类**：在`service/helper`包下定义工具类，用于业务逻辑辅助
+## Strategy Registry Safety
 
-### Service实现类示例代码
-```
-package com.ocft.iic.uaw.server.modules.transaction.core.generalinformation.service.impl;
+When current architecture builds a strategy map:
 
-import com.ocft.iic.ecommon.api.enums.IICResEnum;
-import com.ocft.iic.uaw.server.modules.transaction.common.transaction.pojo.vo.InformationResVO;
-import com.ocft.iic.uaw.server.modules.transaction.common.transaction.service.BaseEnquiryInformationSaveStrategy;
-import com.ocft.iic.uaw.server.modules.transaction.core.generalinformation.pojo.bo.GeneralInformationBO;
-import com.ocft.iic.uaw.server.modules.transaction.core.generalinformation.pojo.dto.GeneralInformationDTO;
-import com.ocft.iic.uaw.server.modules.transaction.core.generalinformation.service.GeneralInformationService;
-import com.ocft.iic.uaw.server.modules.transaction.core.generalinformation.service.converter.GeneralInformationConverter;
-import com.ocft.iic.uaw.server.modules.transaction.core.generalinformation.service.helper.GeneralInformationHelper;
-import com.ocft.iic.uaw.server.modules.transaction.support.repeatsubmitchecker.RepeatSubmitChecker;
-import com.ocft.iic.uaw.server.modules.transaction.support.utils.LogUtil;
-import com.ocft.iic.uaw.server.modules.transaction.support.utils.MyObjectUtil;
-import com.ocft.uaw.comm.api.exception.IICRuntimeException;
-import org.jetbrains.annotations.NotNull;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
-import org.springframework.stereotype.Service;
-
-import javax.annotation.PostConstruct;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-/**
- * Java doc
- * @author EX-SHANGHONG336
- */
-@Service
-public class GeneralInformationServiceImpl implements GeneralInformationService {
-
-    @Autowired
-    private RepeatSubmitChecker repeatSubmitChecker;
-
-    @Autowired
-    private GeneralInformationConverter generalInformationConverter;
-
-    @Autowired
-    List<BaseEnquiryInformationSaveStrategy<GeneralInformationDTO>> saveStrategies;
-
-    private Map<String,BaseEnquiryInformationSaveStrategy<GeneralInformationDTO>> strategyMap;
-
-    @PostConstruct
-    public void init() {
-        if (strategyMap != null) {
-            return;
-        }
-        strategyMap = new HashMap<>(16);
-
-        if (saveStrategies == null || saveStrategies.isEmpty()) {
-            return;
-        }
-
-        for (BaseEnquiryInformationSaveStrategy<GeneralInformationDTO> strategy : saveStrategies) {
-            Component component = strategy.getClass().getAnnotation(Component.class);
-            if (component == null) {
-                LogUtil.warn("策略类 {} 未配置 @Component 注解，跳过注册。", strategy.getClass().getSimpleName());
-                continue;
-            }
-
-            String key = component.value().trim();
-            if (key.isEmpty()) {
-                LogUtil.warn("策略类 {} 的 @Component.value() 为空或仅包含空白字符，跳过注册。", strategy.getClass().getSimpleName());
-                continue;
-            }
-
-            if (strategyMap.putIfAbsent(key, strategy) != null) {
-                LogUtil.warn("策略 key '{}' 重复注册，来源类：{}，当前注册策略将覆盖旧策略。", key, strategy.getClass().getSimpleName());
-            }
-        }
-    }
-   /**
-    * Java doc
-    */
-    @Override
-    public InformationResVO submitOrCancel(GeneralInformationBO generalInformationBO) {
-        LogUtil.info("submitOrCancel generalInformationBO: {}", generalInformationBO);
-
-        repeatSubmitChecker.check(generalInformationBO.getRequestToken());
-
-        BaseEnquiryInformationSaveStrategy<GeneralInformationDTO> strategy = getStrategyServiceByTransactionType(generalInformationBO.getTransactionType());
-
-        GeneralInformationDTO generalInformationDTO = generalInformationConverter.convertBoToDto(generalInformationBO);
-
-        List<GeneralInformationDTO> transactionList = GeneralInformationHelper.buildAgreementInformationDTO(generalInformationDTO);
-
-        boolean saveResult = strategy.execute(transactionList);
-
-        if (saveResult) {
-            return new InformationResVO(IICResEnum.SUCCESS.getMsg());
-        } else {
-            throw new IICRuntimeException("save general Information failed.");
-        }
-    }
-
-    @NotNull
-    private BaseEnquiryInformationSaveStrategy<GeneralInformationDTO> getStrategyServiceByTransactionType(String transactionType) {
-        BaseEnquiryInformationSaveStrategy<GeneralInformationDTO> strategy = strategyMap.get(transactionType);
-
-        if (MyObjectUtil.isNull(strategy)) {
-            throw new IICRuntimeException("unsupported transaction type:" + transactionType);
-        }
-        return strategy;
-    }
+```java
+Object previous = strategyMap.putIfAbsent(key, strategy);
+if (previous != null) {
+    throw new IllegalStateException("Duplicate strategy key: " + key);
 }
 ```
 
-### 策略实现类示例代码
-```
-package com.ocft.iic.uaw.server.modules.transaction.core.generalinformation.service.strategy;
+`putIfAbsent` keeps the previous value; never log that the new value overwrote it. Duplicate behavior (fail fast or explicitly approved deterministic priority) must be designed and tested. Do not silently skip missing/blank keys.
 
-import com.ocft.iic.uaw.server.modules.transaction.common.transaction.service.BaseEnquiryInformationSaveStrategy;
-import com.ocft.iic.uaw.server.modules.transaction.core.generalinformation.dao.entity.DeathClaimEnquiry;
-import com.ocft.iic.uaw.server.modules.transaction.core.generalinformation.dao.mapper.DeathClaimEnquiryMapper;
-import com.ocft.iic.uaw.server.modules.transaction.core.generalinformation.pojo.dto.GeneralInformationDTO;
-import com.ocft.iic.uaw.server.modules.transaction.core.generalinformation.service.converter.GeneralInformationConverter;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
+## Transactions, Errors, And Observability
 
-/**
- * transaction定制化 明细表处理实现
- * Qualifier 的命名 必须和对应的transactionType 一致
- * @author EX-XUEBO158
- */
-@Component("deathClaimEnquiry")
-public class DeathClaimEnquiryServiceStrategyImpl extends BaseEnquiryInformationSaveStrategy<GeneralInformationDTO> {
+- Put transaction ownership on the application/service operation according to current framework convention.
+- Specify idempotency and partial-failure behavior for write APIs.
+- Map internal/external exceptions through the existing error contract; do not leak stack traces or provider payloads.
+- Log stable identifiers, outcome, latency, and actionable error context. Redact secrets and personal data.
 
-    @Autowired
-    private DeathClaimEnquiryMapper deathClaimEnquiryMapper;
+## Required Tests
 
-    @Autowired
-    private GeneralInformationConverter generalInformationConverter;
+- successful request/response contract;
+- validation and authorization rejection;
+- service/gateway error mapping;
+- boundary/default/compatibility behavior;
+- idempotency/duplicate strategy behavior when applicable;
+- regression for the approved change.
 
-    @Override
-    public void saveDetailInformation(GeneralInformationDTO enquiryInfo, String transactionId) {
+## Block Conditions
 
-        DeathClaimEnquiry deathClaimEnquiry = generalInformationConverter.convertToTransactionDeathClaimEnquiry(enquiryInfo, transactionId);
-        deathClaimEnquiryMapper.insertDeathClaimEnquiry(deathClaimEnquiry);
-    }
-}
-```
-
-### 策略实现类实现要求
-1. **类命名规范**：策略实现类命名格式为`{业务类型}ServiceStrategyImpl`，例如`DeathClaimEnquiryServiceStrategyImpl`
-2. **继承基类**：必须继承`BaseEnquiryInformationSaveStrategy<T>`，其中T为对应的DTO类型
-3. **Component注解**：必须使用`@Component`注解，且value值必须与transactionType完全一致（区分大小写）
-4. **注入依赖**：需要注入Mapper和Converter，用于执行具体的数据库操作和对象转换
-5. **实现方法**：必须实现`saveDetailInformation(T enquiryInfo, String transactionId)`抽象方法，该方法用于保存明细表数据
-6. **方法逻辑**：在`saveDetailInformation`方法中，需要执行以下操作：
-   - 使用Converter将DTO转换为Entity实体
-   - 调用Mapper的insert方法将数据插入数据库
-7. **事务管理**：策略方法在事务上下文中执行，无需额外添加事务注解
-8. **批量插入**：需保存集合数据时，优先考虑批量插入提高效率
-
-### MyDocument策略实现类示例代码（带文档列表处理）
-```
-package com.ocft.iic.uaw.server.modules.transaction.core.mydocument.service.strategy;
-
-import com.ocft.iic.uaw.server.modules.transaction.core.mydocument.dao.entity.MyDocument;
-import com.ocft.iic.uaw.server.modules.transaction.core.mydocument.dao.mapper.MyDocumentMapper;
-import com.ocft.iic.uaw.server.modules.transaction.core.mydocument.pojo.dto.MyDocumentDTO;
-import com.ocft.iic.uaw.server.modules.transaction.core.mydocument.pojo.dto.MyDocumentInformationDTO;
-import com.ocft.iic.uaw.server.modules.transaction.core.mydocument.service.converter.MyDocumentConverter;
-import com.ocft.iic.uaw.server.modules.transaction.common.transaction.service.BaseEnquiryInformationSaveStrategy;
-import com.ocft.iic.uaw.server.modules.transaction.support.utils.LogUtil;
-import org.apache.commons.collections4.CollectionUtils;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
-
-import java.util.List;
-
-/**
- * My Document 工单策略实现类
- * <p>实现文档信息的保存逻辑，将文档信息插入到 iic_crm_transaction_my_document 表</p>
- * @author EX-SHANGHONG336
- * @since 1.0.0
- */
-@Component("myDocument")
-public class MyDocumentServiceStrategyImpl extends BaseEnquiryInformationSaveStrategy<MyDocumentInformationDTO> {
-
-    @Autowired
-    private MyDocumentMapper documentInfoMapper;
-
-    @Autowired
-    private MyDocumentConverter myDocumentConverter;
-
-    /**
-     * 保存文档明细信息
-     * @param enquiryInfo 文档信息 DTO，包含文档列表和交易信息
-     * @param transactionId 交易编号
-     */
-    @Override
-    public void saveDetailInformation(MyDocumentInformationDTO enquiryInfo, String transactionId) {
-        LogUtil.info("saveDetailInformation MyDocumentInformationDTO: {}", enquiryInfo);
-        List<MyDocumentDTO> documents = enquiryInfo.getDocuments();
-        if (CollectionUtils.isNotEmpty(documents)) {
-            List<MyDocument> documentInfoList = myDocumentConverter.convertToTransactionDocumentInfoList(enquiryInfo, documents, transactionId);
-            LogUtil.info("saveDetailInformation List<MyDocument>: {}", documentInfoList);
-            documentInfoMapper.batchInsertDocumentInformation(documentInfoList);
-        }
-    }
-}
-```
-
-### 策略实现类开发要点
-1. **策略注册机制**：Service实现类通过`@PostConstruct`注解的`init()`方法自动注册所有策略，无需手动配置
-2. **策略选择**：通过`getStrategyServiceByTransactionType(transactionType)`方法根据transactionType获取对应策略
-3. **文档列表处理**：如果业务涉及文档列表，需要在策略中使用`CollectionUtils.isNotEmpty()`检查列表非空后再处理
-4. **批量插入**：对于列表数据，使用Mapper的批量插入方法（如`batchInsertDocumentInformation`）提高性能
-5. **日志记录**：在策略方法中使用`LogUtil.info()`记录关键信息，便于调试和监控
-6. **Converter使用**：Converter接口需要继承`BaseTransactionConverter`以获得基础的当前用户信息获取能力
-
-## 背景5：DAO层规范
-1. **Entity实体类**：在`dao/entity`包下定义Entity类，继承`BaseTransactionEntity`
-   - 使用`@TableName`注解指定数据库表名
-   - 使用`@TableField`注解指定字段映射
-2. **Mapper接口**：在`dao/mapper`包下定义Mapper接口，继承`BaseMapper<Entity>`
-   - 自定义方法用于操作明细表
-3. **Mapper XML**：在对应的XML文件中编写SQL语句
-4. 示例Entity代码
-```
-package com.ocft.iic.uaw.server.modules.transaction.core.generalinformation.dao.entity;
-
-import com.baomidou.mybatisplus.annotation.TableField;
-import com.baomidou.mybatisplus.annotation.TableName;
-import com.ocft.iic.uaw.server.modules.transaction.common.transaction.dao.entity.BaseTransactionEntity;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-
-/**
- * @author EX-SHANGHONG336
- */
-@EqualsAndHashCode(callSuper = false)
-@Data
-@TableName("iic_crm_transaction_death_claim_enquiry")
-public class DeathClaimEnquiry extends BaseTransactionEntity {
-
-    @TableField("brand")
-    private String brand;
-
-    @TableField("additional_info")
-    private String additionalInfo;
-}
-```
-
-## 背景6：Controller规范
-* 目标子目录{API接口所在业务包package位置}的`controller`包下新增Controller类
-* 所有接口返回值都是`IICResponseModel<VO>`类型
-* 使用`@Api`注解标注控制器，使用`@ApiOperation`标注接口描述
-* 使用`@RequestMapping`指定控制器路径，路径常量定义在`ContextPath`类中
-* 使用`@Api(tags = ModuleTags.XXX)`指定API标签，标签常量定义在`ModuleTags`类中
-* 有入参的默认添加`@Valid @RequestBody`
-* 示例Controller代码
-```
-package com.ocft.iic.uaw.server.modules.transaction.core.generalinformation.controller;
-
-import com.ocft.iic.ecommon.api.response.IICResponseModel;
-import com.ocft.iic.uaw.server.modules.transaction.base.constants.ContextPath;
-import com.ocft.iic.uaw.server.modules.transaction.base.constants.ModuleTags;
-import com.ocft.iic.uaw.server.modules.transaction.common.transaction.pojo.vo.InformationResVO;
-import com.ocft.iic.uaw.server.modules.transaction.core.generalinformation.pojo.bo.GeneralInformationBO;
-import com.ocft.iic.uaw.server.modules.transaction.core.generalinformation.service.GeneralInformationService;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
-import javax.validation.Valid;
-
-/**
- * 提交 General Information工单
- *   Death Claim Enquiry (身故理赔咨询)
- *   Errors and Issues（错误与问题）
- *   OM Enquiry （OM咨询）
- *   Overpayment Recovery/Missed Premiums（超额付款追回/保费欠缴）
- * @author EX-SHANGHONG336
- */
-@RestController
-@RequestMapping(ContextPath.GENERAL_INFORMATION)
-@Api(value = "提交通用信息工单", tags = ModuleTags.GENERAL_INFORMATION)
-public class SubmitGeneralInformationController {
-
-    @Autowired
-    private GeneralInformationService generalInformationService;
-
-    @ApiOperation("提交通用信息工单接口")
-    @PostMapping("/submit")
-    public IICResponseModel<InformationResVO> submitOrCancel(@Valid @RequestBody GeneralInformationBO requestBO) {
-        return IICResponseModel.success(generalInformationService.submitOrCancel(requestBO));
-    }
-}
-```
-
-## 背景7：项目包结构规范
-```
-transaction/
-├── base/                           # 基础包（基础BO、DTO、Converter等）
-│   ├── constants/                  # 常量类（ContextPath、ModuleTags等）
-│   └── converter/                  # 基础转换器
-├── common/                         # 公共模块
-│   └── transaction/                # 通用transaction处理
-│       ├── dao/                    # 数据访问层
-│       │   ├── dto/                # 数据传输对象
-│       │   ├── entity/             # 实体类
-│       │   ├── mapper/             # Mapper接口
-│       │   └── service/            # 服务层
-│       │       ├── converter/      # 转换器
-│       │       └── strategy/       # 策略实现
-│       └── pojo/                   # 普通对象
-│           ├── bo/                 # 业务对象
-│           ├── dto/                # 数据传输对象
-│           └── vo/                 # 视图对象
-├── core/                           # 核心业务模块
-│   └── {module}/                   # 具体业务模块（如generalinformation、agreementinformation等）
-│       ├── controller/             # 控制器
-│       ├── dao/                    # 数据访问层
-│       │   ├── entity/             # 实体类
-│       │   └── mapper/             # Mapper接口
-│       ├── pojo/                   # 普通对象
-│       │   ├── bo/                 # 业务对象
-│       │   ├── dto/                # 数据传输对象
-│       │   └── vo/                 # 视图对象
-│       ├── service/                # 服务层
-│       │   ├── converter/          # 转换器
-│       │   ├── helper/             # 工具类
-│       │   ├── impl/               # 实现类
-│       │   └── strategy/           # 策略实现
-│       └── enums/                  # 枚举类
-└── support/                        # 支持类（工具类、拦截器等）
-    ├── repeatsubmitchecker/        # 重复提交检查器
-    └── remotecache/                # 远程缓存
-```
-
-# 要求
-1. 根据背景1获取接口设计文档信息和需要生成代码的包路径位置
-2. 根据背景2和背景3创建请求参数（BO）和响应返回值（VO）对象，代码生成位置必须按照背景规范创建
-3. 分析输入{API接口设计文档}内容，根据背景4规范生成Service、DTO、Converter、Helper等类，代码生成位置必须按照背景规范创建
-4. 根据背景5规范生成DAO层的Entity和Mapper类，代码生成位置必须按照背景规范创建
-5. 根据背景6规范生成Controller类，代码生成位置必须按照背景规范创建
-6. 所有需要与数据库交互的代码不得使用 @select、@insert、@update、@delete 等注解，SQL 必须编写在对应的 XML 文件中
+Block Design/implementation when route ownership, contract fields, authorization rule, transaction behavior, or response/error convention cannot be established safely.

@@ -1,100 +1,22 @@
-# UAW SDD2.0 Routing Index
+# UAW-SDD 2.0 Runtime Routing Index
 
-本文件定义 `uaw-sdd-ai-coding` 的上下文装配、知识路由和阶段交接规则。
+This index routes current SDD2 execution. `original/` is migration provenance only and must not be loaded as runtime instruction. See `source-provenance.json`.
 
-本文件是 Skill 内部参考资料，不作为 `proposal-input.md`、`spec.md`、`design.md`、`tasks.md` 或 `archive.md` 输出。
-
-## 1. Entry
-
-SDD2.0 的用户入口是 `Brief Design（人工简要设计）`。
-
-启动链路：
-
-```text
-Brief Design
-→ proposal-input.md
-→ spec.md
-→ design.md
-→ tasks.md
-→ implementation by Phase
-→ uaw-code-review / SDD_TASK_CODE_REVIEW
-→ Review-driven Auto-fix
-→ uaw-unit-test / SDD mode
-→ Unit Test Summary
-→ archive.md
-```
-
-`proposal-input.md` 由 Skill 根据人工简要设计自动组装，模板来源：
-
-```text
-skills/uaw-sdd-ai-coding/references/templates/proposal-input-internal-template.md
-```
-
-## 2. Skill Reference Paths
-
-SDD 总控流程引用：
+## 1. Always Load
 
 ```text
 skills/uaw-sdd-ai-coding/SKILL.md
+skills/uaw-sdd-ai-coding/references/sdd2-control-contract.md
 skills/uaw-sdd-ai-coding/references/sdd2-workflow.md
 skills/uaw-sdd-ai-coding/references/process-control.md
-skills/uaw-sdd-ai-coding/references/input-examples.md
 skills/uaw-sdd-ai-coding/references/context/routing-index.md
-skills/uaw-sdd-ai-coding/references/context/transactions-dictionary.md
 ```
 
-SDD 模板引用：
+Load `input-examples.md` before requesting missing Brief fields. Examples remain non-authoritative.
 
-```text
-skills/uaw-sdd-ai-coding/references/templates/proposal-input-internal-template.md
-skills/uaw-sdd-ai-coding/references/templates/spec-template.md
-skills/uaw-sdd-ai-coding/references/templates/design-template.md
-skills/uaw-sdd-ai-coding/references/templates/tasks-template.md
-skills/uaw-sdd-ai-coding/references/templates/archive-template.md
-```
+## 2. Runtime Assets
 
-后端与模型规则引用：
-
-```text
-skills/uaw-sdd-ai-coding/references/rules/backend/
-skills/uaw-sdd-ai-coding/references/rules/model/
-```
-
-代码评审 Skill 引用：
-
-```text
-skills/uaw-code-review/SKILL.md
-skills/uaw-code-review/references/code-review-rules.md
-skills/uaw-code-review/references/templates/sdd-code-review-findings-template.md
-skills/uaw-code-review/references/templates/summary-report-template.html
-skills/uaw-code-review/references/templates/personal-report-template.html
-```
-
-单元测试 Skill 引用：
-
-```text
-skills/uaw-unit-test/SKILL.md
-skills/uaw-unit-test/references/testing-profile-routing.md
-skills/uaw-unit-test/references/templates/unit-test-summary-template.md
-skills/uaw-unit-test/references/java/
-```
-
-## 3. Runtime Feature Assets
-
-SDD2.x 运行时功能资产默认输出到当前代码工程内：
-
-```text
-sdd2-features/<SprintN>/<feature-name>/
-```
-
-目录规则：
-
-1. `sdd2-features` 是 SDD2.x 主版本线的功能资产根目录。
-2. SDD2.1 / SDD2.2 等小版本升级不得新增 `sdd2.1-features` 或类似目录。
-3. 小版本差异必须记录在功能资产内容中，而不是通过拆分根目录表达。
-4. 未来大版本是否更换功能资产根目录，必须通过独立迁移规则决定。
-
-功能资产目录必须包含：
+Public feature assets:
 
 ```text
 brief-design.md
@@ -103,105 +25,124 @@ spec.md
 design.md
 tasks.md
 code-review-findings.md
+auto-fix-summary.md
+unit-test-summary.md
 archive.md
 ```
 
-功能资产目录必须包含或引用：
+Internal control assets:
 
 ```text
-Auto-fix Summary
-Unit Test Summary
-Process Status
-Process Audit Trail
-Phase Review records
+.sdd2/feature-state.json
+.sdd2/gate-approvals.jsonl
+.sdd2/events.jsonl
+.sdd2/implementation-scope.json
+.sdd2/archive-evidence.json
+.sdd2/revisions/<artifact-stage>/r<revision>-<sha256>.md
 ```
 
-## 4. Context Assembly
+The public entry remains a brief prompt plus Skill invocation. Internal control assets require no developer action.
 
-每次 SDD 任务默认装配：
+## 3. Template Routing
 
-- 当前代码工程目录结构。
-- 当前模块基础语境。
-- 当前代码扫描范围。
-- `skills/uaw-sdd-ai-coding/references/process-control.md`。
-- 与变更范围命中的后端规则、模型规则和业务词典。
-
-按任务条件装配：
-
-- enhancement / refactor 场景的参考资产；不得默认引用旧版 SDD 目录或未被用户指定的历史路径。
-- 用户提供的外部参考设计文档。
-- 业务域词典和特殊集成规则。
-- Code Review 和 Unit Test 的交接规则。
-
-## 5. Routing Rules
-
-`Feature Type（功能类型）` 决定流程重点：
-
-| Feature Type | Routing Focus |
+| Artifact | Template |
 |---|---|
-| query | API、权限、查询条件、返回模型、分页与脱敏 |
-| submit | API、校验、事务、幂等、落库、状态流转 |
-| edit | 数据定位、权限、变更范围、审计、历史兼容 |
-| enhancement | 历史资产引用、差异说明、兼容性、回归风险 |
-| refactor | 行为保持、范围控制、回归验证、禁止功能扩张 |
-| fix | 缺陷复现、修复边界、回归验证、影响面控制 |
+| Proposal | `references/templates/proposal-input-internal-template.md` |
+| Spec | `references/templates/spec-template.md` |
+| Design | `references/templates/design-template.md` |
+| Tasks | `references/templates/tasks-template.md` |
+| Auto-fix | `references/templates/auto-fix-summary-template.md` |
+| Archive | `references/templates/archive-template.md` |
+| Code Review Findings | `skills/uaw-code-review/references/templates/sdd-code-review-findings-template.md` |
+| Unit Test Summary | `skills/uaw-unit-test/references/templates/unit-test-summary-template.md` |
 
-`Change Scope（变更范围）` 决定规则装配：
+## 4. Backend Rule Routing
 
-| Change Scope | Required References |
+Load only rules whose trigger is confirmed by Brief/approved Design/current code.
+
+| Trigger | Runtime rule |
 |---|---|
-| API | `skills/uaw-sdd-ai-coding/references/rules/backend/backend-api.md` |
-| Service | `skills/uaw-sdd-ai-coding/references/rules/backend/transaction-package-structure.md` |
-| DB / Mapper | `skills/uaw-sdd-ai-coding/references/rules/backend/create-table.md`, `skills/uaw-sdd-ai-coding/references/rules/backend/mybatis-orm.md` |
-| Model | `skills/uaw-sdd-ai-coding/references/rules/model/` |
-| Test | `skills/uaw-unit-test/references/testing-profile-routing.md`, `skills/uaw-unit-test/references/templates/unit-test-summary-template.md` |
+| HTTP/API entry or response contract | `references/rules/backend/backend-api.md` |
+| New/changed database table or deployment DDL | `references/rules/backend/create-table.md` |
+| MyBatis mapper/query/mapping | `references/rules/backend/mybatis-orm.md` |
+| Current authenticated user | `references/rules/backend/current-user.md` |
+| EPI integration | `references/rules/backend/epi-gateway.md` |
+| OM external API anti-corruption layer | `references/rules/backend/om-api-acl.md` |
+| MapStruct conversion | `references/rules/backend/mapstruct-conversion.md` |
+| Transaction module package/layout | `references/rules/backend/transaction-package-structure.md` |
+| New transaction type affecting Case Tracker | `references/rules/backend/case-tracker-compatibility.md` |
 
-## 6. Code Review Routing
+If a trigger is ambiguous or the required external/database contract cannot be established, record an open question and block Design/implementation as appropriate. Never fill the gap from a code example.
 
-SDD 流程内代码实现完成后，必须自动调用：
+## 5. Model Rule Routing
+
+| Boundary | Runtime rule |
+|---|---|
+| API/business input | `references/rules/model/bo.md` |
+| Internal/inter-layer transfer | `references/rules/model/dto.md` |
+| Persistence mapping | `references/rules/model/entity.md` |
+| API/view output | `references/rules/model/vo.md` |
+
+Current module conventions decide whether a new type is actually needed. Do not create parallel BO/DTO/VO/Entity models without an ownership/mapping need recorded in Design.
+
+## 6. Test Rule Routing
+
+Always load:
+
+```text
+skills/uaw-unit-test/SKILL.md
+skills/uaw-unit-test/references/testing-profile-routing.md
+```
+
+Then load one primary target rule:
+
+| Target | Runtime rule |
+|---|---|
+| Method/helper | `skills/uaw-unit-test/references/java/method-unit-test.md` |
+| Service | `skills/uaw-unit-test/references/java/service-unit-test.md` |
+| Static utility/dependency | `skills/uaw-unit-test/references/java/static-method-unit-test.md` |
+| Controller | `skills/uaw-unit-test/references/java/controller-unit-test.md` |
+| ServiceStrategy/selector | `skills/uaw-unit-test/references/java/service-strategy-unit-test.md` |
+
+Use the SDD two-pass test handoff: generate test source, refreeze/re-review, then execute and summarize.
+
+## 7. Code Review Routing
+
+SDD invokes:
 
 ```text
 uaw-code-review / SDD_TASK_CODE_REVIEW
 ```
 
-SDD 模式下 Code Review 输入由流程上下文提供；该模式不读取 HTML 模板，不生成 HTML 报告，只在当前功能资产目录生成：
+Load only the Code Review Skill, current rules, and Markdown findings template. HTML templates are standalone-only and must not be loaded in SDD mode.
 
-```text
-code-review-findings.md
-```
+## 8. Business Context Routing
 
-Standalone Code Review 才允许读取：
+`transactions-dictionary.md` is a provenance-labeled historical snapshot. Load it only for a matching transaction-domain task. Treat names/packages/status/dropdowns as candidates that require confirmation from current code/config/schema or current user input before becoming requirements.
 
-```text
-skills/uaw-code-review/references/templates/summary-report-template.html
-skills/uaw-code-review/references/templates/personal-report-template.html
-```
+Record each context use in Proposal/Design with source path, source hash/version, verified-at time, confirming current source, and confidence. Unconfirmed dictionary status or enum values cannot authorize code/database changes.
 
-## 7. Unit Test Routing
+## 9. Feature-Type Focus
 
-Review-driven Auto-fix 完成后，必须自动调用：
+| Type | Required focus |
+|---|---|
+| query | authorization, query bounds, cardinality, response compatibility, masking |
+| submit | validation, transaction, idempotency, persistence, state transition |
+| edit | target identity, authorization, audit, compatibility, partial failure |
+| enhancement | current behavior/delta, compatibility, regression |
+| refactor | behavior preservation, bounded scope, regression |
+| fix | reproduction, root cause, minimal correction, regression |
 
-```text
-uaw-unit-test / SDD mode
-```
+Feature type does not auto-load a business rule. Confirm actual scope first.
 
-SDD 模式下单元测试输入由流程上下文提供。测试目标、变更文件、测试框架和验证方式优先从 SDD 资产、代码变更和项目文件中自动识别。
+## 10. Source Conflict Rule
 
-Unit Test Summary 生成前，必须先新增或修改单元测试源码文件。无法生成或更新测试源码文件时，Unit Test Gate 必须为 blocked，不得进入 Archive。
+For current implementation facts, use this precedence:
 
-Unit Test Summary 必须按以下模板生成或更新：
+1. approved current user requirement;
+2. current executable code/schema/config at captured Git state;
+3. current SDD2 runtime rule;
+4. provenance-labeled context snapshot;
+5. example/template.
 
-```text
-skills/uaw-unit-test/references/templates/unit-test-summary-template.md
-```
-
-## 8. Archive Gate
-
-生成 `archive.md` 前必须满足：
-
-- `spec.md`、`design.md`、`tasks.md` 已通过人工审核。
-- tasks Phase Review 已完成。
-- `code-review-findings.md` 已生成。
-- Review-driven Auto-fix 已完成，并已输出 `auto-fix-summary.md`；无修复项时也必须记录“不需要修复”的原因。
-- Unit Test Summary 已完成，且记录新增或修改的单元测试源码文件。
-- Process Status 和 Process Audit Trail 已同步。
+A conflict affecting behavior, scope, security, data, or acceptance blocks progression and must be resolved explicitly.

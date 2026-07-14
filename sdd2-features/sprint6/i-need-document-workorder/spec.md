@@ -1,5 +1,7 @@
 # spec.md - i-need-document-workorder
 
+> HISTORICAL EXAMPLE ONLY (quarantined 2026-07-14): this file predates deterministic SDD2 control. Approval, reviewer, status, and business text below is legacy illustration, not valid gate evidence or reusable requirement input.
+
 ## 1. Overview
 
 本功能在 `uaw-sdd-demo` 中新增 I need document 工单提交能力。Servicing 坐席接到保单客户来电后，可以为客户提交“查询保单文档”或“发送保单文档给客户”的工单，并将工单提交到下游文档工单平台。
@@ -61,7 +63,7 @@
 
 | Review Stage | Reviewer Role | Review Result | Review Comments | Required Fixes | Next Stage Allowed |
 |---|---|---|---|---|---|
-| spec | AI-as-human-reviewer | 通过 | 范围、非范围、验收标准、下游模拟边界清晰，可以进入 design。 | 无 | yes |
+| spec | legacy-simulated-reviewer (not valid approval) | 通过 | 范围、非范围、验收标准、下游模拟边界清晰，可以进入 design。 | 无 | yes |
 
 ## Process Status
 
@@ -80,5 +82,5 @@ Blocked Reason：无
 | Time | Stage | Action | Result | Next Step |
 |---|---|---|---|---|
 | 2026-06-11 14:36 | spec | AI generated spec.md | draft completed | human review |
-| 2026-06-11 14:37 | spec-review | AI-as-human-reviewer reviewed spec.md | passed | generate design.md |
+| 2026-06-11 14:37 | spec-review | legacy-simulated-reviewer (not valid approval) reviewed spec.md | passed | generate design.md |
 | 2026-06-11 14:43 | archive-sync | AI synchronized final process status | archived | none |

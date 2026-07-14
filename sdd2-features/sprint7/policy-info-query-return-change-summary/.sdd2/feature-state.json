@@ -1,0 +1,102 @@
+{
+  "approvals": {},
+  "artifacts": {
+    "archive": {
+      "path": "archive.md",
+      "recorded_at": "2026-07-14T09:14:15+00:00",
+      "revision": 1,
+      "sha256": "370b9e986ceb541d95d3f4552f554b74b12a1ba6d6790d1119664c04ab5291b2",
+      "status": "historical-record"
+    },
+    "auto-fix-summary": {
+      "path": "auto-fix-summary.md",
+      "recorded_at": "2026-07-14T09:14:15+00:00",
+      "revision": 1,
+      "sha256": "1866dce422d7835dfdc7cc5c7b58dfee1515c3643a0318e947bf391f626d7b70",
+      "status": "historical-record"
+    },
+    "brief-design": {
+      "path": "brief-design.md",
+      "recorded_at": "2026-07-14T09:14:15+00:00",
+      "revision": 1,
+      "sha256": "51bddd5e3d46e4ae0fe28c78c5a2b9fee1a465503ce1245f5afe2fb333e61555",
+      "status": "historical-record"
+    },
+    "code-review-findings": {
+      "path": "code-review-findings.md",
+      "recorded_at": "2026-07-14T09:14:15+00:00",
+      "revision": 1,
+      "sha256": "53e8d4835685002ee8899edd62e15b22cf2a176765f46960c2b6854ab86b39cf",
+      "status": "historical-record"
+    },
+    "design": {
+      "path": "design.md",
+      "recorded_at": "2026-07-14T09:14:15+00:00",
+      "revision": 1,
+      "sha256": "ef4f88b07f103fbb6b0b96fa85eb86f6cf86d8172b6af26522f04756062cbccc",
+      "status": "historical-record"
+    },
+    "proposal-input": {
+      "path": "proposal-input.md",
+      "recorded_at": "2026-07-14T09:14:15+00:00",
+      "revision": 1,
+      "sha256": "f7eaf4ba5b00b868540d7cffc918dd7f80da097d69ebbea287d1375b75ba49e3",
+      "status": "historical-record"
+    },
+    "spec": {
+      "path": "spec.md",
+      "recorded_at": "2026-07-14T09:14:15+00:00",
+      "revision": 1,
+      "sha256": "abd43c97f8a3bc91f2752e885a4a16024420bbe0a638e72973c2daaceb5eb565",
+      "status": "historical-record"
+    },
+    "tasks": {
+      "path": "tasks.md",
+      "recorded_at": "2026-07-14T09:14:15+00:00",
+      "revision": 1,
+      "sha256": "6d87102d7a2d429a2d8c2533b177e4b71cf5cbaec3bf3bcad5b9ad921ff82e54",
+      "status": "historical-record"
+    },
+    "unit-test-summary": {
+      "path": "unit-test-summary.md",
+      "recorded_at": "2026-07-14T09:14:15+00:00",
+      "revision": 1,
+      "sha256": "7f6dd0640250760fad9e2853ee711b423689cf83b00393f077a8816610164324",
+      "status": "historical-record"
+    }
+  },
+  "attempt": 1,
+  "blocked": {
+    "code": "LEGACY_APPROVAL_EVIDENCE_UNVERIFIED",
+    "reason": "Historical AI review records are not valid human approvals.",
+    "recovery": "Run a new SDD2 attempt from a current brief; do not resume this example."
+  },
+  "created_at": "2026-07-14T09:14:15+00:00",
+  "current_stage": "archive",
+  "demo_authorization": null,
+  "entry_contract": {
+    "developer_action_required": false,
+    "user_entry": "brief-prompt-and-skill-call",
+    "version": 1
+  },
+  "execution_mode": "historical-example",
+  "feature_dir": "sdd2-features/sprint7/policy-info-query-return-change-summary",
+  "feature_id": "historical-s7-policy-info-query-return-change-summary",
+  "feature_repo_path": "sdd2-features/sprint7/policy-info-query-return-change-summary",
+  "invalidations": [],
+  "last_completed_stage": null,
+  "next_required_action": "none-historical-example",
+  "phase_reviews": {},
+  "quality_gates": {},
+  "required_phases": [],
+  "revision": 1,
+  "schema_version": "2.0.0",
+  "stage_status": "superseded",
+  "updated_at": "2026-07-14T09:14:15+00:00",
+  "workspace_binding": {
+    "branch": "main",
+    "repo_root": ".",
+    "repository_id": "26e983319b908dbbc62f1439f856455eb3f1083035d444879e32fd92e3a4d589",
+    "worktree": "."
+  }
+}

@@ -84,21 +84,23 @@ Forbidden Changes（禁止变更）：<out-of-scope items or none>
 
 ## Human Review Template（人工审核模板）
 
-以下结构用于 spec、design、tasks、phase-review、implementation、unit-test-summary 和 archive 等审核输入。
+以下结构用于 spec、design、tasks、phase-review、unit-test-summary 和 archive 人工审核输入。Implementation Completion Review、Code Review 和 Auto-fix 是受控质量检查，不伪装成人工审批。
 
 ```text
-Review Stage（审核阶段）：<spec | design | tasks | phase-review | implementation | code-review | unit-test-summary | archive>
+Review Stage（审核阶段）：<spec | design | tasks | phase-review:<exact-phase-id> | unit-test-summary | archive>
 
-Review Result（审核结论）：<通过 | 有条件通过 | 驳回 | blocked | 不适用>
+Review Result（审核结论）：<批准/通过 | 驳回 | blocked>
 
 Review Comments（审核意见）：
 <review comments based on the current asset>
 
 Required Fixes（需要修复）：<required fixes or none>
 
-Next Stage Allowed（是否允许进入下一阶段）：<yes | no | conditional>
+Approved Artifact Revision / SHA-256（被审核版本，可由 Skill 自动填充）：<revision / sha256>
 ```
 
 规则：
-- spec、design、tasks、code-review、unit-test-summary、archive 等核心流程闸门不得填写 `不适用`。
-- `不适用` 仅允许用于 design 已明确不涉及的实施子 Phase。
+- 审批必须是当前 Gate 到达后的新用户消息，明确写出阶段与批准/通过结论。
+- `继续`、`下一步`、`ok`、历史消息、文件内文字和 AI 自评均不构成批准。
+- spec、design、tasks、unit-test-summary、archive 不接受 `不适用` 或有条件通过作为放行状态；存在条件时先保持 blocked/驳回，完成修复后重新审核当前版本。
+- Phase 只有在批准后的 Design/Tasks 根本未声明为 required phase 时才可不存在；已声明 Phase 不可在执行中静默标为不适用。

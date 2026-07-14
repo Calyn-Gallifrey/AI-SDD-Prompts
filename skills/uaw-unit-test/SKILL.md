@@ -1,78 +1,70 @@
 ---
 name: uaw-unit-test
-description: Generate, repair, and summarize Java-focused UAW unit test code. Use when the user asks to create, update, or review unit tests, produce Unit Test Summary, validate Java/Spring Boot test profiles, or when the SDD AI coding skill automatically triggers unit testing after Code Review and Auto-fix.
+description: Generate, update, execute, and summarize Java-focused UAW unit tests. Use for direct unit-test work or SDD2 test generation after Code Review. In SDD mode it uses a two-pass handoff so changed test source is frozen and fully reviewed before execution and Unit Test Summary.
 ---
 
 # UAW Unit Test
 
 ## Core Contract
 
-This skill generates or updates UAW unit test source code and produces Unit Test Summary. Java and Spring Boot are the primary target.
+Generate or update real unit-test source for every accessible production change with an identifiable target. A prose plan, review note, manual check, or `unit-test-summary.md` alone is never test implementation.
 
-Every invocation must result in newly created or updated unit test code when project files are accessible and a test target can be identified. Producing only analysis, review comments, validation notes, or Unit Test Summary is not sufficient.
+Read `references/testing-profile-routing.md`, the selected target rule under `references/java/`, and `references/templates/unit-test-summary-template.md`.
 
-Unit Test Summary is an audit artifact after test code generation. It must not replace unit test source code.
+Do not add/upgrade test dependencies merely to fit a preferred style. Current build dependencies and nearby executable tests are the primary convention. If project files, target code, framework, or a runnable entry cannot be established, return `blocked` with exact recovery information.
 
-Do not mark unit test code generation as not applicable. If the project cannot be read, the test target cannot be identified, or the test framework cannot be determined with available evidence, stop in `blocked` status and request the missing information. A blocked result must not be treated as a successful Unit Test Gate.
+## SDD Mode: Two Passes
 
-Read `references/input-examples.md` before requesting standalone input. The file defines the expected Java unit-test input structure.
+### Pass 1: Generate Test Source
 
-Input templates are not default test targets. Placeholder paths, test class names, commands, and validation entries must be replaced by project-scanned or user-confirmed values.
+Inputs from `uaw-sdd-ai-coding`:
 
-Read `references/templates/unit-test-summary-template.md` before producing or updating Unit Test Summary.
+- current feature/state and frozen implementation scope;
+- approved Spec, Design, and Tasks;
+- immutable Code Review findings and Auto-fix summary;
+- exact production symbols and captured test path patterns.
 
-## Input Policy
+Create/update tests under approved paths and return changed test paths plus selected profile evidence. Do not create Unit Test Summary yet.
 
-Standalone input is limited to information that cannot be reliably scanned from project files.
+Test-source changes invalidate the old scope. Return control so `uaw-sdd-ai-coding` can freeze the new production+test snapshot, rerun full Code Review, and close Auto-fix on that same snapshot.
 
-Required standalone inputs:
+### Pass 2: Execute And Summarize
 
-- `Project Root（项目根目录）`
-- `Test Target（测试目标）`
-- `Validation Method（验证方式）`
-- `Actual Test Entry（实际执行入口）`
+Run only after Code Review is `passed` and Auto-fix is `passed`/`not-required` on the current frozen scope. Verify at least one changed test source matches the captured test path patterns.
 
-Automatically scan and record:
+Execute the narrow relevant unit tests using an actual project-supported entry. Produce `unit-test-summary.md` with command/environment, exit code, counts, failures/skips, test-source hashes, and current scope SHA-256. Return control for the deterministic Unit Test gate and human Unit Test Summary approval.
 
-- Build Tool: Maven, Gradle, Maven Wrapper, or Gradle Wrapper
-- Java Version
-- Spring Boot Version
-- Test Framework: JUnit4, JUnit5, Legacy-Mockito, or No-UAW-Util
-- Changed Files
-- Existing Test Style
-- Whether UAW utility classes exist
+`passed` requires an executed test entry with exit code/result proving success. IDE/CI/Wrapper/local CLI/project script are valid when evidence is reproducible. Manual validation may supplement unit tests but cannot produce a passed SDD Unit Test Gate.
 
-## SDD Mode
+## Standalone Mode
 
-When invoked by `uaw-sdd-ai-coding`, unit-test inputs are derived from `proposal-input.md`, `spec.md`, `design.md`, `tasks.md`, `code-review-findings.md`, Auto-fix Summary, and current code changes.
+Read `references/input-examples.md`. Required user inputs are only facts that cannot be discovered safely: project root, target when ambiguous, and preferred validation environment when multiple unavailable-to-agent choices remain.
 
-SDD mode must generate or update unit test code for the implemented change before producing `unit-test-summary.md`. If no matching test file exists, create a new test file following the selected testing profile and the existing project test layout. If a matching test file exists, update it to cover the current change.
+Generate/update test source first. Execute when possible. A standalone summary may be `not-run` with a precise reason and command for later execution, but must not be represented as passed.
 
-## Output Requirements
+## Required Discovery
 
-Unit Test Summary must follow `references/templates/unit-test-summary-template.md`.
+Record evidence for:
 
-Required fields:
+- build tool/wrapper and module;
+- Java, Spring Boot when present, JUnit platform, Mockito, assertion libraries;
+- Surefire/Gradle test configuration and JDK compatibility;
+- nearby executable test style;
+- target dependencies and mock boundaries;
+- UAW utility availability only when target code uses it.
 
-- Selected Testing Profile
-- Selection rationale
-- Test files added or updated
-- Validation Method
-- Execution Environment
-- Actual Test Entry
-- Test result: pass, fail, skipped, not run, or blocked
-- warning / failure / skipped notes
-- Remaining test risks
+## Outputs
 
-Template sections must be retained. Sections that do not apply are marked as `not applicable` with a reason.
+- one or more added/updated unit-test source paths;
+- selected testing profile and target-specific rule;
+- executable test evidence or a blocked/not-run result;
+- `unit-test-summary.md` only after source generation.
 
-`Test files added or updated` must contain at least one real unit test source file path. `none` is allowed only when the skill is blocked before code generation, and the Unit Test Gate result must then be `blocked`.
-
-Local `mvn` or `gradle` availability is not a prerequisite. IDE, Wrapper, Local CLI, CI, Script, Manual, and Other are valid validation methods when recorded with evidence.
+Never use `none` for test-source changes in a successful SDD flow. Failed, blocked, or not-run SDD tests forbid successful Archive.
 
 ## References
 
-- `references/input-examples.md`: concise Java input structure template.
-- `references/testing-profile-routing.md`: profile selection and validation rules.
-- `references/templates/unit-test-summary-template.md`: required Unit Test Summary output template.
-- `references/java/`: detailed Java test generation rules for methods, services, static methods, controllers, and ServiceStrategy.
+- `references/testing-profile-routing.md`: evidence-based framework/profile selection.
+- `references/java/`: target-specific generation rules.
+- `references/templates/unit-test-summary-template.md`: summary and gate evidence.
+- `references/input-examples.md`: standalone input examples only.

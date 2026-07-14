@@ -1,5 +1,7 @@
 # proposal-input.md
 
+> HISTORICAL EXAMPLE ONLY (quarantined 2026-07-14): this file predates deterministic SDD2 control. Approval, reviewer, status, and business text below is legacy illustration, not valid gate evidence or reusable requirement input.
+
 ## Basic Information
 
 SDD Version（SDD版本）：SDD2.0

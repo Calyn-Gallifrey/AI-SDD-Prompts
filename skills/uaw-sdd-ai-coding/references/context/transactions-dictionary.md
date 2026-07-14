@@ -1,4 +1,19 @@
-根据提供的文件内容，我为您提取整理了所有 Transaction Type 的字典表以及相关的字段定义。
+# Transaction Dictionary Snapshot
+
+## Provenance And Use Boundary
+
+- Runtime role: context snapshot, not an authoritative current system dictionary.
+- Migration source: `original/project-how-to/detailed-context/2.transactions字典清单.md`.
+- Source/runtime content equality verified: `2026-07-14`.
+- Source SHA-256 before this provenance header: `e9afbb3222a3ca6327949810a745e3132b18ce3d236426d2bb28ef94097bb372`.
+- First runtime import commit: `03855a81255c4b8a5037758d7cba783bd56596fe`.
+- Business owner / live system of record: not recorded; must be confirmed for each use.
+
+Names, package candidates, sprint/readiness labels, dependencies, and dropdown values below are historical candidates. Before using one in Spec, Design, code, database scripts, or tests, verify it against current code/config/schema/API or current user confirmation and record the confirming source and timestamp. Missing values remain unknown; do not infer them.
+
+## Extracted Snapshot
+
+The snapshot contains Transaction Type candidates and related field options.
 
 该表格涵盖了从“Enquiry & Information”到“Change Status”等不同模块下的所有交易类型，并补充了文件中涉及的下拉选项（如 Title、Cancel Reason 等）。
 

@@ -1,156 +1,90 @@
-# SDD2.0 Workflow
+# SDD2.0 Artifact And Handoff Workflow
 
-## Entry Change
+`sdd2-control-contract.md` owns all state, approval, invalidation, recovery, and Archive semantics. This file defines only artifact responsibilities and Skill handoffs.
 
-SDD2.0 starts from `Brief Design（人工简要设计）`.
+## Entry And Workspace
 
-`proposal-input.md` is generated internally after parsing the brief design and collecting missing required fields.
+The developer supplies a short Brief Design and invokes `uaw-sdd-ai-coding`. The Skill persists the Brief and performs all internal control operations. No new developer command or form is introduced.
 
-## Generalization Contract
-
-1. SDD2.0 system files define workflow, gates, templates, routing, and engineering constraints; they do not define default business features.
-2. Input templates and reference examples are never requirements. They must not be copied into feature names, output directories, API paths, field names, business logic, implementation code, tests, or archive content unless the same values are explicitly provided by the user as current requirement content.
-3. Missing requirement information must be requested from the user or recorded as an open question. It must not be filled from examples, historical demo assets, or unrelated reference cases.
-4. For enhancement and refactor work, the current codebase is the primary baseline. The generated SDD assets must describe the confirmed delta against existing behavior.
-5. If the confirmed requirement is a minimal change to an existing query, such as adding a response field, the SDD scope must remain minimal and must not create a new submit flow, work order process, table, or module unless explicitly confirmed.
-
-## Proposal Assembly
-
-Map the brief design to proposal fields:
-
-| Brief Design field | proposal-input field |
-|---|---|
-| Feature Name（功能名称） | 功能名称 |
-| Feature Type（功能类型） | 功能类型 |
-| Module（所属模块） | 所属模块 |
-| Goal（一句话目标） | 一句话目标 |
-| Change Scope（变更范围） | 变更范围 |
-| Forbidden Changes（禁止变更） | 禁止变更 |
-| Priority（优先级） | 优先级 |
-| Sprint（迭代） | sprint |
-| Open Questions（待确认问题） | 风险提醒 / 待确认 |
-
-Reference assets are optional context, not required brief-design fields.
-
-For `enhancement` or `refactor`, use the current codebase as the primary baseline. Only use prior SDD feature assets when the user explicitly provides them, names a previous feature, or the current codebase is insufficient to identify the existing behavior. If prior assets may be needed, scan the configured feature workspace before asking the user to provide a path.
-
-## Feature Workspace Root
-
-SDD2.x feature assets use one stable workspace root:
+Feature directory:
 
 ```text
 sdd2-features/<SprintN>/<feature-name>/
 ```
 
-Rules:
+`<feature-name>` comes only from the current confirmed Brief. Keep all SDD2 minor revisions under `sdd2-features`; a new root requires an explicit major-version migration decision.
 
-1. `sdd2-features` represents the SDD major version line, not the exact minor version.
-2. `sdd2.1-features`, `sdd2.2-features`, and other minor-version roots are not used.
-3. If SDD2.1 changes rules, keep writing feature assets under `sdd2-features` and record the executed Skill version inside the generated assets.
-4. A new root for a future major version requires an explicit migration decision, not an automatic naming change.
-5. `<feature-name>` must come from the confirmed current Brief Design. It must not be copied from input templates, reference examples, previous demo features, or historical process assets.
-6. If `Feature Name（功能名称）` is missing or too generic, request confirmation before creating the feature asset directory.
+## Artifact Map
 
-## Stage Flow
+| Artifact | Purpose | Input | Output / Consumer | Completion Condition |
+|---|---|---|---|---|
+| `brief-design.md` | Persist current human brief | Current user message | Proposal assembly | All required fields confirmed |
+| `proposal-input.md` | Normalize internal planning input | Brief + targeted code/context discovery | Spec generation | Source facts and open questions identified |
+| `spec.md` | Define behavior and acceptance | Proposal + current behavior | Human Spec review, Design | Recorded and explicitly approved |
+| `design.md` | Define technical delta and constraints | Approved Spec + current code + routed rules | Human Design review, Tasks | Recorded and explicitly approved |
+| `tasks.md` | Define bounded phases and files | Approved Design | Human Tasks review, implementation scope | Recorded and explicitly approved |
+| `code-review-findings.md` | Immutable first-pass review findings | Frozen scope + approved SDD assets | Auto-fix | Gate recorded for same scope |
+| `auto-fix-summary.md` | Map each finding to fix/disposition | Findings + code changes | Re-review, Unit Test | Gate closed on same reviewed scope |
+| `unit-test-summary.md` | Record test-source changes and results | Reviewed scope + test execution | Human Unit Test Summary review | Unit Test passed and summary approved |
+| `archive.md` | Final traceable delivery record | All current artifacts + Archive evidence | Final human review | Archive check passes and final approval recorded |
 
-Run the flow in this exact order:
+`proposal-input.md` is internal. Reference examples and templates are not business requirements.
 
-```text
-Brief Design
-→ proposal-input.md
-→ spec.md
-→ human spec review
-→ design.md
-→ human design review
-→ tasks.md
-→ human tasks review
-→ implementation by Phase
-→ Phase Review
-→ uaw-code-review in SDD_TASK_CODE_REVIEW mode
-→ Review-driven Auto-fix
-→ uaw-unit-test in SDD mode
-→ Unit Test Summary
-→ Archive status sync
-→ archive.md
-→ final human archive review
-```
+## Proposal Mapping
 
-## Hard Gate Protocol
+| Brief field | Proposal field |
+|---|---|
+| Feature Name | 功能名称 |
+| Feature Type | 功能类型 |
+| Module | 所属模块 |
+| Goal | 一句话目标 |
+| Change Scope | 变更范围 |
+| Forbidden Changes | 禁止变更 |
+| Priority | 优先级 |
+| Sprint | sprint |
+| Open Questions | 风险提醒 / 待确认 |
 
-The SDD2.0 workflow uses hard human-review gates. These gates are mandatory execution blockers, not documentation reminders.
+For `enhancement`, `refactor`, and `fix`, inspect current code first and describe only the confirmed delta. Prior Feature assets may be used only when explicitly named or when current code cannot establish behavior; label them as historical context.
 
-At every hard gate, the assistant must stop after the current artifact is produced. The assistant must not generate the next artifact, edit code, invoke a downstream skill, or archive the feature until a valid human approval message is received after that gate.
-
-Valid approval rules:
-
-1. Approval must come from a new user message after the current gate is reached.
-2. Approval must identify or clearly refer to the current stage being approved.
-3. Generated Review Record content inside SDD assets is not approval by itself.
-4. Historical demo assets, previous approvals, or inferred intent are not approval.
-5. The assistant must not self-approve in real SDD execution.
-6. `AI-as-human-reviewer` is only valid when the user explicitly requests a demo, validation run, or simulated review.
-
-Hard stop points:
-
-| Gate | Stop After Producing | Forbidden Until Approval | Required Approval |
-|---|---|---|---|
-| Spec Review Gate | `spec.md` | `design.md`, `tasks.md`, code changes | Human spec approval |
-| Design Review Gate | `design.md` | `tasks.md`, code changes | Human design approval |
-| Tasks Review Gate | `tasks.md` | implementation code changes | Human tasks approval |
-| Phase Review Gate | each implemented Phase | next Phase implementation | Human Phase Review approval |
-| Code Review Gate | `code-review-findings.md` | Auto-fix, Unit Test, `archive.md` | Valid SDD Findings with Review Conclusion |
-| Auto-fix Gate | `auto-fix-summary.md` and Post Auto-fix Verification | Unit Test, `archive.md` | No remaining P0 / P1 / Blocking P2 |
-| Unit Test Summary Gate | `unit-test-summary.md` | `archive.md` | Human Unit Test Summary approval |
-| Archive Review Gate | `archive.md` | marking flow complete | Final human archive approval |
-
-Ambiguous replies such as "continue", "next", "ok", or "go on" are not sufficient approval unless they clearly identify the current stage and approval result. When approval is ambiguous, the assistant must ask for explicit stage approval and remain stopped.
-
-If a downstream artifact or code change is produced before the required approval, the assistant must report a gate violation and wait for user direction. It must not silently continue or treat the generated downstream content as valid.
-
-Execution gates that do not require a human approval message still require their gate artifact and pass/block state. If `code-review-findings.md`, `auto-fix-summary.md`, generated/updated unit test code, or `unit-test-summary.md` is missing, the workflow must stop in `blocked` status and must not continue to Archive.
-
-## Automatic Skill Calls
-
-After code implementation is complete, automatically invoke `uaw-code-review` in `SDD_TASK_CODE_REVIEW` mode.
-
-In SDD mode, Code Review input is provided by SDD context, including feature directory, SDD artifacts, implementation scope, and expected output.
-
-After Code Review and Auto-fix are complete, automatically invoke `uaw-unit-test` in SDD mode.
-
-In SDD mode, unit-test inputs are derived from code changes, design, tasks, findings, and Auto-fix Summary.
-
-`uaw-unit-test` must generate or update unit test source code before producing Unit Test Summary. Unit Test Summary is not a substitute for test code. If test code cannot be generated or updated because the project, target, or framework cannot be identified, the Unit Test Gate is blocked and Archive is not allowed.
-
-## Required Output Assets
-
-The feature asset directory must contain:
+## Handoff Sequence
 
 ```text
-brief-design.md
-proposal-input.md
-spec.md
-design.md
-tasks.md
-code-review-findings.md
-auto-fix-summary.md
-unit-test-summary.md
-archive.md
+Brief -> Proposal -> Spec approval -> Design approval -> Tasks approval
+-> phased implementation + Phase Reviews
+-> uaw-code-review / SDD_TASK_CODE_REVIEW
+-> Auto-fix + full re-review when scope changes
+-> uaw-unit-test / SDD mode
+-> Unit Test Summary approval
+-> Archive evidence -> Archive approval -> completed
 ```
 
-It must also contain or reference:
+### Code Review Handoff
 
-```text
-Process Status
-Process Audit Trail
-Phase Review records
-```
+Provide:
 
-`brief-design.md` is the persisted user entry input. If the brief design came only from chat, capture the confirmed brief design into `brief-design.md` before assembling `proposal-input.md`.
+- feature directory and state path;
+- approved Spec, Design, and Tasks revisions/hashes;
+- Git repository, branch, base commit, frozen snapshot hash, exact changed-file manifest;
+- Code Review output path.
 
-## SDD2.0 Overrides
+The Code Review Skill must use this fixed scope. It must not infer scope from `git status`, upstream drift, or the feature asset directory alone.
 
-If bundled SDD reference content states that developers fill `proposal-input.md`, the SDD2.0 workflow contract takes precedence. In SDD2.0, developers provide `Brief Design（人工简要设计）`; the skill assembles `proposal-input.md`.
+### Unit Test Handoff
 
-If bundled SDD reference content contain Code Review or Unit Test implementation details, keep the workflow gate in this skill but delegate execution to `uaw-code-review` and `uaw-unit-test`.
+Provide:
 
-Fast Lane, mini-spec, mini-tasks, and archive-lite are outside the active SDD2.0 standard flow. They are only available when a later approved SDD version defines them explicitly.
+- the same current frozen scope;
+- Design test strategy and Tasks test phase;
+- immutable Code Review findings and Auto-fix summary;
+- detected project test stack and routed testing profile;
+- target test source paths and required execution evidence.
+
+The Unit Test Skill generates or updates test code before the summary. If target code, framework, or executable test entry cannot be established, record `blocked`; do not substitute prose or manual checks for unit-test source.
+
+## Change Handling
+
+A user requirement change is not an informal edit. Update the earliest affected artifact, record it, allow deterministic invalidation, and repeat every downstream approval/gate that became stale. If the request identifies a different feature, create a separate feature/worktree rather than retargeting active state.
+
+## Non-Goals
+
+Fast Lane, mini-spec, mini-tasks, archive-lite, and alternate public entry modes are outside SDD2.0. They require a separately approved process version.

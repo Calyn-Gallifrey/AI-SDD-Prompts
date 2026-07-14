@@ -1,0 +1,33 @@
+{
+  "schema_version": "1.0",
+  "runtime_policy": "Files under original/ are migration provenance only and are never runtime instructions.",
+  "reviewed_at": "2026-07-14",
+  "entries": [
+    {"source": "original/project-how-to/detailed-context/1.create_table编写规范.md", "status": "migrated", "runtime_targets": ["skills/uaw-sdd-ai-coding/references/rules/backend/create-table.md"]},
+    {"source": "original/project-how-to/detailed-context/2.transactions字典清单.md", "status": "migrated-context-snapshot", "runtime_targets": ["skills/uaw-sdd-ai-coding/references/context/transactions-dictionary.md"]},
+    {"source": "original/project-how-to/detailed-context/3.根据本次变更内容生成git_commit记录.md", "status": "retired-outside-sdd2-runtime", "runtime_targets": []},
+    {"source": "original/project-how-to/detailed-context/4.how-to-index.md", "status": "superseded", "runtime_targets": ["skills/uaw-sdd-ai-coding/references/context/routing-index.md"]},
+    {"source": "original/project-how-to/readme.md", "status": "superseded", "runtime_targets": ["skills/uaw-sdd-ai-coding/references/context/routing-index.md"]},
+    {"source": "original/project-how-to/spec-context/1.如何新增一个数据库表.md", "status": "migrated", "runtime_targets": ["skills/uaw-sdd-ai-coding/references/rules/backend/create-table.md"]},
+    {"source": "original/project-how-to/spec-context/10.如何生成方法的单元测试.md", "status": "migrated", "runtime_targets": ["skills/uaw-unit-test/references/java/method-unit-test.md"]},
+    {"source": "original/project-how-to/spec-context/11.新增transaction如何兼容caseTrakcer功能.md", "status": "migrated", "runtime_targets": ["skills/uaw-sdd-ai-coding/references/rules/backend/case-tracker-compatibility.md"]},
+    {"source": "original/project-how-to/spec-context/2.如何新增一个transaction业务功能包结构.md", "status": "migrated", "runtime_targets": ["skills/uaw-sdd-ai-coding/references/rules/backend/transaction-package-structure.md"]},
+    {"source": "original/project-how-to/spec-context/29-1如何service的单元测试.md", "status": "migrated", "runtime_targets": ["skills/uaw-unit-test/references/java/service-unit-test.md"]},
+    {"source": "original/project-how-to/spec-context/29-2如何生成静态static方法的单元测试.md", "status": "migrated", "runtime_targets": ["skills/uaw-unit-test/references/java/static-method-unit-test.md"]},
+    {"source": "original/project-how-to/spec-context/29-3如何编写controller单元测试规范.md", "status": "migrated", "runtime_targets": ["skills/uaw-unit-test/references/java/controller-unit-test.md"]},
+    {"source": "original/project-how-to/spec-context/29-4如何创建ServiceStrategy的单元测试.md", "status": "migrated", "runtime_targets": ["skills/uaw-unit-test/references/java/service-strategy-unit-test.md"]},
+    {"source": "original/project-how-to/spec-context/3.如何开发一个后端API接口代码.md", "status": "migrated", "runtime_targets": ["skills/uaw-sdd-ai-coding/references/rules/backend/backend-api.md"]},
+    {"source": "original/project-how-to/spec-context/4.如何开发mybatis的ORM代码.md", "status": "migrated", "runtime_targets": ["skills/uaw-sdd-ai-coding/references/rules/backend/mybatis-orm.md"]},
+    {"source": "original/project-how-to/spec-context/5.如何获取当前用户.md", "status": "migrated", "runtime_targets": ["skills/uaw-sdd-ai-coding/references/rules/backend/current-user.md"]},
+    {"source": "original/project-how-to/spec-context/6.如何调用epi网关接口.md", "status": "migrated-rewritten", "runtime_targets": ["skills/uaw-sdd-ai-coding/references/rules/backend/epi-gateway.md"]},
+    {"source": "original/project-how-to/spec-context/7.如何基于mapstruct进行值对象转换.md", "status": "migrated", "runtime_targets": ["skills/uaw-sdd-ai-coding/references/rules/backend/mapstruct-conversion.md"]},
+    {"source": "original/project-how-to/spec-context/8.1-BO对象生成规范.md", "status": "migrated", "runtime_targets": ["skills/uaw-sdd-ai-coding/references/rules/model/bo.md"]},
+    {"source": "original/project-how-to/spec-context/8.2-VO对象生成规范.md", "status": "migrated", "runtime_targets": ["skills/uaw-sdd-ai-coding/references/rules/model/vo.md"]},
+    {"source": "original/project-how-to/spec-context/8.3-DTO对象生成规范.md", "status": "migrated", "runtime_targets": ["skills/uaw-sdd-ai-coding/references/rules/model/dto.md"]},
+    {"source": "original/project-how-to/spec-context/8.4-Entity对象生成规范.md", "status": "migrated", "runtime_targets": ["skills/uaw-sdd-ai-coding/references/rules/model/entity.md"]},
+    {"source": "original/project-how-to/spec-context/9.如何开发om api防腐代码.md", "status": "migrated", "runtime_targets": ["skills/uaw-sdd-ai-coding/references/rules/backend/om-api-acl.md"]},
+    {"source": "original/project-todo/单元测试.md", "status": "retired-planning-note", "runtime_targets": ["skills/uaw-unit-test/SKILL.md"]},
+    {"source": "original/readme.md", "status": "superseded", "runtime_targets": ["skills/uaw-sdd-ai-coding/references/context/routing-index.md"]},
+    {"source": "original/transaction-context.md", "status": "migrated-context", "runtime_targets": ["skills/uaw-sdd-ai-coding/references/rules/backend/transaction-package-structure.md"]}
+  ]
+}

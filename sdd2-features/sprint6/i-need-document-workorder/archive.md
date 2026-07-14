@@ -1,5 +1,7 @@
 # archive.md - i-need-document-workorder
 
+> HISTORICAL EXAMPLE ONLY (quarantined 2026-07-14): this file predates deterministic SDD2 control. Approval, reviewer, status, and business text below is legacy illustration, not valid gate evidence or reusable requirement input.
+
 ## Archive Summary
 
 Archive Time：2026-06-11 14:43
@@ -130,7 +132,7 @@ Remaining Test Risks：
 
 | Review Stage | Reviewer Role | Review Result | Review Comments | Required Fixes | Next Stage Allowed |
 |---|---|---|---|---|---|
-| archive | AI-as-human-reviewer | 通过 | SDD2.0 全流程已完成，Code Review、Auto-fix、Unit Test Summary 和状态同步均已闭环。 | 无 | no |
+| archive | legacy-simulated-reviewer (not valid approval) | 通过 | SDD2.0 全流程已完成，Code Review、Auto-fix、Unit Test Summary 和状态同步均已闭环。 | 无 | no |
 
 ## Final Conclusion
 

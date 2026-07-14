@@ -1,5 +1,7 @@
 # design.md - policy-info-query-return-change-summary
 
+> HISTORICAL EXAMPLE ONLY (quarantined 2026-07-14): this file predates deterministic SDD2 control. Approval, reviewer, status, and business text below is legacy illustration, not valid gate evidence or reusable requirement input.
+
 ## 1. Design Summary
 
 This change enhances the existing policy information change work order query response by adding `changeSummary`. The field is derived at response mapping time from existing entity fields:
@@ -72,7 +74,7 @@ No controller method signature change is required. JSON serialization returns th
 
 | Review Stage | Reviewer Role | Review Time | Result | Review Comments | Required Fixes | Next Stage Allowed |
 |---|---|---|---|---|---|---|
-| design | AI-as-human-reviewer | 2026-06-17 14:10 CST | 通过 | 设计落点保持在 DTO 与 service mapping，符合最小增强原则。 | 无 | yes |
+| design | legacy-simulated-reviewer (not valid approval) | 2026-06-17 14:10 CST | 通过 | 设计落点保持在 DTO 与 service mapping，符合最小增强原则。 | 无 | yes |
 
 ## 7. Process Status
 
@@ -91,6 +93,6 @@ No controller method signature change is required. JSON serialization returns th
 | Time | Stage | Action | Input | Output | Result | Next |
 |---|---|---|---|---|---|---|
 | 2026-06-17 14:10 CST | design | Generated design from confirmed spec | spec.md | design.md | drafted | design review |
-| 2026-06-17 14:10 CST | design-review | AI-as-human-reviewer reviewed design | design.md | review record | passed | tasks |
+| 2026-06-17 14:10 CST | design-review | legacy-simulated-reviewer (not valid approval) reviewed design | design.md | review record | passed | tasks |
 | 2026-06-17 14:17 CST | auto-fix-sync | Updated design to reflect GET-only response boundary after CR-P1-001 | code-review-findings.md | design.md | confirmed | unit-test |
 | 2026-06-17 14:17 CST | archive-sync | Synced final status after code review, auto-fix, and unit test | final SDD assets | design.md | archived | archive |

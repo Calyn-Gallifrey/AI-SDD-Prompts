@@ -1,5 +1,7 @@
 # design.md - i-need-document-workorder
 
+> HISTORICAL EXAMPLE ONLY (quarantined 2026-07-14): this file predates deterministic SDD2 control. Approval, reviewer, status, and business text below is legacy illustration, not valid gate evidence or reusable requirement input.
+
 ## 1. Design Summary
 
 新增独立的 I need document 工单模块，落位在现有 demo 的 `controller`、`service`、`repository`、`model` 分层下。该功能不修改既有保单信息变更或受益人变更工单。下游平台提交在 demo 中通过 `INeedDocumentDownstreamClient` 模拟。
@@ -139,7 +141,7 @@ Testing Profile：`Legacy-Mockito`
 
 | Review Stage | Reviewer Role | Review Result | Review Comments | Required Fixes | Next Stage Allowed |
 |---|---|---|---|---|---|
-| design | AI-as-human-reviewer | 通过 | 设计保持独立模块边界，demo 下游 client 明确不接真实外部系统，测试策略清晰。 | 无 | yes |
+| design | legacy-simulated-reviewer (not valid approval) | 通过 | 设计保持独立模块边界，demo 下游 client 明确不接真实外部系统，测试策略清晰。 | 无 | yes |
 
 ## Process Status
 
@@ -158,5 +160,5 @@ Blocked Reason：无
 | Time | Stage | Action | Result | Next Step |
 |---|---|---|---|---|
 | 2026-06-11 14:37 | design | AI generated design.md | draft completed | human review |
-| 2026-06-11 14:38 | design-review | AI-as-human-reviewer reviewed design.md | passed | generate tasks.md |
+| 2026-06-11 14:38 | design-review | legacy-simulated-reviewer (not valid approval) reviewed design.md | passed | generate tasks.md |
 | 2026-06-11 14:43 | archive-sync | AI synchronized final process status | archived | none |

@@ -1,142 +1,93 @@
-# Unit Test Summary Template
+# Unit Test Summary
 
-> 本模板是 `uaw-unit-test` 的强制输出模板。
-> SDD 模式下必须输出到当前功能资产目录的 `unit-test-summary.md`。
-> Standalone 模式下按用户指定目录输出；未指定目录时，在被测项目内创建可追溯的测试摘要文件。
+> Audit record created after unit-test source generation/update. In SDD mode, it must bind to the same frozen scope as passed Code Review and closed Auto-fix.
 
----
+## 1. Identity And Scope
 
-# unit-test-summary.md - {feature-or-target-name}
+- Feature ID / standalone task ID:
+- Mode: SDD / standalone
+- Attempt:
+- Scope SHA-256:
+- Base Commit:
+- Head Commit / Tree:
+- Code Revision:
+- Summary Revision / SHA-256:
 
-## Unit Test Summary
+## 2. Profile Evidence
 
-Entry Mode：SDD_UNIT_TEST / STANDALONE_UNIT_TEST
+- Primary Profile: JUNIT5_MOCKITO / JUNIT4_MOCKITO / EXISTING_CUSTOM / BLOCKED_UNKNOWN
+- Modifiers:
+- Target Rule:
+- Build/module evidence:
+- JUnit/Mockito/assertion evidence:
+- Nearby test convention evidence:
+- Selection rationale:
+- Dependency changes: none / exact approved change
 
-Test Time：YYYY-MM-DD HH:mm
+## 3. Test Source Changes
 
-Project Root：`{project-root}`
+| Test file | SHA-256 | Added/updated | Production target | Requirements/findings covered |
+|---|---|---|---|---|
+|  |  |  |  |  |
 
-Test Target：{test-target}
+A passed SDD result requires at least one current changed test source matching captured test paths.
 
-Validation Method：IDE / Wrapper / Local CLI / CI / Script / Manual / Other
+## 4. Scenario Coverage
 
-Execution Environment：本机 / CI / 开发容器 / IDE / 其他
+| Test method / parameter set | Scenario type | Given | Expected assertions/interactions | Requirement / finding |
+|---|---|---|---|---|
+|  | happy / boundary / error / regression |  |  |  |
 
-Actual Test Entry：`{command-or-ide-config-or-ci-job-or-script-or-manual-steps}`
+## 5. Execution Evidence
 
-## Auto-detected Profile
+- Validation Method: Wrapper / Local CLI / IDE / CI / Script
+- Execution Environment:
+- JDK:
+- Exact Test Entry / Command / Job / Configuration:
+- Started/Finished At:
+- Exit Code / Observed Result:
+- Tests Run:
+- Passed:
+- Failed:
+- Errors:
+- Skipped:
+- Relevant output/evidence location:
+- Warnings:
 
-| Item | Result |
-|---|---|
-| Build Tool | Maven / Gradle / Maven Wrapper / Gradle Wrapper / Other |
-| Java Compile Target | {java-version-or-unknown-with-reason} |
-| Spring Boot Version | {spring-boot-version-or-not-applicable} |
-| Test Framework | JUnit4 / JUnit5 / JUnit4 + Vintage / Legacy-Mockito / Other |
-| Existing Test Style | {existing-test-style} |
-| UAW Utility Dependency | UAW-Util / No-UAW-Util / Unknown |
-| Changed Files Source | SDD tasks / git diff / worktree snapshot / user input |
+Do not record `passed` without observed execution evidence. Manual validation belongs in supplemental evidence and cannot pass this gate.
 
-## Selected Testing Profile
+## 6. Failure Or Block Detail
 
-Selected Testing Profile：`UAW-JUnit4` / `SpringBoot-JUnit5` / `Legacy-Mockito` / `No-UAW-Util` / `Other`
+| Failure/block | Test/symbol | Root cause evidence | Production defect vs test defect vs environment | Recovery |
+|---|---|---|---|---|
+|  |  |  |  |  |
 
-Compatible Profile：`{optional-compatible-profile-or-none}`
+## 7. Review And Auto-fix Binding
 
-Selection rationale：
-- {reason-1}
-- {reason-2}
+- Code Review Findings SHA-256:
+- Code Review Result / Scope SHA-256: passed /
+- Auto-fix Summary SHA-256:
+- Auto-fix Result / Scope SHA-256: passed or not-required /
+- Post-test-source full re-review completed: yes / no
 
-Not Applicable Rules：
-- {rule-or-profile-not-applicable-and-reason}
+## 8. Remaining Test Risk
 
-Test Framework Risks：
-- {risk-or-none}
+| Risk | Reason | Impact | Blocking | Follow-up |
+|---|---|---|---|---|
+|  |  |  | yes / no |  |
 
-Additional Dependencies Required：yes / no
+## 9. Gate Conclusion
 
-Dependency Notes：{dependency-change-needed-or-none}
+- Unit Test Result: passed / failed / blocked / not-run
+- Archive Eligible From Unit Test: yes only when passed; otherwise no
+- Evidence Summary:
 
-## Test Files Added / Updated
+## 10. Human Summary Gate (SDD Only)
 
-Added：
-- `{added-test-file-path-or-none-if-updated-list-has-real-test-file}`
+- State Authority: `./.sdd2/feature-state.json`
+- Current Stage: unit-test-summary
+- Stage Status: awaiting-approval
+- Next Required Action: request-unit-test-summary-approval
+- Approval Evidence Destination: `./.sdd2/gate-approvals.jsonl`
 
-Updated：
-- `{updated-test-file-path-or-none-if-added-list-has-real-test-file}`
-
-Existing Tests Referenced：
-- `{existing-test-file-path-or-none}`
-
-## Coverage Summary
-
-Covered Scenarios：
-- {covered-business-path}
-- {covered-exception-or-boundary-path}
-
-Code Review Fixes Covered：
-- {code-review-finding-id-or-not-applicable}
-
-Not Covered：
-- {not-covered-scope-and-reason}
-
-## Test Result
-
-| Metric | Result |
-|---|---|
-| Build | SUCCESS / FAILED / NOT_RUN / BLOCKED |
-| Tests Run | {number-or-not-run} |
-| Failures | {number-or-not-run} |
-| Errors | {number-or-not-run} |
-| Skipped | {number-or-not-run} |
-
-## Warnings / Failure / Skipped Notes
-
-Warnings：
-- {warning-or-none}
-
-Failures：
-- {failure-summary-or-none}
-
-Skipped：
-- {skipped-summary-or-none}
-
-If tests were not executed：
-- Reason：{reason}
-- Alternative Validation：{ide-ci-script-manual-or-none}
-- Archive Impact：allowed / blocked / conditional
-
-## Remaining Test Risks
-
-- {remaining-risk-or-none}
-
-## SDD Linkage
-
-SDD Feature Directory：`{feature-directory-or-not-applicable}`
-
-Source Artifacts：
-- `proposal-input.md` / not applicable
-- `spec.md` / not applicable
-- `design.md` / not applicable
-- `tasks.md` / not applicable
-- `code-review-findings.md` / not applicable
-- `auto-fix-summary.md` / not applicable
-
-## Unit Test Gate
-
-Unit Test Gate Result：passed / blocked / conditional
-
-Archive allowed：yes / no / conditional
-
-Gate Notes：{notes-or-none}
-
----
-
-# Template Rules
-
-1. 不得删除模板章节；与当前入口无关的章节必须写 `not applicable` 并说明原因。
-2. 测试成功结果必须来自实际执行记录；未执行测试必须写明未执行原因、替代验证方式和归档影响。
-3. 必须记录 `Selected Testing Profile`、选择依据、不适用规则、测试框架风险和是否需要补充依赖。
-4. 必须记录新增或修改的测试源码文件；没有新增或修改测试源码文件时，Unit Test Gate Result 必须为 `blocked`，不得视为通过。
-5. 必须记录 warning / failure / skipped，即使测试最终通过。
-6. SDD 模式下必须关联 `proposal-input.md`、`spec.md`、`design.md`、`tasks.md`、`code-review-findings.md` 和 `auto-fix-summary.md`，不得标记为 `not applicable`。
-7. Standalone 模式下没有 SDD 资产时，Source Artifacts 可标记为 `not applicable`。
+Stop after recording this summary and deterministic Unit Test result. Archive preparation requires a new explicit human approval of this current summary revision.

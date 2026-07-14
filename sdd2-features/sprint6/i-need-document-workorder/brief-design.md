@@ -1,5 +1,7 @@
 # Brief Design（人工简要设计）
 
+> HISTORICAL EXAMPLE ONLY (quarantined 2026-07-14): this file predates deterministic SDD2 control. Approval, reviewer, status, and business text below is legacy illustration, not valid gate evidence or reusable requirement input.
+
 Feature Name（功能名称）：i-need-document-workorder
 
 Feature Type（功能类型）：enhancement

@@ -5,6 +5,7 @@
 - 审查方式：只读文件审查、跨文件规则比对、三条 Feature 链路回放、Git 追溯、结构校验、弱模型异常推演、示例工程测试
 - 范围边界：仅审查 SDD 2.0。`sdd/` 不在本报告范围内，未用于任何判断。
 - 结论标记：`事实` 表示文件或测试可直接证明；`判断` 表示基于事实的工程结论；`建议` 表示待批准的修改方向。
+- 整改复核：原始审查结论保留在第 1-12 节；已实施修复后的当前结论见第 13 节，并以第 13 节为准。
 
 ## 1. 总体结论
 
@@ -620,3 +621,109 @@ LibreOffice 渲染的 20 页版本中，多页中文字体缺失/方框、分页
 ## 12. 最终判断
 
 当前 SDD2.0 的主要价值不是“已经稳定运行”，而是已经把需要治理的对象基本列全：输入、产物、人工 Gate、代码评审、自动修复、测试和归档。下一步不能继续主要靠补充说明文字；应把 Gate、状态、revision、范围和追溯变成可执行数据合同与校验命令。完成 P0 后，才适合用真实需求做受控试运行；完成 P1 后，才具备团队级推广条件。
+
+## 13. 整改实施与复核结论
+
+### 13.1 当前结论
+
+**整改后成熟度：5/5（仓库可控边界），具备保持原入口的真实开发运行条件。**
+
+开发者入口未改变，仍然是：
+
+```text
+简要提示词 + 调用 uaw-sdd-ai-coding
+```
+
+开发者不需要运行控制脚本、维护 `.sdd2/`、提供 Git hash 或改用新命令。新增的状态、审批、范围、失效、锁、恢复和归档校验均由 Skill 内部执行。`sdd/` 不属于本次实施范围，Git 变更清单中不存在该目录下的修改。
+
+当前方案已把原先依赖自然语言的流程约束落为三层可执行合同：
+
+1. `references/sdd2-control-contract.md` 是阶段、状态、审批、失效、范围、恢复和 Archive 资格的唯一规则来源。
+2. `scripts/sdd2_control.py` 确定性执行合同；任何非零返回均为硬停止。
+3. JSON Schema、内容寻址资产快照、审批/事件哈希链和静态资产验证器约束持久化事实。
+
+### 13.2 分项成熟度
+
+| 维度 | 整改前 | 整改后 | 当前依据 |
+|---|---:|---:|---|
+| 架构与职责 | 3/5 | 5/5 | 三 Skill 模式和交接边界明确；控制合同唯一。 |
+| Hard Gate | 2/5 | 5/5 | 新消息、stage、attempt、revision、artifact hash 绑定；歧义、引用、否定、自批和重放均拒绝。 |
+| 状态与恢复 | 1/5 | 5/5 | `.sdd2/feature-state.json` 唯一状态源；`resume` 返回唯一动作；终态需显式 restart。 |
+| 范围与追溯 | 2/5 | 5/5 | 干净 Git 基线、worktree 锁、允许/禁止路径、base/head/tree/file/snapshot hash 全绑定。 |
+| 规则质量 | 2/5 | 5/5 | EPI/OM 分离；Backend、Model、Unit Test 冲突和失效示例已修正。 |
+| 自动校验 | 1/5 | 5/5 | 14 个状态机测试、静态资产验证器、Schema、三 Skill 快速校验齐全。 |
+| 示例与文档 | 3/5 | 5/5 | 三个历史 Feature 隔离为 superseded；指南和四张规范图与当前合同一致。 |
+
+### 13.3 P0 闭环
+
+| 原问题 | 状态 | 实施证据 | 复核结果 |
+|---|---|---|---|
+| P0-01 审批证据和 AI 自批 | 已关闭 | `sdd2_control.py`、`gate-approval.schema.json`、内容寻址 revision、三 Feature `.sdd2/` | 歧义/引用/否定/自批/消息重放测试通过；历史审批不回填。 |
+| P0-02 Tasks 与 Code Review 循环 | 已关闭 | `tasks-template.md`、`code-review-rules.md`、控制阶段顺序 | Tasks 只定义批准后的实施 Phase；未来质量 Gate 不再作为 Code Review 前置 checkbox。 |
+| P0-03 唯一状态、失效、恢复和幂等 | 已关闭 | `feature-state.json`、事件链、失效矩阵、`resume`、`restart-attempt` | 需求 revision、终态重启、链损坏和越序资产测试通过。 |
+| P0-04 Code Review 范围不确定 | 已关闭 | `implementation-scope.json`、`capture-scope`、`freeze-scope`、worktree lock | 脏基线、scope drift、并行 Feature 锁测试通过。 |
+| P0-05 Archive/失败测试终态混淆 | 已关闭 | `archive-evidence.json`、`archive-check`、`completed/closed-with-risk/aborted` | failed/blocked/not-run 不可成功归档；风险关闭测试通过。 |
+| P0-06 Review 后变更未强制重审 | 已关闭 | 快照失效规则、Auto-fix 完整复审、Unit Test 双阶段流程 | 生产/测试/配置变化使 Review、Auto-fix、Unit Test、Archive evidence 同步失效。 |
+| P0-07 EPI 加载 OM 规则 | 已关闭 | `epi-gateway.md`、`om-api-acl.md`、`routing-index.md` | 两份 runtime 规则职责和内容已分离，静态比较通过。 |
+
+### 13.4 P1 闭环
+
+| 原问题 | 状态 | 实施证据 |
+|---|---|---|
+| P1-01 多套资产/状态合同 | 已关闭 | 控制合同、固定九资产、Schema；Markdown 状态仅为投影。 |
+| P1-02 Routing 缺失和歧义 | 已关闭 | 重写 `routing-index.md`，按当前代码证据进行最小路由。 |
+| P1-03 Auto-fix 缺模板/覆盖 Findings | 已关闭 | 新增 `auto-fix-summary-template.md`；Findings revision 快照不可变；逐项 disposition。 |
+| P1-04 Unit Test 路径/格式/框架冲突 | 已关闭 | 重写 testing profile 与五类 Java 测试规则；以真实依赖和附近测试为准。 |
+| P1-05 Backend/Model 行为冲突 | 已关闭 | 重写 backend/model runtime 规则，删除不安全默认和互斥示例。 |
+| P1-06 `original/` 运行边界不清 | 已关闭 | `source-provenance.json` 完整映射 26 个来源文件；运行时不直接加载 `original/`。 |
+| P1-07 实施结果审核不可执行 | 已关闭 | Tasks Phase、逐 Phase 人工 Review、控制引擎顺序与证据绑定。 |
+| P1-08 Feature 到代码缺不可变标识 | 已关闭 | base/head/tree/scope/file hashes 与 Archive evidence。 |
+| P1-09 示例越界/归档后变化 | 已关闭 | 三个既有 Feature 全部隔离为 historical-example + superseded，不作为活动证据。 |
+| P1-10 Transactions Dictionary 无来源和时效 | 已关闭 | 增加 source hash、导入 commit、freshness/use boundary；使用前核对当前源码。 |
+| P1-11 指南漂移 | 已关闭 | 重建 DOCX 与四张图；加入可复现生成脚本；13 页逐页检查通过。 |
+| P1-12 无可执行校验器 | 已关闭 | `validate_sdd2_assets.py`、14 个控制测试、三 Skill quick validator。 |
+
+### 13.5 P2 闭环
+
+| 原问题 | 状态 | 实施证据 |
+|---|---|---|
+| P2-01 图示重复命名 | 已关闭 | 保留四张 hyphen 规范图，删除三张 underscore 重复图。 |
+| P2-02 DOCX 渲染可移植性 | 已关闭 | 使用通用中文字体和稳定页宽/表格；macOS LibreOffice PDF 渲染 13 页无裁切。 |
+| P2-03 术语混用 | 已关闭 | 统一 stage/status/Gate/scope/revision 命名，指南提供唯一术语口径。 |
+
+### 13.6 异常场景复核
+
+| 场景 | 当前结果 |
+|---|---|
+| 跳过 Spec/Design 或越序生成资产 | 控制命令拒绝并停止。 |
+| 无人工审批、模糊审批、引用/否定审批 | 拒绝；只接受 Gate 后的新用户明确消息。 |
+| 历史示例或旧消息被当作当前审批 | 拒绝；历史 Feature 为 `superseded`，消息 ID 不可重放。 |
+| 代码或测试变化后沿用 Review | scope drift 自动失效，必须重新冻结和完整 Review。 |
+| Auto-fix 未复审就进入 Unit Test | Auto-fix Gate 无法在旧 scope 关闭，Unit Test 被阻塞。 |
+| Unit Test 失败仍 Archive | Archive check 拒绝；只能修复重跑、显式风险关闭或中止。 |
+| 会话/设备中断 | `resume` 校验仓库身份、分支、锁、资产和哈希链，并返回唯一动作。 |
+| 多 Feature 共用工作树 | 第二个 active Feature 被锁拒绝；并行必须使用独立 worktree。 |
+| 审批/事件记录被篡改 | SHA-256 链校验失败，后续写操作硬停止。 |
+
+### 13.7 最终验证记录
+
+| 验证 | 结果 |
+|---|---|
+| 控制引擎单元测试 | 14/14 通过，覆盖审批、重放、越序、脏基线、范围漂移、哈希链、锁、恢复、失败关闭和完整成功流。 |
+| 静态资产验证 | 52 个 runtime 文件、3 个历史 Feature；0 error、0 warning。 |
+| 历史 Feature 控制校验 | 3/3 通过，仅返回预期的 `HISTORICAL_EXAMPLE_NOT_VALID_GATE_EVIDENCE` 警告。 |
+| Python / JSON / Schema | 编译与解析全部通过。 |
+| Skill 结构校验 | `uaw-sdd-ai-coding`、`uaw-code-review`、`uaw-unit-test` 全部 valid。 |
+| 陈旧标记/引用 | 活动 Skill 中无 `[✓]`、旧 Findings 路径或历史 AI 审批标记。 |
+| 排除目录 | `git diff --name-only` 在 `sdd/` 下无结果。 |
+| DOCX 结构 | 115 paragraphs、29 tables、4 inline images；旧状态/Gate 语义扫描为 0。 |
+| DOCX 视觉 | 系统 LibreOffice 渲染 13 页，逐页检查无缺字、遮挡、裁切或表格溢出。 |
+| Git whitespace | `git diff --check` 通过。 |
+
+### 13.8 剩余平台边界
+
+仓库能够确定性证明被记录的消息来源字段、文本摘要、时间、attempt、stage、revision/hash 和哈希链；平台提供真实 message ID 时同时绑定。若宿主平台不提供可独立查询的 message ID，仓库不能反向证明外部 UI 的账户身份和完整消息时间线，因此不对此作超出证据的声明。该边界已在控制合同和指南中显式表达，不影响仓库可控范围内的 5/5 结论。
+
+### 13.9 最终判断
+
+当前 SDD2.0 已从文档化流程升级为可执行、可校验、可恢复的工程控制流程。最关键的成功条件不是增加开发者操作，而是在保持原入口的同时，把每个 Gate、资产 revision、Git 范围、质量结果和恢复动作变成机器可验证事实。所有原 P0、P1、P2 已按本节证据关闭。

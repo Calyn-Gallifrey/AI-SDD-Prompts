@@ -1,5 +1,7 @@
 # archive.md - policy-info-query-return-change-summary
 
+> HISTORICAL EXAMPLE ONLY (quarantined 2026-07-14): this file predates deterministic SDD2 control. Approval, reviewer, status, and business text below is legacy illustration, not valid gate evidence or reusable requirement input.
+
 ## 1. Archive Summary
 
 | Field | Value |
@@ -97,7 +99,7 @@ Code Review found that the initial implementation would expose `changeSummary` t
 
 | Review Stage | Reviewer Role | Review Time | Result | Review Comments | Required Fixes | Next Stage Allowed |
 |---|---|---|---|---|---|---|
-| archive | AI-as-human-reviewer | 2026-06-17 14:17 CST | 通过 | SDD2.0 全流程已按最新版 Skill 跑通，Code Review 发现并修复范围扩张问题，Unit Test Summary 已通过。 | 无 | no |
+| archive | legacy-simulated-reviewer (not valid approval) | 2026-06-17 14:17 CST | 通过 | SDD2.0 全流程已按最新版 Skill 跑通，Code Review 发现并修复范围扩张问题，Unit Test Summary 已通过。 | 无 | no |
 
 ## 10. Process Status
 

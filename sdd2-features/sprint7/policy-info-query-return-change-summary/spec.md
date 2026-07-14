@@ -1,5 +1,7 @@
 # spec.md - policy-info-query-return-change-summary
 
+> HISTORICAL EXAMPLE ONLY (quarantined 2026-07-14): this file predates deterministic SDD2 control. Approval, reviewer, status, and business text below is legacy illustration, not valid gate evidence or reusable requirement input.
+
 ## 1. Requirement Summary
 
 Enhance the existing policy information change work order query API:
@@ -54,7 +56,7 @@ The response must include a new read-only field `changeSummary`. The field is de
 
 | Review Stage | Reviewer Role | Review Time | Result | Review Comments | Required Fixes | Next Stage Allowed |
 |---|---|---|---|---|---|---|
-| spec | AI-as-human-reviewer | 2026-06-17 14:10 CST | 通过 | 需求范围限定为既有查询响应新增派生字段，验收标准可测试，非范围约束明确。 | 无 | yes |
+| spec | legacy-simulated-reviewer (not valid approval) | 2026-06-17 14:10 CST | 通过 | 需求范围限定为既有查询响应新增派生字段，验收标准可测试，非范围约束明确。 | 无 | yes |
 
 ## 7. Process Status
 
@@ -73,5 +75,5 @@ The response must include a new read-only field `changeSummary`. The field is de
 | Time | Stage | Action | Input | Output | Result | Next |
 |---|---|---|---|---|---|---|
 | 2026-06-17 14:10 CST | spec | Generated spec from proposal-input.md | proposal-input.md | spec.md | drafted | spec review |
-| 2026-06-17 14:10 CST | spec-review | AI-as-human-reviewer reviewed spec | spec.md | review record | passed | design |
+| 2026-06-17 14:10 CST | spec-review | legacy-simulated-reviewer (not valid approval) reviewed spec | spec.md | review record | passed | design |
 | 2026-06-17 14:17 CST | archive-sync | Synced final status after code review, auto-fix, and unit test | final SDD assets | spec.md | archived | archive |

@@ -1,5 +1,7 @@
 # auto-fix-summary.md - policy-beneficiary-email-change
 
+> HISTORICAL EXAMPLE ONLY (quarantined 2026-07-14): this file predates deterministic SDD2 control. Approval, reviewer, status, and business text below is legacy illustration, not valid gate evidence or reusable requirement input.
+
 ## Auto-fix Summary
 
 Review Source：`code-review-findings.md`

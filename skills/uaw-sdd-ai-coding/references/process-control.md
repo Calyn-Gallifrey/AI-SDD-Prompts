@@ -1,191 +1,66 @@
-# SDD Process Control Rules
+# SDD2.0 Internal Operator Control
 
-> 本文件定义 UAW-SDD 功能流程的状态、审核、验证和归档控制规则。
-> 所有 SDD 功能资产必须遵守本文件；若模板与本文件冲突，以本文件为准，并同步修正模板。
+`sdd2-control-contract.md` is authoritative. This file maps normal workflow actions to the internal deterministic CLI. These commands are run by the Skill, never by the developer.
 
----
+Set once while operating the Skill:
 
-# 1. Process Status 生命周期
-
-## 1.1 状态含义
-
-- `draft`：文件已创建但尚未完成。
-- `confirmed`：当前阶段已通过人工确认，可进入下一阶段。
-- `executing`：当前阶段正在实施。
-- `review`：当前阶段正在审核。
-- `fix`：根据审核问题修复中。
-- `unit-test`：测试生成或测试验证中。
-- `archived`：功能流程已完成归档。
-- `blocked`：当前阶段阻塞，必须先处理阻塞原因。
-
-## 1.2 阶段状态更新规则
-
-每个核心 SDD 资产文件必须包含 `Process Status` 与 `Process Audit Trail`：
-
-- `proposal-input.md`
-- `spec.md`
-- `design.md`
-- `tasks.md`
-- `archive.md`
-
-规则：
-
-1. 进入下一阶段前，当前阶段文件必须更新为可进入下一阶段的状态。
-2. 每次阶段确认、驳回、修复、测试、归档，都必须追加 `Process Audit Trail`。
-3. `Process Status` 只记录当前文件在整条流程中的最新有效状态。
-4. `Process Audit Trail` 记录关键阶段流转，不记录无价值流水账。
-5. 核心流程闸门不得标记为跳过或不适用；仅实施子 Phase 可在 design 明确不涉及对应层级时标记为不适用，并必须写明原因和批准角色。
-
-## 1.3 Process Status 字段口径
-
-`Process Status` 必须至少包含以下字段：
-
-- Current Stage
-- Stage Status
-- Last Completed Step
-- Next Required Step
-- Blocked Reason
-
-可按流程需要补充以下字段：
-
-- Human Confirmation Required
-- Allowed Next Action
-- Forbidden Next Action
-- Updated At
-
-规则：
-
-1. 核心判断以必填字段和 `Process Audit Trail` 为准。
-2. 模板可以提供扩展字段，但扩展字段缺失不单独构成流程阻塞。
-3. `archive.md` 建议保留扩展字段，用于明确归档后的允许动作和禁止动作。
-4. 如果 `Stage Status=blocked`，`Blocked Reason` 必须写明阻塞原因、责任角色和恢复条件。
-
-## 1.4 Archive 前状态同步
-
-生成 `archive.md` 前，必须完成状态同步：
-
-1. `proposal-input.md`、`spec.md`、`design.md`、`tasks.md` 均不得停留在旧阶段待办状态。
-2. 上述文件的 `Process Status` 必须更新到最终可归档状态。
-3. 上述文件的 `Process Audit Trail` 必须追加 Archive 同步记录。
-4. `archive.md` 必须记录状态同步结果。
-5. 未完成状态同步时，禁止标记 Archive 完成。
-
----
-
-# 2. 人工审核规则
-
-## 2.1 审核节点
-
-标准流程必须包含以下人工审核节点：
-
-1. spec 审核
-2. design 审核
-3. tasks 审核
-4. tasks 中每个执行 Phase 审核
-5. 实施结果审核
-6. SDD 内部 Code Review
-7. Unit Test Summary 审核
-8. Archive 审核
-
-规则：
-
-1. 未通过人工审核的阶段不得进入下一阶段。
-2. 如果由 AI 代理人工审核，必须在功能资产中标明审核角色，不得记录为真实人员审批。
-3. 审核结论必须是：通过 / 有条件通过 / 驳回 / blocked / 不适用。
-4. 有条件通过必须记录条件、修复范围和后续验证方式。
-5. 真实 SDD 执行中，AI 不得自行给出人工审核通过结论；只有用户在当前审核点之后明确批准，才视为通过。
-6. `AI-as-human-reviewer` 仅允许用于用户明确要求的 demo、验证演练或模拟审核，不得用于真实内网执行流程。
-7. 模糊回复（如“继续”“下一步”“ok”）未明确指向当前审核阶段和通过结论时，不得视为审核通过，必须停留在当前审核点并要求补充明确审核结论。
-8. 若在缺少审核通过的情况下已经生成下游资产或代码，必须记录为 Gate Violation，并停止继续推进，等待用户处理指令。
-9. spec、design、tasks、Code Review、Unit Test Summary、Archive 是核心流程闸门，不得使用“不适用”作为通过结论；核心闸门无法完成时必须记录为 `blocked`。
-10. 实施子 Phase 只有在 design 已明确该层级无变更时才允许“不适用”；Phase 6 测试层在存在生产代码变更时不得标记为不适用。
-
-## 2.2 Phase Review
-
-`tasks.md` 中每个执行 Phase 完成后，必须记录 Phase Review。
-
-必须记录：
-
-| Phase | Reviewer Role | Review Time | Result | Findings | Required Action | Next Phase Allowed |
-|---|---|---|---|---|---|---|
-|  |  |  |  |  |  |  |
-
-规则：
-
-1. 每个实际执行的 Phase 都必须有审核记录。
-2. 被跳过的 Phase 必须记录“不适用原因”。
-3. Phase Review 未通过时，不得进入下一 Phase。
-4. Phase Review 中发现的问题必须回到对应 Phase 修复。
-5. Phase Review 不替代 SDD 内部 Code Review。
-
----
-
-# 3. 验证方式记录
-
-SDD 不强制绑定单一验证命令或单一执行环境。
-
-允许的验证方式包括：
-
-- IDE 内置 Maven / Gradle
-- Maven Wrapper / Gradle Wrapper
-- 本机 Maven / Gradle
-- CI Pipeline
-- 项目脚本
-- 手工接口验证
-- 其他经团队确认的验证方式
-
-必须记录：
-
-- Validation Method：IDE / Wrapper / Local CLI / CI / Script / Manual / Other
-- Execution Environment：本机 / CI / 开发容器 / IDE / 其他
-- Build Tool 或测试执行器
-- 实际执行入口：命令、IDE 配置名、CI Job、脚本路径或手工验证说明
-- 测试结果：pass / fail / blocked / not run
-- 测试数量或覆盖场景
-- warning / failure / skipped 说明
-
-规则：
-
-1. 不得把本机是否安装 `mvn` 作为 SDD 流程前置条件。
-2. 如当前环境无法执行命令，允许记录 IDE / CI / Wrapper / 手工验证作为实际验证方式。
-3. 无法自动验证时，必须说明原因、替代验证方式和归档影响。
-4. 验证记录不得替代 Code Review 和 Unit Test Summary。
-5. 验证记录不得替代单元测试源码生成；存在生产代码变更时，必须生成或更新单元测试源码文件。
-
----
-
-# 4. SDD 内部 Code Review Findings 产物
-
-SDD 内部 Code Review 必须输出 Markdown Findings 产物，不生成 HTML 报告。
-
-固定文件：
-
-```text
-./code-review-findings.md
+```bash
+CONTROL=skills/uaw-sdd-ai-coding/scripts/sdd2_control.py
 ```
 
-规则：
+## Command Map
 
-1. `code-review-findings.md` 必须生成在当前功能资产目录。
-2. `code-review-findings.md` 只用于 SDD 内部质量闸门，不得作为独立 HTML 评审报告。
-3. `code-review-findings.md` 必须被 `tasks.md` 和 `archive.md` 引用。
-4. Findings 完成后必须进入 Review-driven Auto-fix。
-5. Auto-fix 完成后必须进入 Unit Test Generation / Unit Test Summary。
-6. 独立 Git 范围评审和独立工作区快照评审仍按 `UAW-Code-Review.md` 的 standalone 规则生成 HTML 报告。
-7. SDD 内部 Code Review 缺少输入资产或实现范围时，必须停止在 `blocked` 状态，不得降级为 standalone 评审。
-8. SDD 内部 Code Review 不得输出空泛通过结论；必查项未逐项检查完成时，不得进入 Auto-fix、Unit Test 或 Archive。
+| Workflow action | Internal command |
+|---|---|
+| Initialize after Brief persistence | `python3 "$CONTROL" init --feature-dir <dir> --feature-id <id> --mode real` |
+| Resume/current-state check | `python3 "$CONTROL" resume --feature-dir <dir>` |
+| Record changed public artifact | `python3 "$CONTROL" record-artifact --feature-dir <dir> --stage <stage>` |
+| Persist explicit current approval | `python3 "$CONTROL" approve --feature-dir <dir> --stage <stage> --source user-message --approver-role human --approval-text <exact-message> --message-id <id-if-available>` |
+| Capture clean implementation scope | `python3 "$CONTROL" capture-scope --feature-dir <dir> --allowed-path <pattern> --forbidden-path <pattern> --required-phase <phase> --test-path <pattern>` |
+| Record Phase Review | `python3 "$CONTROL" phase-review --feature-dir <dir> --phase <phase> --approval-text <exact-message> --message-id <id-if-available>` |
+| Freeze current code/test scope | `python3 "$CONTROL" freeze-scope --feature-dir <dir>` |
+| Record quality gate | `python3 "$CONTROL" quality-gate --feature-dir <dir> --gate <code-review|auto-fix|unit-test> --result <result> --evidence <reproducible-evidence>` |
+| Prepare immutable Archive evidence | `python3 "$CONTROL" prepare-archive --feature-dir <dir>` |
+| Check Archive eligibility | `python3 "$CONTROL" archive-check --feature-dir <dir> --require-archive` |
+| Validate all controls | `python3 "$CONTROL" validate --feature-dir <dir>` |
+| Explicit failed-flow closure | `python3 "$CONTROL" close --feature-dir <dir> --result <closed-with-risk|aborted> --approval-text <exact-message>` |
+| Explicit new attempt | `python3 "$CONTROL" restart-attempt --feature-dir <dir> --approval-text <exact-message>` |
 
----
+Repeat `--allowed-path`, `--forbidden-path`, `--required-phase`, and `--test-path` as needed. Patterns must be narrow; `*`, `**`, repository root, and absolute paths are rejected.
 
-# 5. 禁止事项
+Use `--non-production-change` only when the approved Tasks contain no production-code change. Record the justification in Design and Tasks. It must not be used to bypass test-source requirements.
 
-1. 禁止从 proposal 直接生成代码。
-2. 禁止跳过人工审核节点。
-3. 禁止跳过 Phase Review。
-4. 禁止跳过 SDD 内部 Code Review。
-5. 禁止在 Code Review / Auto-fix / 单元测试源码生成 / Unit Test Summary 完成前生成 Archive。
-6. 禁止只扫描 SDD 资产目录而不扫描当前代码现状。
-7. 禁止把本地命令可用性作为唯一验证前置条件。
-8. 禁止在 SDD 内部 Code Review 中生成 HTML 报告。
-9. 禁止用 standalone code review HTML 报告替代 SDD 内部 `code-review-findings.md`。
-10. 禁止用 Unit Test Summary 替代单元测试源码文件。
+## Approval Handling
+
+Do not execute `approve` from the same assistant turn that generated the gate artifact. Wait for a new user message. Pass the exact approval text without rewriting it. If the platform exposes a stable message ID, record it; otherwise leave it absent and retain timestamp, exact text, artifact revision, artifact hash, and approval hash-chain evidence.
+
+For an explicitly authorized demo only:
+
+1. initialize with `--mode demo`;
+2. persist the separate current user authorization with `authorize-demo`;
+3. use `source=demo-simulation` and `approver-role=ai-as-human-reviewer`;
+4. label every output as simulation evidence, not human approval.
+
+## Error Handling
+
+Exit code meanings:
+
+- `0`: action succeeded and returned current structured result.
+- `1`: validation/check completed and found blocking errors.
+- `2`: command or transition was rejected.
+
+For `1` or `2`, stop. Preserve the returned error, update the human-readable artifact status only as a projection of `.sdd2/feature-state.json`, and follow `resume.next_required_action`. Never edit control JSON/JSONL by hand.
+
+## Recovery Rules
+
+- Missing/mismatched lock: resume may reacquire only when no other feature owns the worktree; otherwise use another worktree.
+- Scope drift: freeze the new snapshot, then rerun Code Review, Auto-fix closure, Unit Test, Unit Test Summary approval, and Archive evidence as invalidated.
+- Artifact drift: record the changed artifact, then repeat all invalidated downstream actions.
+- Hash-chain corruption: stop and retain evidence; do not repair or rewrite history automatically.
+- Failed/blocked test: fix and rerun on current scope, or obtain explicit user risk closure/abort. Never complete Archive.
+- Interrupted session: call `resume`; do not infer state from conversation history.
+- Repeated execution: use `restart-attempt` only after a new explicit user retry/restart message.
+
+## Historical Examples
+
+Use `migrate-legacy` once to quarantine pre-control examples. It records existing artifacts as historical, stores no fabricated approvals, marks the state `superseded`, and disables resume/progression.

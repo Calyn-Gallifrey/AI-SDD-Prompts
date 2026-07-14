@@ -1,5 +1,7 @@
 # proposal-input.md
 
+> HISTORICAL EXAMPLE ONLY (quarantined 2026-07-14): this file predates deterministic SDD2 control. Approval, reviewer, status, and business text below is legacy illustration, not valid gate evidence or reusable requirement input.
+
 本文件由 `uaw-sdd-ai-coding` 根据 `Brief Design（人工简要设计）` 自动组装，开发不需要手工填写。
 
 ## 1. Task Basic Information
@@ -118,5 +120,5 @@ Blocked Reason：无
 | Time | Stage | Action | Result | Next Step |
 |---|---|---|---|---|
 | 2026-06-11 14:35 | brief-design | AI parsed required fields | passed | assemble proposal-input.md |
-| 2026-06-11 14:36 | proposal | AI-as-human-reviewer confirmed proposal input | passed | generate spec.md |
+| 2026-06-11 14:36 | proposal | legacy-simulated-reviewer (not valid approval) confirmed proposal input | passed | generate spec.md |
 | 2026-06-11 14:43 | archive-sync | AI synchronized final process status | archived | none |

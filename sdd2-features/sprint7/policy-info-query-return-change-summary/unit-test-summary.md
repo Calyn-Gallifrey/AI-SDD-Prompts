@@ -1,5 +1,7 @@
 # unit-test-summary.md - policy-info-query-return-change-summary
 
+> HISTORICAL EXAMPLE ONLY (quarantined 2026-07-14): this file predates deterministic SDD2 control. Approval, reviewer, status, and business text below is legacy illustration, not valid gate evidence or reusable requirement input.
+
 ## Unit Test Summary
 
 Entry Mode：SDD_UNIT_TEST

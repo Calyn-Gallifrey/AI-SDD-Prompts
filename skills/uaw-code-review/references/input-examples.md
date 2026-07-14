@@ -41,7 +41,7 @@ Include Untracked Files（包含未跟踪文件）：<yes | no>
 
 Baseline（基准）：<current HEAD | specified baseline>
 
-Formal Merge Gate（是否正式合并门禁）：<yes | no>
+Formal Merge Gate（是否正式合并门禁）：no
 
 Report Output Directory（报告输出目录）：<report-output-directory>
 

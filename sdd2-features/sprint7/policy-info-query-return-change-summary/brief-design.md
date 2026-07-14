@@ -1,5 +1,7 @@
 # Brief Design（人工简要设计）
 
+> HISTORICAL EXAMPLE ONLY (quarantined 2026-07-14): this file predates deterministic SDD2 control. Approval, reviewer, status, and business text below is legacy illustration, not valid gate evidence or reusable requirement input.
+
 Feature Name（功能名称）：policy-info-query-return-change-summary
 
 Feature Type（功能类型）：enhancement
@@ -63,4 +65,4 @@ Open Questions（待确认问题）：
 
 | Review Stage | Reviewer Role | Review Time | Result | Review Comments | Required Fixes | Next Stage Allowed |
 |---|---|---|---|---|---|---|
-| brief-design | AI-as-human-reviewer | 2026-06-17 14:10 | 通过 | 必填字段完整，范围明确为既有查询响应新增字段，禁止扩展项清晰。 | 无 | yes |
+| brief-design | legacy-simulated-reviewer (not valid approval) | 2026-06-17 14:10 | 通过 | 必填字段完整，范围明确为既有查询响应新增字段，禁止扩展项清晰。 | 无 | yes |

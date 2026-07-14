@@ -1,0 +1,102 @@
+{
+  "approvals": {},
+  "artifacts": {
+    "archive": {
+      "path": "archive.md",
+      "recorded_at": "2026-07-14T09:12:54+00:00",
+      "revision": 1,
+      "sha256": "2f4662bfa4c34f69d6bf97920853a6242a4de6d737ebff54936146c603584fad",
+      "status": "historical-record"
+    },
+    "auto-fix-summary": {
+      "path": "auto-fix-summary.md",
+      "recorded_at": "2026-07-14T09:12:54+00:00",
+      "revision": 1,
+      "sha256": "8ed91bb118ce1b7468ff773364e54c22bf842aba9cc951402f98681bed84df1e",
+      "status": "historical-record"
+    },
+    "brief-design": {
+      "path": "brief-design.md",
+      "recorded_at": "2026-07-14T09:12:54+00:00",
+      "revision": 1,
+      "sha256": "93978f35bcb8240747b56938ca2ed33bca9b3222c35cda37e90d9c17488a8fb4",
+      "status": "historical-record"
+    },
+    "code-review-findings": {
+      "path": "code-review-findings.md",
+      "recorded_at": "2026-07-14T09:12:54+00:00",
+      "revision": 1,
+      "sha256": "7fae12f77e50bc25c0bf973fa760973727519dc8f2430faf83c0992040f005e0",
+      "status": "historical-record"
+    },
+    "design": {
+      "path": "design.md",
+      "recorded_at": "2026-07-14T09:12:54+00:00",
+      "revision": 1,
+      "sha256": "20ef8d07810d08e6945c40578b1cb985632388b9cbb5d33a056c4d577ba5828d",
+      "status": "historical-record"
+    },
+    "proposal-input": {
+      "path": "proposal-input.md",
+      "recorded_at": "2026-07-14T09:12:54+00:00",
+      "revision": 1,
+      "sha256": "b0ab88e7a3398546cbf1a9ff0480e96574a44792b215019ffeef77d5e9bfcd32",
+      "status": "historical-record"
+    },
+    "spec": {
+      "path": "spec.md",
+      "recorded_at": "2026-07-14T09:12:54+00:00",
+      "revision": 1,
+      "sha256": "1d2b9e84eee0050281e43fb1e952d814e99c22beda41ed94c4d4e8aa1ea956bf",
+      "status": "historical-record"
+    },
+    "tasks": {
+      "path": "tasks.md",
+      "recorded_at": "2026-07-14T09:12:54+00:00",
+      "revision": 1,
+      "sha256": "5d7eef52e391ee67568a9e583263903f6056c90c61c536b9a855d17bd615cbc7",
+      "status": "historical-record"
+    },
+    "unit-test-summary": {
+      "path": "unit-test-summary.md",
+      "recorded_at": "2026-07-14T09:12:54+00:00",
+      "revision": 1,
+      "sha256": "08abe2ecc5aa410abb2f6adcbb70c1b5fd30f2dfafac862bb88693c67d32fb02",
+      "status": "historical-record"
+    }
+  },
+  "attempt": 1,
+  "blocked": {
+    "code": "LEGACY_APPROVAL_EVIDENCE_UNVERIFIED",
+    "reason": "Historical AI review records are not valid human approvals.",
+    "recovery": "Run a new SDD2 attempt from a current brief; do not resume this example."
+  },
+  "created_at": "2026-07-14T09:12:54+00:00",
+  "current_stage": "archive",
+  "demo_authorization": null,
+  "entry_contract": {
+    "developer_action_required": false,
+    "user_entry": "brief-prompt-and-skill-call",
+    "version": 1
+  },
+  "execution_mode": "historical-example",
+  "feature_dir": "sdd2-features/sprint6/policy-beneficiary-email-change",
+  "feature_id": "historical-s6-policy-beneficiary-email-change",
+  "feature_repo_path": "sdd2-features/sprint6/policy-beneficiary-email-change",
+  "invalidations": [],
+  "last_completed_stage": null,
+  "next_required_action": "none-historical-example",
+  "phase_reviews": {},
+  "quality_gates": {},
+  "required_phases": [],
+  "revision": 1,
+  "schema_version": "2.0.0",
+  "stage_status": "superseded",
+  "updated_at": "2026-07-14T09:12:54+00:00",
+  "workspace_binding": {
+    "branch": "main",
+    "repo_root": ".",
+    "repository_id": "26e983319b908dbbc62f1439f856455eb3f1083035d444879e32fd92e3a4d589",
+    "worktree": "."
+  }
+}

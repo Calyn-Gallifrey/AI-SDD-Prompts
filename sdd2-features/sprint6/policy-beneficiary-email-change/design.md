@@ -1,5 +1,7 @@
 # design.md - policy-beneficiary-email-change
 
+> HISTORICAL EXAMPLE ONLY (quarantined 2026-07-14): this file predates deterministic SDD2 control. Approval, reviewer, status, and business text below is legacy illustration, not valid gate evidence or reusable requirement input.
+
 ## 1. Design Summary
 
 在现有 `PolicyBeneficiaryChangeWorkOrderController`、`PolicyBeneficiaryChangeWorkOrderService`、`PolicyBeneficiaryChangeWorkOrder` 上做小范围增强，新增邮箱变更入口。为避免影响现有受益人变更 API，请求 DTO 单独新增，实体和响应 DTO 增加可选邮箱字段。
@@ -112,7 +114,7 @@ policyNo + beneficiaryIdNo + status SUBMITTED
 
 | Review Stage | Reviewer Role | Review Result | Review Comments | Required Fixes | Next Stage Allowed |
 |---|---|---|---|---|---|
-| design | AI-as-human-reviewer | 通过 | 设计落位在现有受益人变更模块内，新增 DTO 和 endpoint 能避免破坏原 API，测试策略清晰。 | 无 | yes |
+| design | legacy-simulated-reviewer (not valid approval) | 通过 | 设计落位在现有受益人变更模块内，新增 DTO 和 endpoint 能避免破坏原 API，测试策略清晰。 | 无 | yes |
 
 ## Process Status
 
@@ -131,5 +133,5 @@ Blocked Reason：无
 | Time | Stage | Action | Result | Next Step |
 |---|---|---|---|---|
 | 2026-06-11 12:41 | design | AI generated design.md | draft completed | human review |
-| 2026-06-11 12:42 | design-review | AI-as-human-reviewer reviewed design.md | passed | generate tasks.md |
+| 2026-06-11 12:42 | design-review | legacy-simulated-reviewer (not valid approval) reviewed design.md | passed | generate tasks.md |
 | 2026-06-11 12:50 | archive-sync | AI synchronized final process status | archived | none |
