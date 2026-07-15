@@ -38,6 +38,7 @@
 - Demo 预演报告：`docs/reviews/UAW-SDD2.0-demo-rehearsal-2026-07-15.md`
 - 全盘审查与整改报告：`docs/reviews/UAW-SDD2.0-full-audit-2026-07-14.md`
 - 操作指南：`docs/UAW-SDD2.0 Skill化方案说明与操作指南.docx`
+- 本轮语言加固提交：`facb978 feat(sdd2): enforce simplified Chinese artifacts`
 - 先前 Demo 控制修复提交：
   - `e5829b9 fix(sdd2): preserve demo approval provenance`
   - `4218185 fix(sdd2): close demo rehearsal control gaps`
@@ -63,8 +64,8 @@
 ## Git 与同步
 
 - 分支：`main`；上游：`origin/main`。
-- 本轮语言加固将与本 handoff 一起提交；提交后本地预计相对上游 ahead 6、behind 0。
-- 本机仍缺少可用的 GitHub HTTPS 凭据，推送预计继续返回：
+- 语言加固提交 `facb978` 完成后，本地相对上游 ahead 6、behind 0；本 handoff 更新提交后预计 ahead 7、behind 0。
+- 2026-07-15 已执行 `git push origin main`，本机因缺少可用的 GitHub HTTPS 凭据而失败：
 
 ```text
 fatal: could not read Username for 'https://github.com': Device not configured
