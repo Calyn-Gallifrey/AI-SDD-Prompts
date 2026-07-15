@@ -1,36 +1,36 @@
-# OM API Anti-Corruption Layer Rule
+# OM API 防腐层规则
 
-## Trigger And Evidence
+## 触发条件与证据
 
-Use only for a confirmed Old Mutual (OM) external API integration. Identify the current OM client/SDK operation, request/response/error contract, authentication, timeouts/retries, shared ACL utilities, and a current module example.
+只用于已确认的 Old Mutual（OM）外部 API 集成。确认当前 OM Client/SDK Operation、请求/响应/错误契约、认证、Timeout/Retry、共享 ACL 工具和当前模块示例。
 
-This rule is distinct from EPI. Do not route an EPI call through OM types/utilities merely because the old examples looked similar.
+本规则与 EPI 不同。不得因为旧示例相似，就通过 OM 类型或工具调用 EPI。
 
-## ACL Structure
+## ACL 结构
 
-1. Business/application services depend on an internal OM gateway/service interface, not an external SDK client.
-2. The implementation owns transport invocation and delegates deterministic mapping/parsing.
-3. External OM request/response/result types do not escape into domain/controller contracts.
-4. Use an existing `RemoteResultUtil` or equivalent only if current OM code confirms its contract handles success, error code, null data, warnings, and partial results correctly. `Optional.empty()` must not erase a provider error.
-5. Map OM errors to internal typed outcomes/exceptions with provider code/correlation retained safely.
-6. Define timeout/retry/fallback per operation. Retry only safe/idempotent calls.
-7. Redact credentials and personal/provider payload data in logs; preserve approved correlation identifiers.
+1. 业务/应用 Service 依赖内部 OM Gateway/Service Interface，不直接依赖外部 SDK Client。
+2. 实现层负责 Transport 调用，并委托确定性映射/解析。
+3. 外部 OM 请求、响应和结果类型不得泄露到 Domain/Controller 契约。
+4. 只有当前 OM 代码确认 `RemoteResultUtil` 或同类工具能正确处理成功、错误码、null Data、Warning 和部分结果时才可使用。`Optional.empty()` 不得抹去 Provider 错误。
+5. 将 OM 错误映射为内部类型化结果/异常，并安全保留 Provider Code 和 Correlation。
+6. 按 Operation 定义 Timeout、Retry 和 Fallback。只重试安全、幂等调用。
+7. 日志脱敏凭据、个人数据和 Provider Payload，保留已批准的 Correlation 标识。
 
-## Mapping
+## 映射
 
-- Field mapping and defaults are explicit and version-aware.
-- Unknown enum/status behavior is defined.
-- Null/empty/partial payload behavior follows the actual OM contract.
-- Date/time, money/precision, locale/country, and identifier conversion are tested where present.
+- 字段映射和默认值必须显式并考虑版本。
+- 定义未知枚举/状态行为。
+- null、空值和部分 Payload 行为遵循真实 OM 契约。
+- 涉及时测试日期时间、金额精度、Locale/国家和标识符转换。
 
-## Tests
+## 测试
 
-- request/header/auth metadata mapping without real secrets;
-- successful and empty/partial response mapping;
-- OM business error, malformed response, timeout, and transport failure;
-- retry/fallback and idempotency behavior when configured;
-- compatibility for unknown/new provider values.
+- 请求、Header 和认证元数据映射，不使用真实密钥；
+- 成功、空值和部分响应映射；
+- OM 业务错误、畸形响应、Timeout 和传输失败；
+- 配置时的 Retry、Fallback 和幂等行为；
+- 未知/新增 Provider 值的兼容性。
 
-## Block Conditions
+## 阻塞条件
 
-Block when the current OM operation contract, external type version, error semantics, auth, or timeout/retry policy is unknown. Do not implement from illustrative class names.
+当前 OM Operation 契约、外部类型版本、错误语义、认证或 Timeout/Retry 策略不明确时必须阻塞。不得根据示意类名实现。

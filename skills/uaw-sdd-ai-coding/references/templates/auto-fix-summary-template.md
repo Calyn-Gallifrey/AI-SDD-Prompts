@@ -1,73 +1,73 @@
-# Review-Driven Auto-fix Summary
+# 评审驱动的 Auto-fix 总结
 
-> Records dispositions and fixes without rewriting the original Code Review findings.
+> 记录每项评审发现的处置和修复，不得重写原始 Code Review Findings。正文必须以简体中文为主体。
 
-## 1. Identity And Scope
+## 1. 基本信息与范围
 
-- Feature ID:
-- Attempt:
-- Code Review Findings Revision / SHA-256:
-- Reviewed Scope SHA-256:
-- Code Revision Before Auto-fix:
-- Code Revision After Auto-fix:
-- Auto-fix Result: passed / not-required / failed / blocked
+- Feature ID：
+- Attempt：
+- Code Review Findings 修订/SHA-256：
+- 已评审范围 SHA-256：
+- Auto-fix 前代码修订：
+- Auto-fix 后代码修订：
+- Auto-fix 结果：`passed` / `not-required` / `failed` / `blocked`
 
-## 2. Findings Disposition
+## 2. Findings 处置
 
-| Finding ID | Severity | Original location | Disposition | Changed files/symbols | Fix description | Verification | Residual risk |
+| Finding ID | 严重度 | 原始位置 | 处置 | 变更文件/符号 | 修复说明 | 验证 | 剩余风险 |
 |---|---|---|---|---|---|---|---|
-| CR-001 | P0/P1/P2 |  | fixed / accepted-risk / rejected-with-evidence / blocked |  |  |  |  |
+| CR-001 | P0/P1/P2 |  | `fixed` / `accepted-risk` / `rejected-with-evidence` / `blocked` |  |  |  |  |
 
-Do not delete, reword, or mark resolved inside `code-review-findings.md`. This table is the only disposition record.
+不得在 `code-review-findings.md` 中删除、改写或标记已解决。本表是唯一处置记录。
 
-## 3. Scope Change
+## 3. 范围变更
 
-- Production/test/config changed: yes / no
-- New Frozen Scope SHA-256:
-- Full Code Review rerun required: yes / no
-- Full Code Review rerun result/evidence:
+- 生产/测试/配置是否变更：`yes` / `no`
+- 新冻结范围 SHA-256：
+- 是否要求完整重跑 Code Review：`yes` / `no`
+- 完整重跑结果/证据：
 
-Any code, test, configuration, Design, or Tasks change requires a new scope freeze and full Code Review. A targeted spot-check cannot replace it.
+任何代码、测试、配置、Design 或 Tasks 变更都要求重新冻结并完整执行 Code Review。定向 Spot Check 不能替代完整复审。
 
-## 4. No-Fix Path
+## 4. 无需修复路径
 
-Complete only when result is `not-required`:
+仅当结果为 `not-required` 时填写：
 
-- Findings count by severity:
-- Why no code change is required:
-- Evidence that Code Review passed on the current scope:
+- 各严重度 Findings 数量：
+- 无需修改代码的原因：
+- Code Review 已在当前范围通过的证据：
 
-## 5. Validation
+## 5. 验证
 
-| Check | Method / command | Environment | Exit/result | Evidence |
+| 检查项 | 方法/命令 | 环境 | 退出码/结果 | 证据 |
 |---|---|---|---|---|
-| Build/static check |  |  |  |  |
-| Finding-specific verification |  |  |  |  |
+| 构建/静态检查 |  |  |  |  |
+| Finding 定向验证 |  |  |  |  |
 
-## 6. Remaining Items
+## 6. 剩余事项
 
-| ID | Owner | Reason unresolved | Blocking | Required next action |
+| ID | 所有者 | 未解决原因 | 是否阻塞 | 下一必需动作 |
 |---|---|---|---|---|
-|  |  |  | yes / no |  |
+|  |  |  | `yes` / `no` |  |
 
-P0, P1, and explicitly blocking P2 items must be closed before Unit Test. Risk acceptance does not convert a failed Code Review into a passed gate without the required current human decision and process state.
+进入 Unit Test 前必须关闭 P0、P1 和明确阻塞的 P2。风险接受不能在缺少当前人工决定和正确流程状态时，把失败 Code Review 转为通过。
 
-## 7. Unit Test Handoff
+## 7. Unit Test 交接
 
-- Current Scope SHA-256:
-- Production symbols changed:
-- Required test targets/scenarios:
-- Regression risks from fixes:
-- Unit Test allowed: yes / no
+- 当前范围 SHA-256：
+- 已变更生产符号：
+- 必需测试目标/场景：
+- 修复引入的回归风险：
+- 是否允许 Unit Test：`yes` / `no`
 
-## 8. Control Projection
+## 8. 控制状态投影
 
-- State Authority: `./.sdd2/feature-state.json`
-- Attempt:
-- Control Revision:
-- Current Stage: auto-fix
-- Stage Status:
-- Next Required Action:
-- Artifact Revision / SHA-256:
+- 状态权威文件：`./.sdd2/feature-state.json`
+- Attempt：
+- 控制修订：
+- 当前阶段：`auto-fix`
+- 阶段状态：
+- 下一必需动作：
+- 资产修订/SHA-256：
 
-This artifact is a quality-gate record, not human stage approval.
+本资产是质量 Gate 记录，不是人工阶段批准。

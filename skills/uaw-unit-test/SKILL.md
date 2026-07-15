@@ -1,70 +1,72 @@
 ---
 name: uaw-unit-test
-description: Generate, update, execute, and summarize Java-focused UAW unit tests. Use for direct unit-test work or SDD2 test generation after Code Review. In SDD mode it uses a two-pass handoff so changed test source is frozen and fully reviewed before execution and Unit Test Summary.
+description: 生成、更新、执行并总结以 Java 为主的 UAW 单元测试。用于独立单元测试任务，或 SDD2 Code Review 后的测试生成。SDD 模式采用两轮交接，确保已变更测试源码在执行和生成 Unit Test Summary 前重新冻结并完整复审。
 ---
 
-# UAW Unit Test
+# UAW 单元测试
 
-## Core Contract
+## 核心契约
 
-Generate or update real unit-test source for every accessible production change with an identifiable target. A prose plan, review note, manual check, or `unit-test-summary.md` alone is never test implementation.
+每项可访问且目标可识别的生产代码变更，都必须生成或更新真实单元测试源码。文字计划、评审备注、手工检查或单独的 `unit-test-summary.md` 永远不能替代测试实现。
 
-Read `references/testing-profile-routing.md`, the selected target rule under `references/java/`, and `references/templates/unit-test-summary-template.md`.
+读取 `references/testing-profile-routing.md`、`references/java/` 下选中的目标规则，以及 `references/templates/unit-test-summary-template.md`。
 
-Do not add/upgrade test dependencies merely to fit a preferred style. Current build dependencies and nearby executable tests are the primary convention. If project files, target code, framework, or a runnable entry cannot be established, return `blocked` with exact recovery information.
+所有人类可读指令与新生成 Summary 遵循 `skills/uaw-sdd-ai-coding/references/language-policy.md`，以简体中文为主体。代码、依赖、Profile、命令和状态枚举保持精确。
 
-## SDD Mode: Two Passes
+不得为了适配偏好风格而新增或升级测试依赖。当前构建依赖和邻近可执行测试是主要约定。无法确认项目文件、目标代码、框架或可运行入口时，返回 `blocked`，并给出精确恢复信息。
 
-### Pass 1: Generate Test Source
+## SDD 模式：两轮执行
 
-Inputs from `uaw-sdd-ai-coding`:
+### 第一轮：生成测试源码
 
-- current feature/state and frozen implementation scope;
-- approved Spec, Design, and Tasks;
-- immutable Code Review findings and Auto-fix summary;
-- exact production symbols and captured test path patterns.
+从 `uaw-sdd-ai-coding` 接收：
 
-Create/update tests under approved paths and return changed test paths plus selected profile evidence. Do not create Unit Test Summary yet.
+- 当前 Feature、状态和冻结实现范围；
+- 已批准 Spec、Design 和 Tasks；
+- 不可变 Code Review Findings 和 Auto-fix Summary；
+- 精确生产符号和已捕获测试路径模式。
 
-Test-source changes invalidate the old scope. Return control so `uaw-sdd-ai-coding` can freeze the new production+test snapshot, rerun full Code Review, and close Auto-fix on that same snapshot.
+在已批准路径下创建或更新测试，返回已变更测试路径和所选 Profile 证据。此时不得创建 Unit Test Summary。
 
-### Pass 2: Execute And Summarize
+测试源码变化会使旧范围失效。把控制权返回 `uaw-sdd-ai-coding`，由其冻结新的生产+测试快照，完整重跑 Code Review，并在同一快照上关闭 Auto-fix。
 
-Run only after Code Review is `passed` and Auto-fix is `passed`/`not-required` on the current frozen scope. Verify at least one changed test source matches the captured test path patterns.
+### 第二轮：执行并总结
 
-Execute the narrow relevant unit tests using an actual project-supported entry. Produce `unit-test-summary.md` with command/environment, exit code, counts, failures/skips, test-source hashes, and current scope SHA-256. Return control for the deterministic Unit Test gate and human Unit Test Summary approval.
+只有 Code Review 在当前冻结范围为 `passed`，且 Auto-fix 在同一范围为 `passed` 或 `not-required` 后才能运行。验证至少一个已变更测试源码匹配已捕获测试路径。
 
-`passed` requires an executed test entry with exit code/result proving success. IDE/CI/Wrapper/local CLI/project script are valid when evidence is reproducible. Manual validation may supplement unit tests but cannot produce a passed SDD Unit Test Gate.
+使用项目真实支持的入口执行最小相关单元测试。生成 `unit-test-summary.md`，记录命令/环境、退出码、数量、失败/跳过、测试源码哈希和当前范围 SHA-256。把控制权返回主 Skill，执行确定性 Unit Test Gate 并等待人工 Unit Test Summary 批准。
 
-## Standalone Mode
+`passed` 要求测试入口确实执行，并由退出码或结果证明成功。IDE、CI、Wrapper、本地 CLI 和项目脚本都可作为入口，但证据必须可复现。手工验证只能补充，不能通过 SDD Unit Test Gate。
 
-Read `references/input-examples.md`. Required user inputs are only facts that cannot be discovered safely: project root, target when ambiguous, and preferred validation environment when multiple unavailable-to-agent choices remain.
+## Standalone 模式
 
-Generate/update test source first. Execute when possible. A standalone summary may be `not-run` with a precise reason and command for later execution, but must not be represented as passed.
+读取 `references/input-examples.md`。只向用户询问无法安全发现的事实：项目根目录、目标含糊时的测试目标，以及存在多个 Agent 无法使用的验证环境时的偏好。
 
-## Required Discovery
+先生成或更新测试源码，再尽可能执行。Standalone Summary 可以因明确原因记录为 `not-run`，并给出后续运行命令，但不得表述为已通过。
 
-Record evidence for:
+## 必需发现证据
 
-- build tool/wrapper and module;
-- Java, Spring Boot when present, JUnit platform, Mockito, assertion libraries;
-- Surefire/Gradle test configuration and JDK compatibility;
-- nearby executable test style;
-- target dependencies and mock boundaries;
-- UAW utility availability only when target code uses it.
+记录：
 
-## Outputs
+- 构建工具/Wrapper 和模块；
+- Java、存在时的 Spring Boot、JUnit Platform、Mockito、断言库；
+- Surefire/Gradle 测试配置和 JDK 兼容性；
+- 邻近可执行测试风格；
+- 目标依赖和 Mock 边界；
+- 只有目标代码使用时才记录 UAW 工具可用性。
 
-- one or more added/updated unit-test source paths;
-- selected testing profile and target-specific rule;
-- executable test evidence or a blocked/not-run result;
-- `unit-test-summary.md` only after source generation.
+## 输出
 
-Never use `none` for test-source changes in a successful SDD flow. Failed, blocked, or not-run SDD tests forbid successful Archive.
+- 一个或多个新增/更新的单元测试源码路径；
+- 已选测试 Profile 和目标规则；
+- 可执行测试证据，或 `blocked`/`not-run` 结果；
+- 只有源码生成后才创建 `unit-test-summary.md`。
 
-## References
+成功 SDD 流程中，测试源码变更不得为 `none`。SDD 测试为 `failed`、`blocked` 或 `not-run` 时，禁止成功 Archive。
 
-- `references/testing-profile-routing.md`: evidence-based framework/profile selection.
-- `references/java/`: target-specific generation rules.
-- `references/templates/unit-test-summary-template.md`: summary and gate evidence.
-- `references/input-examples.md`: standalone input examples only.
+## 参考文件
+
+- `references/testing-profile-routing.md`：基于证据选择框架/Profile。
+- `references/java/`：按测试目标分类的生成规则。
+- `references/templates/unit-test-summary-template.md`：Summary 与 Gate 证据。
+- `references/input-examples.md`：仅用于 Standalone 输入示例。

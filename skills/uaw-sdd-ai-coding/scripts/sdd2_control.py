@@ -115,6 +115,24 @@ DEFAULT_TEST_PATHS = (
     "**/*Spec.java",
 )
 
+TRADITIONAL_ONLY_CHARS = frozenset(
+    "體臺灣們後裏與為這個發現實驗證審總結檔歸單測試資訊處將應須讓開關門"
+    "階轉態規則產項數據庫執務運維護優錯誤讀寫錄碼權戶組織報風險嚴級別範圍"
+    "標準達過進還時會從對學習設計議問題說確認變據續終點線網絡節選擇"
+)
+
+FENCED_CODE_PATTERN = re.compile(r"```[^\n]*\n.*?```", re.DOTALL)
+INLINE_CODE_PATTERN = re.compile(r"`[^`\n]+`")
+STYLE_SCRIPT_PATTERN = re.compile(r"<(?:style|script)\b[^>]*>.*?</(?:style|script)>", re.IGNORECASE | re.DOTALL)
+HTML_COMMENT_PATTERN = re.compile(r"<!--.*?-->", re.DOTALL)
+HTML_TAG_PATTERN = re.compile(r"<[^>\n]+>")
+URL_PATTERN = re.compile(r"https?://\S+")
+MARKDOWN_LINK_TARGET_PATTERN = re.compile(r"\]\([^)]*\)")
+PLACEHOLDER_PATTERN = re.compile(r"<[^>\n]+>")
+MUSTACHE_PATTERN = re.compile(r"\{\{[^}\n]+\}\}")
+HAN_PATTERN = re.compile(r"[\u3400-\u4dbf\u4e00-\u9fff]")
+LATIN_WORD_PATTERN = re.compile(r"\b[A-Za-z][A-Za-z'-]*\b")
+
 
 class ControlError(RuntimeError):
     """A deterministic control failure that must block workflow progress."""
@@ -136,6 +154,70 @@ def sha256_file(path: Path) -> str:
     if not path.is_file():
         raise ControlError(f"Required file does not exist: {path}")
     return sha256_bytes(path.read_bytes())
+
+
+def human_readable_text(content: str) -> str:
+    """Remove machine-oriented blocks before checking the human-readable body."""
+    text = STYLE_SCRIPT_PATTERN.sub(" ", content)
+    text = HTML_COMMENT_PATTERN.sub(" ", text)
+    text = FENCED_CODE_PATTERN.sub(" ", text)
+    text = INLINE_CODE_PATTERN.sub(" ", text)
+    text = URL_PATTERN.sub(" ", text)
+    text = MARKDOWN_LINK_TARGET_PATTERN.sub("]", text)
+    text = PLACEHOLDER_PATTERN.sub(" ", text)
+    text = MUSTACHE_PATTERN.sub(" ", text)
+    text = HTML_TAG_PATTERN.sub(" ", text)
+    return text
+
+
+def simplified_chinese_body_issues(
+    content: str,
+    *,
+    minimum_han: int = 16,
+    enforce_dominance: bool = True,
+) -> list[str]:
+    """Return stable issue codes when human-readable prose is not Simplified-Chinese-led."""
+    body = human_readable_text(content)
+    han_count = len(HAN_PATTERN.findall(body))
+    latin_word_count = len(LATIN_WORD_PATTERN.findall(body))
+    issues: list[str] = []
+    if han_count < minimum_han:
+        issues.append(f"INSUFFICIENT_SIMPLIFIED_CHINESE:{han_count}<{minimum_han}")
+
+    traditional = sorted(set(body) & TRADITIONAL_ONLY_CHARS)
+    if traditional:
+        issues.append("TRADITIONAL_CHINESE_DETECTED:" + "".join(traditional))
+
+    if enforce_dominance and latin_word_count > han_count:
+        issues.append(f"ENGLISH_DOMINATES_BODY:{latin_word_count}>{han_count}")
+
+    if enforce_dominance:
+        english_prose_lines: list[int] = []
+        for line_number, line in enumerate(body.splitlines(), start=1):
+            stripped = line.strip()
+            if not stripped or "|" in stripped or HAN_PATTERN.search(stripped):
+                continue
+            if len(LATIN_WORD_PATTERN.findall(stripped)) >= 8:
+                english_prose_lines.append(line_number)
+        if english_prose_lines:
+            rendered = ",".join(str(value) for value in english_prose_lines[:5])
+            issues.append(f"ENGLISH_ONLY_PROSE_LINES:{rendered}")
+    return issues
+
+
+def validate_artifact_language(path: Path, stage: str) -> None:
+    minimum_han = 8 if stage == "brief-design" else 16
+    try:
+        content = path.read_text(encoding="utf-8")
+    except UnicodeDecodeError as exc:
+        raise ControlError(
+            f"ARTIFACT_LANGUAGE_NOT_SIMPLIFIED_CHINESE:{stage}:INVALID_UTF8"
+        ) from exc
+    issues = simplified_chinese_body_issues(content, minimum_han=minimum_han)
+    if issues:
+        raise ControlError(
+            f"ARTIFACT_LANGUAGE_NOT_SIMPLIFIED_CHINESE:{stage}:" + ";".join(issues)
+        )
 
 
 def atomic_write_json(path: Path, value: Any) -> None:
@@ -825,6 +907,7 @@ def cmd_init(args: argparse.Namespace) -> dict[str, Any]:
     brief = feature_dir / ARTIFACT_FILES["brief-design"]
     if not brief.is_file():
         raise ControlError("brief-design.md must be persisted before SDD2 initialization")
+    validate_artifact_language(brief, "brief-design")
     repo_root = git_root(feature_dir)
     feature_repo_path = feature_dir.relative_to(repo_root).as_posix()
     branch = run_git(repo_root, "branch", "--show-current")
@@ -989,6 +1072,7 @@ def cmd_record_artifact(args: argparse.Namespace) -> dict[str, Any]:
         allow_scope_drift=True,
     )
     path = feature_dir / ARTIFACT_FILES[stage]
+    validate_artifact_language(path, stage)
     digest = sha256_file(path)
     previous = state["artifacts"].get(stage)
     scope_sha256: str | None = None

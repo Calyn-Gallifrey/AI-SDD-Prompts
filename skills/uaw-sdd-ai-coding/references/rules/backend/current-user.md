@@ -1,29 +1,29 @@
-# Current User Rule
+# 当前用户规则
 
-## Trigger And Discovery
+## 触发条件与发现
 
-Use when behavior needs the authenticated user/agent identity. Inspect the current module's security/context API and nearby use before choosing a method. Names such as `UserContext.getUserId()` or `getCurrentUser()` are valid only when current dependencies/code confirm them.
+行为需要认证用户或 Agent 身份时使用。选择方式前检查当前模块的安全/上下文 API 及邻近用法。`UserContext.getUserId()`、`getCurrentUser()` 等名称只有被当前依赖和代码确认后才可使用。
 
-## Rules
+## 规则
 
-1. Define which identity is required: user ID, adviser ID, subject, roles, tenant/country, or system actor.
-2. Missing/anonymous context follows an explicit approved security behavior; never fall back to an empty string, arbitrary default, request-supplied identity, or fabricated system user.
-3. Service/application code owns authorization-sensitive identity decisions. Helpers/converters should receive the required identity as an explicit argument when practical.
-4. A MapStruct converter may use a context parameter (`@Context`) or explicit mapping parameter. Static access/expression is allowed only when it is the established, testable module convention.
-5. Do not cache request/user context in static fields or singleton mutable state.
-6. Do not log tokens, full user objects, roles/claims payloads, or personal data. Log only approved stable identifiers when needed.
-7. Background/async execution must explicitly propagate an approved identity context or use a designed system actor; request thread-local context must not be assumed.
+1. 明确所需身份：User ID、Adviser ID、Subject、Role、租户/国家或 System Actor。
+2. 身份缺失或匿名时，遵循已批准的明确安全行为；不得回退为空字符串、任意默认值、请求传入身份或虚构 System User。
+3. Service/应用层负责涉及权限的身份决定。可行时，Helper/Converter 通过显式参数接收所需身份。
+4. MapStruct Converter 可使用上下文参数 `@Context` 或显式映射参数。只有这是模块既有且可测试的约定时，才允许静态访问或 Expression。
+5. 不得把请求/用户上下文缓存在静态字段或 Singleton 可变状态中。
+6. 不得记录 Token、完整用户对象、Role/Claim Payload 或个人数据。确有需要时只记录已批准的稳定标识。
+7. 后台/异步执行必须显式传递已批准身份上下文，或使用已设计的 System Actor；不得假定请求 ThreadLocal 可用。
 
-## Tests
+## 测试
 
-- authenticated identity maps/authorizes correctly;
-- missing/anonymous identity is denied or handled exactly as designed;
-- wrong role/tenant/country is rejected when applicable;
-- converter/service receives the intended identity;
-- async/background behavior does not accidentally reuse another request's context.
+- 已认证身份正确映射并授权；
+- 身份缺失/匿名时按 Design 拒绝或处理；
+- 适用时拒绝错误 Role、租户或国家；
+- Converter/Service 接收到预期身份；
+- 异步/后台行为不会错误复用其他请求上下文。
 
-Mock the current context boundary using existing test support. Do not add production fallback logic merely to simplify tests.
+使用现有测试支持模拟当前上下文边界。不得为了简化测试而新增生产回退逻辑。
 
-## Block Conditions
+## 阻塞条件
 
-Block when the current identity API, required identity meaning, missing-user behavior, or async propagation requirement is unknown.
+当前身份 API、所需身份含义、用户缺失行为或异步传递要求不明确时必须阻塞。

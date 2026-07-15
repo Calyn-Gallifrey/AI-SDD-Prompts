@@ -1,145 +1,145 @@
-# Feature Specification
+# Feature 需求规格（Spec）
 
-> Defines observable behavior and acceptance boundaries. It must not prescribe unapproved implementation details.
+> 定义可观察行为和验收边界，不得规定未经批准的实现细节。正文必须以简体中文为主体。
 
-## 1. Identity And Sources
+## 1. 基本信息与来源
 
-- Feature ID:
-- Feature Name:
-- Module:
-- Sprint:
-- Priority:
-- Proposal Input Revision / SHA-256:
-- Current Code Base Commit:
-- Spec Revision:
+- Feature ID：
+- 功能名称：
+- 所属模块：
+- 迭代：
+- 优先级：
+- Proposal Input 修订/SHA-256：
+- 当前代码基线 Commit：
+- Spec 修订：
 
-## 2. Goal
-
-
-## 3. Scope
-
-### In Scope
+## 2. 目标
 
 
-### Forbidden Changes
+## 3. 范围
+
+### 范围内事项
 
 
-### Non-Goals
+### 禁止变更
 
 
-## 4. Existing Behavior And Delta
+### 非目标
 
-| Area | Existing behavior, verified from | Required delta | Compatibility constraint |
+
+## 4. 既有行为与所需增量
+
+| 区域 | 已确认既有行为及来源 | 所需增量 | 兼容性约束 |
 |---|---|---|---|
 |  |  |  |  |
 
-## 5. Actors And Preconditions
+## 5. 参与者与前置条件
 
-| Actor / caller | Authorization | Preconditions | Entry |
+| 参与者/调用方 | 权限 | 前置条件 | 入口 |
 |---|---|---|---|
 |  |  |  |  |
 
-## 6. Functional Requirements
+## 6. 功能需求
 
-| ID | Requirement | Input | Processing rule | Output / side effect | Source |
+| ID | 需求 | 输入 | 处理规则 | 输出/副作用 | 来源 |
 |---|---|---|---|---|---|
-| FR-01 |  |  |  |  | user / code / approved context |
+| FR-01 |  |  |  |  | 用户 / 代码 / 已批准上下文 |
 
-## 7. Data Contract
+## 7. 数据契约
 
-### Request
+### 请求
 
-| Field | Type | Required | Validation | Meaning | Source |
+| 字段 | 类型 | 必填 | 校验 | 含义 | 来源 |
 |---|---|---|---|---|---|
 |  |  |  |  |  |  |
 
-### Response
+### 响应
 
-| Field | Type | Nullability | Meaning | Compatibility |
+| 字段 | 类型 | 是否可空 | 含义 | 兼容性 |
 |---|---|---|---|---|
 |  |  |  |  |  |
 
-### Persistence / Message / External Contract
+### 持久化、消息或外部契约
 
-| Contract | Change | Invariant | Migration / compatibility |
+| 契约 | 变更 | 不变量 | 迁移/兼容性 |
 |---|---|---|---|
 |  |  |  |  |
 
-## 8. Business Rules
+## 8. 业务规则
 
-| ID | Condition | Required behavior | Error / fallback | Priority |
+| ID | 条件 | 必需行为 | 错误/回退 | 优先级 |
 |---|---|---|---|---|
 | BR-01 |  |  |  |  |
 
-## 9. Failure And Boundary Behavior
+## 9. 失败与边界行为
 
-| Scenario | Expected behavior | Observable response | Logging / audit | Retry / idempotency |
+| 场景 | 预期行为 | 可观察响应 | 日志/审计 | Retry/幂等 |
 |---|---|---|---|---|
 |  |  |  |  |  |
 
-## 10. Security And Compliance
+## 10. 安全与合规
 
-- Authentication/authorization:
-- Sensitive data:
-- Data access boundary:
-- Injection/input risks:
-- Audit/logging constraints:
+- 认证与授权：
+- 敏感数据：
+- 数据访问边界：
+- 注入/输入风险：
+- 审计/日志约束：
 
-## 11. Non-Functional Requirements
+## 11. 非功能需求
 
-| Category | Requirement | Measurable threshold / evidence |
+| 类别 | 要求 | 可测阈值/证据 |
 |---|---|---|
-| Performance |  |  |
-| Reliability |  |  |
-| Compatibility |  |  |
-| Observability |  |  |
+| 性能 |  |  |
+| 可靠性 |  |  |
+| 兼容性 |  |  |
+| 可观测性 |  |  |
 
-## 12. Acceptance Criteria
+## 12. 验收标准
 
-| ID | Given | When | Then | Required evidence |
+| ID | Given（前提） | When（动作） | Then（结果） | 必需证据 |
 |---|---|---|---|---|
-| AC-01 |  |  |  | unit test / integration evidence / inspection |
+| AC-01 |  |  |  | 单元测试 / 集成证据 / 检查 |
 
-Every functional requirement and business rule must map to at least one acceptance criterion.
+每项功能需求和业务规则必须至少映射到一项验收标准。
 
-## 13. Test Intent
+## 13. 测试意图
 
-| Test class | Required scenarios | Source target | Notes |
+| 测试类别 | 必需场景 | 源码目标 | 说明 |
 |---|---|---|---|
-| Unit | happy, boundary, error, compatibility |  | Production changes require changed test source |
-| Other, if approved |  |  |  |
+| 单元测试 | 正常、边界、错误、兼容 |  | 生产变更必须修改测试源码 |
+| 其他已批准测试 |  |  |  |
 
-## 14. Traceability
+## 14. 可追溯性
 
-| Requirement | Acceptance | Design owner | Planned task | Test evidence |
+| 需求 | 验收项 | Design 所有者 | 计划任务 | 测试证据 |
 |---|---|---|---|---|
-| FR-01 | AC-01 | pending | pending | pending |
+| FR-01 | AC-01 | 待定 | 待定 | 待定 |
 
-## 15. Risks, Assumptions, Open Questions
+## 15. 风险、假设与待确认问题
 
-| ID | Type | Description | Evidence | Impact | Resolution / owner |
+| ID | 类型 | 描述 | 证据 | 影响 | 解决方式/所有者 |
 |---|---|---|---|---|---|
-|  | risk / assumption / open-question |  |  |  |  |
+|  | `risk` / `assumption` / `open-question` |  |  |  |  |
 
-Unresolved items affecting behavior, scope, data, security, or acceptance block Spec approval.
+影响行为、范围、数据、安全或验收的未解决事项会阻塞 Spec 批准。
 
-## 16. Human Review Gate
+## 16. 人工审核 Gate
 
-- Required Approver: current human reviewer
-- Approval Source: new user message after this artifact is recorded
-- Valid Results: approved / rejected / blocked
-- Approval Evidence: `.sdd2/gate-approvals.jsonl`
+- 必需审核人：当前人工审核人
+- 批准来源：本资产记录后用户发送的新消息
+- 有效结果：`approved` / `rejected` / `blocked`
+- 批准证据：`.sdd2/gate-approvals.jsonl`
 
-Stop after generating and recording this file. Do not generate Design until the current Spec revision is explicitly approved.
+生成并记录本文件后停止。当前 Spec 修订未被明确批准前，不得生成 Design。
 
-## 17. Control Projection
+## 17. 控制状态投影
 
-- State Authority: `./.sdd2/feature-state.json`
-- Attempt:
-- Control Revision:
-- Current Stage: spec
-- Stage Status: awaiting-approval
-- Next Required Action: request-spec-approval
-- Artifact Revision / SHA-256:
+- 状态权威文件：`./.sdd2/feature-state.json`
+- Attempt：
+- 控制修订：
+- 当前阶段：`spec`
+- 阶段状态：`awaiting-approval`
+- 下一必需动作：`request-spec-approval`
+- 资产修订/SHA-256：
 
-This block mirrors control state; text in this file is not approval.
+本节只投影控制状态；文件内文字不构成批准。

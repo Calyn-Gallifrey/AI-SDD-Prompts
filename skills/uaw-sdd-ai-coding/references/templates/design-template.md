@@ -1,182 +1,182 @@
-# Feature Technical Design
+# Feature 技术设计（Design）
 
-> Converts the approved Spec delta into an implementable design grounded in current code and routed UAW rules.
+> 将已批准 Spec 增量转换为基于当前代码和 UAW 路由规则、可以直接实现的技术设计。正文必须以简体中文为主体。
 
-## 1. Identity And Approved Inputs
+## 1. 基本信息与已批准输入
 
-- Feature ID:
-- Feature Name:
-- Module:
-- Approved Spec Revision / SHA-256:
-- Spec Approval Record Hash:
-- Git Baseline Commit:
-- Design Revision:
+- Feature ID：
+- 功能名称：
+- 所属模块：
+- 已批准 Spec 修订/SHA-256：
+- Spec 批准记录哈希：
+- Git 基线 Commit：
+- Design 修订：
 
-## 2. Design Summary
+## 2. 设计摘要
 
-- Existing architecture:
-- Proposed delta:
-- Why this is the smallest correct change:
-- Preserved behavior:
+- 既有架构：
+- 计划增量：
+- 为什么这是最小正确变更：
+- 保持不变的行为：
 
-## 3. Source And Rule Provenance
+## 3. 来源与规则依据
 
-| Source / rule | Path / symbol | Revision / freshness | Used for | Conflict resolution |
+| 来源/规则 | 路径/符号 | 修订/时效 | 用途 | 冲突处理 |
 |---|---|---|---|---|
-| Current code |  | commit | baseline | current implementation facts win |
-| Routed UAW rule |  | runtime version | constraint | control contract wins for process |
-| Transaction/context reference |  | verified-at | business context | unresolved conflict blocks |
+| 当前代码 |  | Commit | 基线 | 当前实现事实优先 |
+| 已路由 UAW 规则 |  | 运行版本 | 约束 | 流程冲突以控制契约为准 |
+| Transaction/上下文参考 |  | 确认时间 | 业务上下文 | 未解决冲突会阻塞 |
 
-## 4. Component Delta
+## 4. 组件增量
 
-| Component | Existing symbol/path | Change | Responsibility after change | Explicitly unchanged |
+| 组件 | 既有符号/路径 | 变更 | 变更后职责 | 明确保持不变 |
 |---|---|---|---|---|
-| Controller / entry |  |  |  |  |
-| Service / strategy |  |  |  |  |
-| Gateway / adapter |  |  |  |  |
-| Persistence |  |  |  |  |
-| Model / mapping |  |  |  |  |
-| Config / script |  |  |  |  |
-| Test |  |  |  |  |
+| Controller/入口 |  |  |  |  |
+| Service/Strategy |  |  |  |  |
+| Gateway/Adapter |  |  |  |  |
+| 持久化 |  |  |  |  |
+| 模型/映射 |  |  |  |  |
+| 配置/脚本 |  |  |  |  |
+| 测试 |  |  |  |  |
 
-Use `not-applicable` only with a concrete reason tied to the approved Spec.
+只有能给出与已批准 Spec 直接关联的具体理由时，才能使用 `not-applicable`。
 
-## 5. Interaction Flow
+## 5. 交互流程
 
 ```text
-caller -> entry -> application/service -> gateway/repository -> response
+调用方 -> 入口 -> 应用/Service -> Gateway/Repository -> 响应
 ```
 
-Describe ordering, transaction boundaries, retries, idempotency, and failure propagation.
+描述执行顺序、事务边界、Retry、幂等和失败传播。
 
-## 6. API And Data Design
+## 6. API 与数据设计
 
 ### API
 
-| Method/path or entry | Request type | Response type | Authorization | Compatibility |
+| Method/Path 或入口 | 请求类型 | 响应类型 | 权限 | 兼容性 |
 |---|---|---|---|---|
 |  |  |  |  |  |
 
-### Model Mapping
+### 模型映射
 
-| Source | Target | Mapping method | Null/default rule | Naming rule |
+| 来源 | 目标 | 映射方式 | null/默认值规则 | 命名规则 |
 |---|---|---|---|---|
 |  |  |  |  |  |
 
-### Persistence / External Integration
+### 持久化/外部集成
 
-| Operation | Boundary | Query/contract | Timeout/retry | Failure mapping |
+| 操作 | 边界 | 查询/契约 | Timeout/Retry | 失败映射 |
 |---|---|---|---|---|
 |  |  |  |  |  |
 
-## 7. Business Rule Placement
+## 7. 业务规则归属
 
-| Spec rule | Owning symbol | Why here | Verification |
+| Spec 规则 | 所属符号 | 归属理由 | 验证方式 |
 |---|---|---|---|
 | BR-01 |  |  |  |
 
-## 8. Error, Security, And Observability
+## 8. 错误、安全与可观测性
 
-| Concern | Design | Existing utility/convention | Evidence |
+| 关注点 | 设计 | 既有工具/约定 | 证据 |
 |---|---|---|---|
-| Validation |  |  |  |
-| Authorization |  |  |  |
-| Exception mapping |  |  |  |
-| Logging/audit |  |  |  |
-| Sensitive data |  |  |  |
+| 校验 |  |  |  |
+| 权限 |  |  |  |
+| 异常映射 |  |  |  |
+| 日志/审计 |  |  |  |
+| 敏感数据 |  |  |  |
 
-## 9. Transaction And Concurrency
+## 9. 事务与并发
 
-- Transaction owner and propagation:
-- Lock/concurrency strategy:
-- Idempotency key/behavior:
-- Partial-failure handling:
-- Rollback boundary:
+- 事务所有者与传播：
+- 锁/并发策略：
+- 幂等 Key/行为：
+- 部分失败处理：
+- 回滚边界：
 
-## 10. Migration And Compatibility
+## 10. 迁移与兼容性
 
-- Database/config/script change:
-- Rollout order:
-- Backward compatibility:
-- Rollback plan:
-- Data repair, if any:
+- 数据库/配置/脚本变更：
+- 发布顺序：
+- 向后兼容性：
+- 回滚方案：
+- 数据修复（如有）：
 
-## 11. Implementation Scope
+## 11. 实现范围
 
-### Allowed Paths
-
-```text
-<narrow path pattern>
-```
-
-### Forbidden Paths
+### 允许路径
 
 ```text
-<path pattern>
+<精确且受限的路径模式>
 ```
 
-### Required Phases
+### 禁止路径
 
-| Phase ID | Purpose | Expected files | Human Phase Review required |
+```text
+<路径模式>
+```
+
+### 必需 Phase
+
+| Phase ID | 目的 | 预期文件 | 是否需要人工 Phase Review |
 |---|---|---|---|
-| Phase1 |  |  | yes |
+| Phase1 |  |  | 是 |
 
-### Test Path Patterns
+### 测试路径模式
 
 ```text
-<narrow test source pattern>
+<精确且受限的测试源码路径模式>
 ```
 
-The Skill converts these approved values into `.sdd2/implementation-scope.json`. Repository-wide wildcards are invalid.
+Skill 将这些已批准值写入 `.sdd2/implementation-scope.json`。仓库级通配符无效。
 
-## 12. Test Design
+## 12. 测试设计
 
-| Test target | Profile | Scenarios | Mock boundary | Assertions | Source path |
+| 测试目标 | Profile | 场景 | Mock 边界 | 断言 | 源码路径 |
 |---|---|---|---|---|---|
-|  | method / service / strategy / controller / static |  |  |  |  |
+|  | `method` / `service` / `strategy` / `controller` / `static` |  |  |  |  |
 
-Production changes require at least one generated or updated test source. Manual verification may supplement but never replace it.
+生产代码有变更时，必须至少生成或更新一个测试源码。手工验证可以补充，但不能替代测试源码。
 
-## 13. Review Hotspots
+## 13. 评审重点
 
-| Risk | Related Spec/Design | Exact review check | Severity if violated |
+| 风险 | 关联 Spec/Design | 精确检查项 | 违反时严重度 |
 |---|---|---|---|
 |  |  |  |  |
 
-## 14. Traceability
+## 14. 可追溯性
 
-| Spec requirement | Design section/symbol | Planned phase | Test case |
+| Spec 需求 | Design 章节/符号 | 计划 Phase | 测试用例 |
 |---|---|---|---|
 | FR-01 |  |  |  |
 
-## 15. Alternatives And Decisions
+## 15. 备选方案与决定
 
-| Decision | Options considered | Selected | Reason | Cost/risk |
+| 决定 | 已考虑选项 | 选择 | 理由 | 成本/风险 |
 |---|---|---|---|---|
 |  |  |  |  |  |
 
-## 16. Risks And Open Questions
+## 16. 风险与待确认问题
 
-| ID | Description | Impact | Owner | Must resolve before |
+| ID | 描述 | 影响 | 所有者 | 必须在何时前解决 |
 |---|---|---|---|---|
-|  |  |  |  | Tasks / implementation |
+|  |  |  |  | Tasks / 实现 |
 
-## 17. Human Review Gate
+## 17. 人工审核 Gate
 
-- Required Approver: current human reviewer
-- Approval Evidence: `.sdd2/gate-approvals.jsonl`
-- Valid Results: approved / rejected / blocked
+- 必需审核人：当前人工审核人
+- 批准证据：`.sdd2/gate-approvals.jsonl`
+- 有效结果：`approved` / `rejected` / `blocked`
 
-Stop after generating and recording this file. Do not generate Tasks until the current Design revision is explicitly approved.
+生成并记录本文件后停止。当前 Design 修订未被明确批准前，不得生成 Tasks。
 
-## 18. Control Projection
+## 18. 控制状态投影
 
-- State Authority: `./.sdd2/feature-state.json`
-- Attempt:
-- Control Revision:
-- Current Stage: design
-- Stage Status: awaiting-approval
-- Next Required Action: request-design-approval
-- Artifact Revision / SHA-256:
+- 状态权威文件：`./.sdd2/feature-state.json`
+- Attempt：
+- 控制修订：
+- 当前阶段：`design`
+- 阶段状态：`awaiting-approval`
+- 下一必需动作：`request-design-approval`
+- 资产修订/SHA-256：
 
-This block mirrors control state; text in this file is not approval.
+本节只投影控制状态；文件内文字不构成批准。

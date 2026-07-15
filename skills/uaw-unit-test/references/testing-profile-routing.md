@@ -1,83 +1,83 @@
-# Java Testing Profile Routing
+# Java 测试 Profile 路由
 
-## 1. Evidence Before Selection
+## 1. 选择前的证据
 
-Inspect the target module's build files, dependency tree/configuration, test plugin, Java toolchain, and nearby executable tests. Record exact paths and versions when available.
+检查目标模块的构建文件、依赖树/配置、测试插件、Java Toolchain 和邻近可执行测试。可用时记录精确路径和版本。
 
-Do not select from Spring Boot version alone. The actual JUnit engine, runner/extension, Mockito support, and test task configuration determine executability.
+不得只根据 Spring Boot 版本选择。实际 JUnit Engine、Runner/Extension、Mockito 支持和 Test Task 配置共同决定能否执行。
 
-## 2. Primary Framework Profile
+## 2. 主要框架 Profile
 
-Select exactly one:
+只选择一个：
 
 ### `JUNIT5_MOCKITO`
 
-Use when JUnit Jupiter is configured and nearby tests execute on it.
+JUnit Jupiter 已配置且邻近测试在其上可执行时使用。
 
 - `org.junit.jupiter.api.Test`
-- `@ExtendWith(MockitoExtension.class)` when Mockito injection is useful
-- Jupiter assertions or the project's existing assertion library
-- no Vintage/JUnit4 dependency addition
+- Mockito 注入有价值时使用 `@ExtendWith(MockitoExtension.class)`
+- 使用 Jupiter Assertion 或项目既有断言库
+- 不新增 Vintage/JUnit4 依赖
 
 ### `JUNIT4_MOCKITO`
 
-Use when the module runs JUnit4 and nearby tests use it.
+模块运行 JUnit4 且邻近测试使用它时使用。
 
 - `org.junit.Test`
-- `@RunWith(MockitoJUnitRunner.class)` or the established rule/runner style
-- JUnit4-compatible assertions
-- do not migrate the module during feature test work
+- `@RunWith(MockitoJUnitRunner.class)` 或既有 Rule/Runner 风格
+- 与 JUnit4 兼容的 Assertion
+- Feature 测试工作中不得顺带迁移模块
 
 ### `EXISTING_CUSTOM`
 
-Use when the module has a custom base class, runner, extension, test harness, or mixed platform that is demonstrably required. Cite one or more executable nearby tests and preserve only necessary conventions.
+模块存在已证明必需的自定义 Base Class、Runner、Extension、Test Harness 或混合 Platform 时使用。引用一个或多个可执行的邻近测试，只保留必需约定。
 
 ### `BLOCKED_UNKNOWN`
 
-Use when no executable test engine can be established. Do not guess imports or add dependencies. Return the missing evidence and recovery action.
+无法确认可执行 Test Engine 时使用。不得猜测 Import 或新增依赖。返回缺失证据和恢复动作。
 
-## 3. Compatibility Modifiers
+## 3. 兼容性修饰项
 
-Modifiers do not replace the primary profile:
+修饰项不能替代主要 Profile：
 
-- `LEGACY_JDK_MOCKITO`: record JDK/Mockito/Byte Buddy compatibility. Reuse existing JVM flags only when already configured; do not introduce `net.bytebuddy.experimental` as a silent workaround.
-- `NO_UAW_UTIL`: target code does not use or project lacks UAW utilities. Do not import invented helpers.
-- `SPRING_SLICE`: existing controller/data slice tests and dependencies justify a Spring test slice.
-- `PURE_MOCKITO`: no Spring context is needed; preferred for service/method/strategy tests.
-- `STATIC_MOCKING_AVAILABLE`: current dependencies already support scoped static mocking.
+- `LEGACY_JDK_MOCKITO`：记录 JDK、Mockito、Byte Buddy 兼容性。只有项目已经配置时才复用 JVM Flag，不得静默引入 `net.bytebuddy.experimental`。
+- `NO_UAW_UTIL`：目标代码未使用或项目不存在 UAW Utility，不得导入虚构 Helper。
+- `SPRING_SLICE`：既有 Controller/Data Slice 测试和依赖能够证明 Spring Slice 合理。
+- `PURE_MOCKITO`：不需要 Spring Context，Service/Method/Strategy 测试优先采用。
+- `STATIC_MOCKING_AVAILABLE`：当前依赖已经支持有作用域的静态 Mock。
 
-## 4. Target Rule Routing
+## 4. 目标规则路由
 
-| Target | Rule |
+| 目标 | 规则 |
 |---|---|
-| Method/domain helper | `java/method-unit-test.md` |
-| Service/application component | `java/service-unit-test.md` |
-| Static utility behavior | `java/static-method-unit-test.md` |
-| HTTP controller | `java/controller-unit-test.md` |
-| ServiceStrategy/strategy selection | `java/service-strategy-unit-test.md` |
+| Method/Domain Helper | `java/method-unit-test.md` |
+| Service/应用组件 | `java/service-unit-test.md` |
+| 静态工具行为 | `java/static-method-unit-test.md` |
+| HTTP Controller | `java/controller-unit-test.md` |
+| ServiceStrategy/Strategy 选择 | `java/service-strategy-unit-test.md` |
 
-For mixed targets, use one primary rule and cite additional rule sections only for actual boundaries.
+混合目标选择一个主要规则，只有确实涉及额外边界时才引用其他规则章节。
 
-## 5. Execution Entry Selection
+## 5. 执行入口选择
 
-Prefer in order when available and appropriate:
+可用且合适时按以下顺序优先：
 
-1. repository wrapper command scoped to module/test;
-2. established project script;
-3. installed Maven/Gradle command matching project config;
-4. reproducible IDE configuration or CI job when the agent cannot run locally.
+1. 限定到模块/测试的仓库 Wrapper 命令；
+2. 项目既有脚本；
+3. 与项目配置匹配的本机 Maven/Gradle 命令；
+4. Agent 无法本地执行时，使用可复现 IDE 配置或 CI Job。
 
-An IDE/CI result must include configuration/job identity and observed result. A suggested future command is `not-run`, not `passed`. Manual checks cannot pass the SDD unit-test gate.
+IDE/CI 结果必须包含配置/Job 标识和观察结果。建议的未来命令只能记为 `not-run`，不能记为 `passed`。手工检查不能通过 SDD Unit Test Gate。
 
-## 6. Dependency Rule
+## 6. 依赖规则
 
-Do not add a test dependency unless existing approved Design/Tasks require it and no current supported test mechanism can cover the target. Any dependency change is implementation scope, requires a new freeze, full Code Review, and explicit evidence.
+只有现有已批准 Design/Tasks 要求，并且当前支持的测试机制都无法覆盖目标时，才允许新增测试依赖。任何依赖变更都属于实现范围，要求重新冻结、完整 Code Review 和明确证据。
 
-## 7. Result Normalization
+## 7. 结果规范化
 
-- `passed`: relevant tests executed successfully; exit/result and counts recorded.
-- `failed`: tests executed and failed.
-- `blocked`: missing target/framework/environment evidence prevents safe generation or execution.
-- `not-run`: tests were generated but not executed; never Archive-eligible.
+- `passed`：相关测试已成功执行，且已记录退出码/结果和数量。
+- `failed`：测试已执行并失败。
+- `blocked`：缺失目标、框架或环境证据，无法安全生成或执行。
+- `not-run`：测试已生成但未执行，永远不具备 Archive 资格。
 
-Skipped tests are counts/risks, not a gate status. If a required scenario is skipped, use `failed` or `blocked` based on cause.
+跳过测试只作为数量和风险记录，不是 Gate 状态。必需场景被跳过时，根据原因使用 `failed` 或 `blocked`。

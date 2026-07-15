@@ -1,28 +1,28 @@
-# DTO Model Rule
+# DTO 模型规则
 
-## Ownership
+## 所有权
 
-A DTO transports data between application/integration layers or represents a query projection. Do not create one when an existing owned type already matches the contract.
+DTO 用于应用层/集成层之间传输数据，或表示查询投影。已有归属明确的类型与契约一致时，不得重复创建。
 
-## Naming And Placement
+## 命名与位置
 
-- New UAW transaction types use exact suffix `DTO` when current module follows it.
-- Preserve established module convention for existing/public types; avoid mass renaming.
-- Place beside the owning application/integration boundary, not in a generic global package by default.
+- 当前模块遵循该约定时，新 UAW Transaction 类型使用严格后缀 `DTO`。
+- 现有或公开类型保留模块既有约定，避免批量重命名。
+- 放在拥有该应用/集成边界的位置，默认不得放入全局通用包。
 
-## Structure
+## 结构
 
-- DTOs do not expose persistence Entities, API BOs, or API VOs as fields.
-- Nested owned data may use another DTO or an appropriate immutable/value type. Java standard value types, enums, money/date types, and collections are allowed when their semantics are defined; “non-primitive must be DTO” is not a valid universal rule.
-- Keep transport fields focused; avoid business behavior and persistence annotations.
-- API schema/validation annotations appear only when the DTO is actually an API boundary and current convention permits it.
-- Define null/default, collection mutability, enum/unknown-value, date/timezone, and precision behavior.
-- Use Lombok/serialization interfaces according to current module compatibility.
+- DTO 字段不得暴露持久化 Entity、API BO 或 API VO。
+- 嵌套归属数据可使用其他 DTO 或适当的不可变/值类型。语义已定义时，可使用 Java 标准值类型、枚举、金额/日期类型和集合；“非基本类型必须是 DTO”不是通用规则。
+- 字段聚焦传输职责，避免业务行为和持久化注解。
+- 只有 DTO 确实属于 API 边界且当前约定允许时，才添加 API Schema/校验注解。
+- 明确定义 null/默认值、集合可变性、枚举未知值、日期时区和精度行为。
+- Lombok 与序列化接口必须兼容当前模块。
 
-## Mapping And Tests
+## 映射与测试
 
-Use explicit mapping for renamed/transformed fields. Test null/default/nested/collection and provider/persistence projection mappings that changed. Prevent sensitive/unneeded fields from crossing boundaries.
+字段重命名或转换时使用显式映射。测试 null、默认值、嵌套、集合以及已变更的 Provider/持久化投影映射，防止敏感或无关字段跨越边界。
 
-## Block Conditions
+## 阻塞条件
 
-Block when DTO owner, source/target contract, field semantics, or target package/style cannot be established.
+DTO 所有者、源/目标契约、字段语义或目标包/风格无法确认时必须阻塞。

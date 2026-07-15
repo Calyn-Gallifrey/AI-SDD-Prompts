@@ -362,12 +362,12 @@ def build_document() -> Document:
     subtitle.paragraph_format.space_after = Pt(28)
     rule = doc.add_paragraph()
     rule.paragraph_format.space_after = Pt(16)
-    run = rule.add_run("稳定入口  ·  确定性状态  ·  可追溯审批  ·  冻结范围  ·  可恢复执行")
+    run = rule.add_run("稳定入口  ·  中文主体  ·  确定性状态  ·  可追溯审批  ·  可恢复执行")
     set_run_font(run, 11.5, color=MUTED)
     add_callout(
         doc,
         "核心承诺",
-        "开发者仍然只需提交简要提示词并调用 uaw-sdd-ai-coding；状态、审批、Git 范围、失效和恢复全部由 Skill 内部处理。",
+        "开发者仍然只需提交简要提示词并调用 uaw-sdd-ai-coding；状态、审批、Git 范围、失效和恢复全部由 Skill 内部处理，新生成过程资产以简体中文为主体。",
         kind="gate",
     )
     doc.add_paragraph().paragraph_format.space_after = Pt(145)
@@ -379,7 +379,7 @@ def build_document() -> Document:
         metadata.rows,
         [
             ("适用范围", "UAW-SDD 2.0 当前运行基线"),
-            ("文档版本", "2.0-hardened / 2026-07-14"),
+            ("文档版本", "2.0-hardened / 2026-07-15"),
             ("成熟度目标", "5/5（仓库可控边界）"),
             ("权威规则", "skills/uaw-sdd-ai-coding/references/sdd2-control-contract.md"),
         ],
@@ -453,6 +453,22 @@ def build_document() -> Document:
         "无需运行 sdd2_control.py、维护 .sdd2 文件、提供 commit/hash、手工冻结范围或判断恢复点。",
         kind="control",
     )
+    add_heading(doc, "2.1 简体中文主体规范", 2)
+    add_paragraph(
+        doc,
+        "三项 Skill 的人类可读运行规则、模板以及新建或修订的九项公开资产，统一以简体中文为主体。唯一语言规则来源是 skills/uaw-sdd-ai-coding/references/language-policy.md。",
+    )
+    add_bullets(
+        doc,
+        [
+            "标题、说明、事实、判断、风险、验收、评审发现、测试结论和归档总结使用简体中文。",
+            "文件名、路径、命令、代码标识符、Schema 键、状态枚举、技术缩写和外部契约原值可保留英文。",
+            "用户以英文提交需求时，资产分析和结论仍使用简体中文；需要追溯的原文可按原样引用并标注来源。",
+            "控制器在 init 和 record-artifact 时执行语言校验；不符合规范时返回非零并阻塞当前动作。",
+            "historical-example 是不可变审计样例，为保持哈希和迁移证据不回写翻译，也不得复制为新资产。",
+            "original/ 是保留原文和来源哈希的导入档案，不作为运行规则；面向运行的派生内容必须在 references/ 中以简体中文表达。",
+        ],
+    )
 
     # 3-4
     add_heading(doc, "3. 架构与权威层级", 1)
@@ -464,6 +480,7 @@ def build_document() -> Document:
             "sdd2-control-contract.md：阶段、状态、审批、失效、范围、恢复和 Archive 资格的唯一事实来源。",
             "sdd2_control.py：确定性执行控制契约；返回非零即硬停止。",
             "references/schemas/：持久化状态、审批和范围的数据结构约束。",
+            "language-policy.md：人类可读文件与生成资产的简体中文主体要求。",
             "references/templates/：九个公开资产的人类可读结构。",
             "references/rules/ 与下游 Skill 规则：当前代码实现和测试约束。",
             "examples 与历史 Feature：仅供阅读，不构成需求、审批或运行状态。",
@@ -813,6 +830,7 @@ def build_document() -> Document:
             ["测试真实性", "测试源码 + 可执行证据；失败不可 Archive", "双阶段测试与归档拒绝测试"],
             ["恢复与并行", "唯一 next action；一 worktree 一 active Feature", "resume / lock / restart 测试"],
             ["可追溯归档", "九资产、Git IDs、scope/file hashes 全当前", "archive evidence / check 测试"],
+            ["语言一致性", "运行规则和新资产以简体中文为主体，必要英文受控保留", "init / record-artifact 正反例与静态语言校验"],
             ["可维护性", "契约唯一来源、Schema、路由和 provenance 完整", "静态资产验证器"],
         ],
         widths=[3.6, 9.2, 5.1],
@@ -839,7 +857,7 @@ def build_document() -> Document:
         doc,
         [
             "控制单测必须覆盖审批歧义、消息重放、越序资产、脏基线、范围漂移、测试失败、锁、恢复和完整成功路径。",
-            "静态验证必须覆盖运行资产、Schema、引用、来源映射、历史样例隔离和不变入口。",
+            "静态验证必须覆盖运行资产、简体中文主体、Schema、引用、来源映射、历史样例隔离和不变入口。",
             "三个 Skill 必须分别通过 Skill 结构验证。",
             "指南和四张图必须重新生成并完成逐页/逐图视觉检查。",
         ],
@@ -853,6 +871,7 @@ def build_document() -> Document:
             ["开发者入口", "未引入新命令、参数或手工控制文件"],
             ["控制契约", "与脚本、Schema、Workflow、三 Skill 无冲突"],
             ["九个公开资产", "模板齐全，职责、输入、输出和 Gate 可追溯"],
+            ["语言规范", "运行规则及新建或修订资产以简体中文为主体，必要英文不改变机器契约"],
             ["异常路径", "失败/阻塞/重试/风险关闭/中止均有确定行为"],
             ["历史样例", "明确隔离，不含可被误认为当前审批的记录"],
             ["文档与图示", "只描述当前 SDD2.0 运行基线，内容与控制契约一致"],
@@ -864,7 +883,7 @@ def build_document() -> Document:
     add_callout(
         doc,
         "成熟度结论",
-        "当本章全部通过时，SDD2.0 在仓库可控边界达到 5/5：入口稳定、流程闭环、审批可追溯、范围确定、质量 Gate 可验证、失败可恢复且归档不可伪成功。",
+        "当本章全部通过时，SDD2.0 在仓库可控边界达到 5/5：入口稳定、中文资产一致、流程闭环、审批可追溯、范围确定、质量 Gate 可验证、失败可恢复且归档不可伪成功。",
         kind="success",
     )
 

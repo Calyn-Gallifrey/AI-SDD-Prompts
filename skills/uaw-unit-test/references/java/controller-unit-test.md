@@ -1,38 +1,38 @@
-# Controller Unit-Test Rule
+# Controller 单元测试规则
 
-Use for HTTP controller request mapping, validation, authorization handoff, serialization, and exception translation.
+用于 HTTP Controller 的请求映射、校验、权限交接、序列化和异常转换。
 
-## Harness Selection
+## Test Harness 选择
 
-Choose from current executable project evidence:
+根据当前项目的可执行证据选择：
 
-- standalone MockMvc for focused mapping/validation with mocked service;
-- supported Spring MVC slice when filters, advice, converters, or security configuration are part of the contract;
-- direct method testing only when the controller is not HTTP-mapped or the approved change is purely method-level and nearby tests use it.
+- 以独立 MockMvc 测试聚焦映射/校验，并 Mock Service；
+- Filter、Advice、Converter 或安全配置属于契约时，使用项目支持的 Spring MVC Slice；
+- 只有 Controller 未映射 HTTP，或已批准变更仅为 Method 层且邻近测试采用该方式时，才直接测试 Method。
 
-Do not use `@SpringBootTest` by default. Do not add a Spring test dependency that the module lacks without approved scope.
+默认不得使用 `@SpringBootTest`。未进入已批准范围时，不得新增模块目前缺失的 Spring 测试依赖。
 
-## Required Scenarios
+## 必需场景
 
-1. correct method/path/content type;
-2. valid request binding and service arguments;
-3. response status and important JSON/body fields;
-4. required-field, format, range, and malformed-body validation as applicable;
-5. authorization/authentication behavior when in scope;
-6. service/domain exception to HTTP error mapping;
-7. compatibility/default behavior for changed request/response fields;
-8. regression scenario from Spec or findings.
+1. 正确 Method、Path 和 Content Type；
+2. 有效请求绑定和传入 Service 的参数；
+3. 响应状态及关键 JSON/Body 字段；
+4. 适用时的必填、格式、范围和畸形 Body 校验；
+5. 权限在范围内时的认证/授权行为；
+6. Service/domain 异常到 HTTP 错误的映射；
+7. 已变更请求/响应字段的兼容与默认行为；
+8. 来自 Spec 或 Findings 的回归场景。
 
-## Assertions
+## 断言
 
-- Assert status plus contract-relevant headers/body, not status alone.
-- Verify service is not called on rejected requests.
-- Capture service input when request-to-model mapping changed.
-- Use the project's configured object mapper/converters when serialization behavior matters.
-- Do not duplicate framework internals or assert incidental JSON formatting.
+- 不得只断言 Status，同时检查契约相关 Header/Body。
+- 请求被拒绝时验证 Service 未被调用。
+- 请求到模型映射变化时捕获并检查 Service Input。
+- 序列化行为相关时使用项目已配置 ObjectMapper/Converter。
+- 不重复测试框架内部实现，不断言无意义的 JSON 格式细节。
 
-## Security
+## 安全
 
-Use established test security helpers/configuration. Never bypass security merely to make the test pass when authorization is in contract. Do not embed real tokens, credentials, or personal data.
+使用既有测试安全 Helper/配置。权限属于契约时，不得为让测试通过而绕过安全。测试数据不得包含真实 Token、凭据或个人数据。
 
-Record harness/profile evidence, test paths, endpoint/scenario mapping, execution entry, result counts, and current scope hash.
+记录 Harness/Profile 证据、测试路径、Endpoint/场景映射、执行入口、结果数量和当前范围哈希。

@@ -6,7 +6,11 @@ from __future__ import annotations
 import json
 import re
 import sys
+import zipfile
 from pathlib import Path
+from xml.etree import ElementTree
+
+from sdd2_control import simplified_chinese_body_issues
 
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -27,6 +31,7 @@ PUBLIC_ASSETS = {
 
 REQUIRED_RUNTIME = {
     "skills/uaw-sdd-ai-coding/references/sdd2-control-contract.md",
+    "skills/uaw-sdd-ai-coding/references/language-policy.md",
     "skills/uaw-sdd-ai-coding/references/schemas/feature-state.schema.json",
     "skills/uaw-sdd-ai-coding/references/schemas/gate-approval.schema.json",
     "skills/uaw-sdd-ai-coding/references/schemas/implementation-scope.schema.json",
@@ -34,7 +39,18 @@ REQUIRED_RUNTIME = {
     "skills/uaw-sdd-ai-coding/references/rules/backend/case-tracker-compatibility.md",
 }
 
+LANGUAGE_RELAXED_RUNTIME = {
+    "skills/uaw-sdd-ai-coding/references/context/transactions-dictionary.md",
+}
+
+REQUIRED_SUPPLEMENTAL_LANGUAGE_FILES = {
+    "CODEX_HANDOFF.md",
+    "docs/UAW-SDD2.0 Skill化方案说明与操作指南.docx",
+    "uaw-sdd-demo/README.md",
+}
+
 ALLOWED_ORIGINAL_REFERENCES = {
+    "skills/uaw-sdd-ai-coding/references/language-policy.md",
     "skills/uaw-sdd-ai-coding/references/context/routing-index.md",
     "skills/uaw-sdd-ai-coding/references/context/transactions-dictionary.md",
     "skills/uaw-sdd-ai-coding/references/context/source-provenance.json",
@@ -53,9 +69,32 @@ def read_json(path: Path, errors: list[str]) -> object | None:
         return None
 
 
+def read_docx_text(path: Path) -> str:
+    text_parts: list[str] = []
+    word_namespace = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+    paragraph_tag = f"{{{word_namespace}}}p"
+    style_tag = f"{{{word_namespace}}}pStyle"
+    text_tag = f"{{{word_namespace}}}t"
+    value_attribute = f"{{{word_namespace}}}val"
+    with zipfile.ZipFile(path) as archive:
+        for name in sorted(archive.namelist()):
+            if not name.startswith("word/") or not name.endswith(".xml"):
+                continue
+            root = ElementTree.fromstring(archive.read(name))
+            for paragraph in root.iter(paragraph_tag):
+                style = paragraph.find(f"./{{{word_namespace}}}pPr/{style_tag}")
+                if style is not None and style.get(value_attribute) == "CodeBlock":
+                    continue
+                paragraph_text = "".join(node.text or "" for node in paragraph.iter(text_tag))
+                if paragraph_text:
+                    text_parts.append(paragraph_text)
+    return "\n".join(text_parts)
+
+
 def main() -> int:
     errors: list[str] = []
     warnings: list[str] = []
+    language_checked_files = 0
 
     for item in sorted(REQUIRED_RUNTIME):
         if not (ROOT / item).is_file():
@@ -90,6 +129,15 @@ def main() -> int:
             continue
         content = path.read_text(encoding="utf-8")
         rel = relative(path)
+        if path.suffix in {".md", ".html"} or path.name == "openai.yaml":
+            language_checked_files += 1
+            language_issues = simplified_chinese_body_issues(
+                content,
+                minimum_han=12,
+                enforce_dominance=rel not in LANGUAGE_RELAXED_RUNTIME,
+            )
+            for issue in language_issues:
+                errors.append(f"LANGUAGE_POLICY_VIOLATION:{rel}:{issue}")
         if "UAW-Code-Review.md" in content:
             errors.append(f"STALE_REFERENCE:{rel}:UAW-Code-Review.md")
         if "[✓]" in content:
@@ -102,6 +150,31 @@ def main() -> int:
                 continue
             if not (ROOT / candidate).exists():
                 errors.append(f"BROKEN_SKILL_REFERENCE:{rel}:{candidate}")
+
+    supplemental_language_files = {
+        ROOT / item for item in REQUIRED_SUPPLEMENTAL_LANGUAGE_FILES
+    }
+    supplemental_language_files.update(ROOT.glob("*.md"))
+    supplemental_language_files.update(
+        path for path in (ROOT / "docs").rglob("*") if path.is_file() and path.suffix in {".md", ".html", ".docx"}
+    )
+    supplemental_language_files.update(
+        path for path in (ROOT / "uaw-sdd-demo").glob("*.md") if path.is_file()
+    )
+    for path in sorted(supplemental_language_files):
+        item = relative(path)
+        path = ROOT / item
+        if not path.is_file():
+            errors.append(f"MISSING_LANGUAGE_ASSET:{item}")
+            continue
+        try:
+            content = read_docx_text(path) if path.suffix == ".docx" else path.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError, zipfile.BadZipFile, ElementTree.ParseError) as exc:
+            errors.append(f"INVALID_LANGUAGE_ASSET:{item}:{exc}")
+            continue
+        language_checked_files += 1
+        for issue in simplified_chinese_body_issues(content, minimum_han=16):
+            errors.append(f"LANGUAGE_POLICY_VIOLATION:{item}:{issue}")
 
     epi = SKILLS / "uaw-sdd-ai-coding/references/rules/backend/epi-gateway.md"
     om = SKILLS / "uaw-sdd-ai-coding/references/rules/backend/om-api-acl.md"
@@ -147,7 +220,9 @@ def main() -> int:
         "errors": sorted(set(errors)),
         "warnings": sorted(set(warnings)),
         "checked_runtime_files": len(runtime_files),
+        "checked_language_files": language_checked_files,
         "checked_historical_features": len(feature_dirs),
+        "checked_source_archive_files": sum(1 for path in (ROOT / "original").rglob("*") if path.is_file()),
     }
     print(json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True))
     return 0 if not errors else 1

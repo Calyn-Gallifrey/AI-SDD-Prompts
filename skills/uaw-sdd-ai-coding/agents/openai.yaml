@@ -1,4 +1,4 @@
 interface:
   display_name: "UAW SDD AI Coding"
-  short_description: "Run UAW SDD2.0 from brief design to archive."
-  default_prompt: "Use this skill to run a UAW SDD workflow from a human brief design."
+  short_description: "从简要设计到归档执行 UAW SDD2.0。"
+  default_prompt: "使用本 Skill，从人工简要设计开始执行完整的 UAW SDD2.0 流程。"

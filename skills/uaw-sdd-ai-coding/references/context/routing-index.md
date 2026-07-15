@@ -1,22 +1,23 @@
-# UAW-SDD 2.0 Runtime Routing Index
+# UAW-SDD 2.0 运行时路由索引
 
-This index routes current SDD2 execution. `original/` is migration provenance only and must not be loaded as runtime instruction. See `source-provenance.json`.
+本索引用于当前 SDD2 执行。`original/` 只保存迁移来源，不得加载为运行时指令。来源关系见 `source-provenance.json`。
 
-## 1. Always Load
+## 1. 始终加载
 
 ```text
 skills/uaw-sdd-ai-coding/SKILL.md
 skills/uaw-sdd-ai-coding/references/sdd2-control-contract.md
+skills/uaw-sdd-ai-coding/references/language-policy.md
 skills/uaw-sdd-ai-coding/references/sdd2-workflow.md
 skills/uaw-sdd-ai-coding/references/process-control.md
 skills/uaw-sdd-ai-coding/references/context/routing-index.md
 ```
 
-Load `input-examples.md` before requesting missing Brief fields. Examples remain non-authoritative.
+请求补充缺失 Brief 字段前加载 `input-examples.md`。示例始终不具权威性。
 
-## 2. Runtime Assets
+## 2. 运行时资产
 
-Public feature assets:
+公开 Feature 资产：
 
 ```text
 brief-design.md
@@ -30,7 +31,7 @@ unit-test-summary.md
 archive.md
 ```
 
-Internal control assets:
+内部控制资产：
 
 ```text
 .sdd2/feature-state.json
@@ -41,11 +42,11 @@ Internal control assets:
 .sdd2/revisions/<artifact-stage>/r<revision>-<sha256>.md
 ```
 
-The public entry remains a brief prompt plus Skill invocation. Internal control assets require no developer action.
+公开入口仍是简要提示词加 Skill 调用。内部控制资产不要求开发者执行任何动作。公开资产正文必须通过简体中文主体校验。
 
-## 3. Template Routing
+## 3. 模板路由
 
-| Artifact | Template |
+| 资产 | 模板 |
 |---|---|
 | Proposal | `references/templates/proposal-input-internal-template.md` |
 | Spec | `references/templates/spec-template.md` |
@@ -56,93 +57,93 @@ The public entry remains a brief prompt plus Skill invocation. Internal control 
 | Code Review Findings | `skills/uaw-code-review/references/templates/sdd-code-review-findings-template.md` |
 | Unit Test Summary | `skills/uaw-unit-test/references/templates/unit-test-summary-template.md` |
 
-## 4. Backend Rule Routing
+## 4. 后端规则路由
 
-Load only rules whose trigger is confirmed by Brief/approved Design/current code.
+只加载 Brief、已批准 Design 或当前代码已确认触发条件的规则。
 
-| Trigger | Runtime rule |
+| 触发条件 | 运行时规则 |
 |---|---|
-| HTTP/API entry or response contract | `references/rules/backend/backend-api.md` |
-| New/changed database table or deployment DDL | `references/rules/backend/create-table.md` |
-| MyBatis mapper/query/mapping | `references/rules/backend/mybatis-orm.md` |
-| Current authenticated user | `references/rules/backend/current-user.md` |
-| EPI integration | `references/rules/backend/epi-gateway.md` |
-| OM external API anti-corruption layer | `references/rules/backend/om-api-acl.md` |
-| MapStruct conversion | `references/rules/backend/mapstruct-conversion.md` |
-| Transaction module package/layout | `references/rules/backend/transaction-package-structure.md` |
-| New transaction type affecting Case Tracker | `references/rules/backend/case-tracker-compatibility.md` |
+| HTTP/API 入口或响应契约 | `references/rules/backend/backend-api.md` |
+| 新建/修改数据库表或部署 DDL | `references/rules/backend/create-table.md` |
+| MyBatis Mapper、查询或映射 | `references/rules/backend/mybatis-orm.md` |
+| 当前认证用户 | `references/rules/backend/current-user.md` |
+| EPI 集成 | `references/rules/backend/epi-gateway.md` |
+| OM 外部 API 防腐层 | `references/rules/backend/om-api-acl.md` |
+| MapStruct 转换 | `references/rules/backend/mapstruct-conversion.md` |
+| Transaction 模块包结构 | `references/rules/backend/transaction-package-structure.md` |
+| 新 Transaction Type 影响 Case Tracker | `references/rules/backend/case-tracker-compatibility.md` |
 
-If a trigger is ambiguous or the required external/database contract cannot be established, record an open question and block Design/implementation as appropriate. Never fill the gap from a code example.
+触发条件含糊，或必需外部/数据库契约无法确认时，记录待确认问题，并按影响阻塞 Design 或实现。绝不能使用代码示例补全缺口。
 
-## 5. Model Rule Routing
+## 5. 模型规则路由
 
-| Boundary | Runtime rule |
+| 边界 | 运行时规则 |
 |---|---|
-| API/business input | `references/rules/model/bo.md` |
-| Internal/inter-layer transfer | `references/rules/model/dto.md` |
-| Persistence mapping | `references/rules/model/entity.md` |
-| API/view output | `references/rules/model/vo.md` |
+| API/业务输入 | `references/rules/model/bo.md` |
+| 内部/层间传输 | `references/rules/model/dto.md` |
+| 持久化映射 | `references/rules/model/entity.md` |
+| API/视图输出 | `references/rules/model/vo.md` |
 
-Current module conventions decide whether a new type is actually needed. Do not create parallel BO/DTO/VO/Entity models without an ownership/mapping need recorded in Design.
+是否需要新类型由当前模块约定决定。Design 未记录所有权或映射需求时，不得并行创建 BO/DTO/VO/Entity。
 
-## 6. Test Rule Routing
+## 6. 测试规则路由
 
-Always load:
+始终加载：
 
 ```text
 skills/uaw-unit-test/SKILL.md
 skills/uaw-unit-test/references/testing-profile-routing.md
 ```
 
-Then load one primary target rule:
+然后选择一个主要目标规则：
 
-| Target | Runtime rule |
+| 目标 | 运行时规则 |
 |---|---|
 | Method/helper | `skills/uaw-unit-test/references/java/method-unit-test.md` |
 | Service | `skills/uaw-unit-test/references/java/service-unit-test.md` |
-| Static utility/dependency | `skills/uaw-unit-test/references/java/static-method-unit-test.md` |
+| 静态工具/依赖 | `skills/uaw-unit-test/references/java/static-method-unit-test.md` |
 | Controller | `skills/uaw-unit-test/references/java/controller-unit-test.md` |
-| ServiceStrategy/selector | `skills/uaw-unit-test/references/java/service-strategy-unit-test.md` |
+| ServiceStrategy/选择器 | `skills/uaw-unit-test/references/java/service-strategy-unit-test.md` |
 
-Use the SDD two-pass test handoff: generate test source, refreeze/re-review, then execute and summarize.
+遵循 SDD 两轮测试交接：先生成测试源码，再重新冻结/复审，最后执行并总结。
 
-## 7. Code Review Routing
+## 7. Code Review 路由
 
-SDD invokes:
+SDD 调用：
 
 ```text
 uaw-code-review / SDD_TASK_CODE_REVIEW
 ```
 
-Load only the Code Review Skill, current rules, and Markdown findings template. HTML templates are standalone-only and must not be loaded in SDD mode.
+只加载 Code Review Skill、当前规则和 Markdown Findings 模板。HTML 模板只用于 Standalone 模式，SDD 模式不得加载。
 
-## 8. Business Context Routing
+## 8. 业务上下文路由
 
-`transactions-dictionary.md` is a provenance-labeled historical snapshot. Load it only for a matching transaction-domain task. Treat names/packages/status/dropdowns as candidates that require confirmation from current code/config/schema or current user input before becoming requirements.
+`transactions-dictionary.md` 是带来源标签的历史快照。只有任务匹配 Transaction 业务域时才加载。名称、包、状态和下拉值只作为候选项，必须由当前代码、配置、Schema 或当前用户输入确认后才能转为需求。
 
-Record each context use in Proposal/Design with source path, source hash/version, verified-at time, confirming current source, and confidence. Unconfirmed dictionary status or enum values cannot authorize code/database changes.
+每次使用上下文时，在 Proposal/Design 中记录来源路径、来源哈希/版本、确认时间、当前确认来源和置信度。未确认的字典状态或枚举值不得授权代码或数据库变更。
 
-## 9. Feature-Type Focus
+## 9. Feature 类型关注点
 
-| Type | Required focus |
+| 类型 | 必查重点 |
 |---|---|
-| query | authorization, query bounds, cardinality, response compatibility, masking |
-| submit | validation, transaction, idempotency, persistence, state transition |
-| edit | target identity, authorization, audit, compatibility, partial failure |
-| enhancement | current behavior/delta, compatibility, regression |
-| refactor | behavior preservation, bounded scope, regression |
-| fix | reproduction, root cause, minimal correction, regression |
+| query | 权限、查询边界、基数、响应兼容性、脱敏 |
+| submit | 校验、事务、幂等、持久化、状态转换 |
+| edit | 目标身份、权限、审计、兼容性、部分失败 |
+| enhancement | 当前行为/增量、兼容性、回归 |
+| refactor | 行为保持、受限范围、回归 |
+| fix | 复现、根因、最小修复、回归 |
 
-Feature type does not auto-load a business rule. Confirm actual scope first.
+Feature 类型不会自动加载业务规则。必须先确认真实范围。
 
-## 10. Source Conflict Rule
+## 10. 来源冲突规则
 
-For current implementation facts, use this precedence:
+当前实现事实按以下优先级判断：
 
-1. approved current user requirement;
-2. current executable code/schema/config at captured Git state;
-3. current SDD2 runtime rule;
-4. provenance-labeled context snapshot;
-5. example/template.
+1. 当前用户已批准的需求；
+2. 已捕获 Git 状态下的当前可执行代码、Schema 和配置；
+3. 当前 SDD2 运行规则；
+4. 带来源标签的上下文快照；
+5. 示例或模板。
 
-A conflict affecting behavior, scope, security, data, or acceptance blocks progression and must be resolved explicitly.
+影响行为、范围、安全、数据或验收的冲突必须明确解决，否则阻塞流程。

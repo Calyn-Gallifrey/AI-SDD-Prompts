@@ -1,35 +1,35 @@
-# Entity Model Rule
+# Entity 模型规则
 
-## Ownership
+## 所有权
 
-An Entity represents persistence state for a verified table/query contract. It must not be used as controller request/response or external integration contract.
+Entity 表示已确认表/查询契约的持久化状态。不得把它用作 Controller 请求/响应或外部集成契约。
 
-## Naming And Placement
+## 命名与位置
 
-- New UAW persistence types use suffix `Entity` when the target module does; preserve established existing conventions where table-named entities differ.
-- Place under the owning persistence package determined from current mapper configuration.
-- Extend `BaseEntity`, `BaseTransactionEntity`, or another base only when it exists and its columns/annotations match the table. Do not duplicate inherited columns.
+- 目标模块采用该约定时，新 UAW 持久化类型使用 `Entity` 后缀；现有按表命名的类型保留其既有约定。
+- 根据当前 Mapper 配置放入所属持久化包。
+- 只有 `BaseEntity`、`BaseTransactionEntity` 或其他基类真实存在，且其列和注解与表匹配时才继承；不得重复定义继承列。
 
-## Mapping
+## 映射
 
-- Table/column annotations and MyBatis-Plus vs XML mapping follow the detected persistence stack.
-- Define primary-key generation, null/default, optimistic lock, soft delete, tenant/country, audit fields, enum/type handlers, JSON, dates/timezones, money/precision, and sensitive storage from current schema.
-- Do not add API schema or Bean Validation annotations unless the Entity truly owns that boundary (normally it does not).
-- Avoid broad `equals/hashCode/toString` over mutable relations, large fields, or sensitive values. Lombok is conditional on current safe conventions.
-- Relationships/nested objects require an explicit query/result mapping; they are not implicit table columns.
+- 表/列注解以及 MyBatis-Plus 与 XML 的选择遵循已识别的持久化栈。
+- 根据当前 Schema 定义主键生成、null/默认值、乐观锁、软删除、租户/国家、审计字段、枚举/TypeHandler、JSON、日期时区、金额精度和敏感数据存储。
+- 除非 Entity 确实拥有该边界（通常不拥有），否则不得添加 API Schema 或 Bean Validation 注解。
+- 避免针对可变关系、大字段或敏感值生成宽泛的 `equals`、`hashCode`、`toString`。Lombok 仅在当前约定安全时使用。
+- 关系或嵌套对象需要显式查询/结果映射，不能视为隐式表列。
 
-## Compatibility
+## 兼容性
 
-Entity changes must align with approved schema rollout. A field added to code before/after DDL needs backward-compatible behavior and deployment order. Do not assume column existence from an API request.
+Entity 变更必须与已批准 Schema 发布顺序一致。代码字段早于或晚于 DDL 上线时，必须设计向后兼容行为和部署顺序。不得根据 API 请求假定数据库列已存在。
 
-## Tests And Validation
+## 测试与验证
 
-- mapper/XML loading and field mapping;
-- key/default/type-handler/soft-delete behavior where changed;
-- query projection and cardinality;
-- sensitive-data persistence/redaction;
-- compatibility with rollout order.
+- Mapper/XML 加载和字段映射；
+- 已变更的主键、默认值、TypeHandler 和软删除行为；
+- 查询投影与基数；
+- 敏感数据持久化/脱敏；
+- 发布顺序兼容性。
 
-## Block Conditions
+## 阻塞条件
 
-Block when table schema, key/defaults, base entity semantics, mapping technology, or sensitive-data policy is unknown.
+表 Schema、主键/默认值、基础 Entity 语义、映射技术或敏感数据策略不明确时必须阻塞。

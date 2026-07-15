@@ -1,41 +1,41 @@
-# Method Unit-Test Rule
+# Method 单元测试规则
 
-Use for a focused public/package-visible method, domain helper, mapper helper, or small collaborator whose behavior can be exercised without a Spring context.
+用于无需 Spring Context 即可执行的聚焦 Public/Package-visible Method、Domain Helper、Mapper Helper 或小型协作者。
 
-## Required Analysis
+## 必需分析
 
-1. Read the method and all branches, validation, defaults, exceptions, and side effects.
-2. Identify observable contract from approved Spec/current callers; do not test private implementation details directly.
-3. Partition inputs into valid, boundary, null/empty, invalid, and regression cases that actually apply.
-4. Identify collaborators. Mock only external boundaries; use real value objects where practical.
+1. 读取 Method 以及全部分支、校验、默认值、异常和副作用。
+2. 根据已批准 Spec 和当前调用方识别可观察契约，不得直接测试 Private 实现细节。
+3. 将实际适用输入划分为有效、边界、null/空值、无效和回归场景。
+4. 识别协作者。只 Mock 外部边界，实际可行时使用真实值对象。
 
-## Test Design
+## 测试设计
 
-| Concern | Required approach |
+| 关注点 | 必需方式 |
 |---|---|
-| Happy path | assert complete meaningful result, not only non-null |
-| Boundary | minimum/maximum, empty, nullability, precision, ordering as applicable |
-| Invalid input | assert exact exception type and important message/code when contractual |
-| Branches | one case per materially different outcome |
-| Side effects | verify arguments and count; assert no interaction on rejected paths |
-| Regression | reproduce the changed/previously failing behavior |
+| 正常路径 | 断言完整且有意义的结果，不能只检查非 null |
+| 边界 | 按需覆盖最小/最大、空值、可空性、精度和顺序 |
+| 无效输入 | 契约要求时断言精确异常类型和关键 Message/Code |
+| 分支 | 每个实质不同结果至少一个用例 |
+| 副作用 | 验证参数和次数；拒绝路径验证无交互 |
+| 回归 | 复现已变更行为或此前失败行为 |
 
-Use parameterized tests when multiple cases share the same contract and improve readability. Avoid loops with opaque assertions.
+多个场景共享同一契约且能提高可读性时使用 Parameterized Test，避免使用包含模糊断言的循环。
 
-## Assertions
+## 断言
 
-- Assert domain fields/collections and ordering that callers depend on.
-- For exceptions, use the selected framework's supported assertion mechanism.
-- Use argument captors only when the collaborator input is part of behavior.
-- Do not assert incidental local variable choices, exact internal call order, or logging unless they are contractual.
+- 断言调用方依赖的 Domain 字段、集合和顺序。
+- 异常使用所选框架支持的断言机制。
+- 只有协作者输入属于行为契约时才使用 ArgumentCaptor。
+- 不断言偶然的局部变量选择、精确内部调用顺序或非契约日志。
 
-## Constraints
+## 约束
 
-- Do not expose a private method solely for testing; exercise it through an observable owner unless Design explicitly changes the API.
-- Do not start Spring for pure method behavior.
-- Do not import UAW utilities unless target code and current dependencies use them.
-- Keep test data minimal and named for the scenario.
+- 不得只为测试而公开 Private Method；通过可观察 Owner 执行，除非 Design 明确改变 API。
+- 纯 Method 行为不得启动 Spring。
+- 目标代码和当前依赖未使用 UAW Utility 时，不得导入。
+- 测试数据保持最小，并按场景命名。
 
-## Completion Evidence
+## 完成证据
 
-Record target symbol, changed test path, scenario mapping, selected framework profile, command/entry, and observed result in Unit Test Summary.
+在 Unit Test Summary 中记录目标符号、已变更测试路径、场景映射、所选框架 Profile、命令/入口和观察结果。

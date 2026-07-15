@@ -1,4 +1,4 @@
 interface:
   display_name: "UAW Code Review"
-  short_description: "Review UAW code with HTML or SDD findings."
-  default_prompt: "Use this skill to review UAW code changes."
+  short_description: "使用 HTML 报告或 SDD Findings 评审 UAW 代码。"
+  default_prompt: "使用本 Skill 评审 UAW 代码变更。"

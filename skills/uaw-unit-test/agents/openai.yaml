@@ -1,4 +1,4 @@
 interface:
   display_name: "UAW Unit Test"
-  short_description: "Generate or update UAW Java unit test code."
-  default_prompt: "Use this skill to generate or update UAW unit test code and then produce Unit Test Summary."
+  short_description: "生成或更新 UAW Java 单元测试代码。"
+  default_prompt: "使用本 Skill 生成或更新 UAW 单元测试代码，并在执行后生成 Unit Test Summary。"

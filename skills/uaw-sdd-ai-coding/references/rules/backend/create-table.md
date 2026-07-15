@@ -1,47 +1,47 @@
-# Database Table And DDL Rule
+# 数据库表与 DDL 规则
 
-## Trigger And Required Inputs
+## 触发条件与必需输入
 
-Use for approved schema/table/index changes. Confirm database engine/version, owning module, current migration/deployment convention, table purpose, columns/types/null/defaults, keys/indexes, retention, sensitive-data handling, rollout, and rollback. Do not infer schema from model examples.
+已批准 Schema、表或索引变更时使用。确认数据库引擎/版本、所属模块、当前迁移/部署约定、表用途、列类型/null/默认值、Key/索引、保留期、敏感数据处理、发布和回滚。不得根据模型示例推断 Schema。
 
-## Naming And Structure
+## 命名与结构
 
-- Follow the current database/project convention. Use `iic_crm_<business_entity>` only when current UAW schema confirms that prefix.
-- Every column has a clear purpose and compatible type/length/precision.
-- Primary/unique/foreign key behavior is explicit.
-- Indexes map to verified query predicates/order and data cardinality; avoid redundant indexes.
-- Timestamps/audit/soft-delete/tenant/country fields follow current schema, not a generic template.
-- Sensitive values use the approved encryption/tokenization mechanism. Searchable sensitive data requires an approved non-reversible lookup representation and access controls.
+- 遵循当前数据库/项目约定。只有当前 UAW Schema 已确认该前缀时，才使用 `iic_crm_<business_entity>`。
+- 每列都必须用途明确，并采用兼容的类型、长度和精度。
+- 主键、唯一键和外键行为必须明确。
+- 索引必须对应已确认的查询条件/排序和数据基数，避免重复索引。
+- 时间戳、审计、软删除、租户和国家字段遵循当前 Schema，不得套用通用模板。
+- 敏感值使用已批准的加密/Token 化机制。可搜索敏感数据必须采用已批准的不可逆检索表示和访问控制。
 
-## Migration Safety
+## 迁移安全
 
-- Use the repository's existing versioned migration/DDL path; do not execute SQL against an environment.
-- No destructive `DROP`, broad `DELETE`, column narrowing, or irreversible rewrite without explicit approved migration and rollback/data-recovery plan.
-- Define lock/downtime and backward-compatible rollout for large/live tables.
-- Make rerun/idempotency behavior consistent with the current migration tool.
-- Include verification queries or schema checks that are safe and read-only.
+- 使用仓库既有的版本化迁移/DDL 路径，不得从 Skill 对环境执行 SQL。
+- 未明确批准迁移以及回滚/数据恢复方案时，禁止破坏性 `DROP`、宽泛 `DELETE`、列收窄或不可逆重写。
+- 大表或在线表必须定义锁/停机影响和向后兼容发布顺序。
+- 重复执行/幂等行为与当前迁移工具一致。
+- 提供安全、只读的验证查询或 Schema 检查。
 
-## Allowed File Scope
+## 允许文件范围
 
-The approved Tasks may allow both:
+已批准 Tasks 可同时允许：
 
-1. the exact migration/DDL directory (often `db/**`, when current project confirms it); and
-2. the exact existing deployment descriptor path.
+1. 精确迁移/DDL 目录，当前项目确认时通常为 `db/**`；
+2. 精确的现有部署描述文件路径。
 
-This rule does not restrict edits to `db/**` while simultaneously requiring a descriptor elsewhere. Both paths must be explicit in implementation scope. If the descriptor is missing/unparseable, block; do not create a replacement unless Design explicitly approves its format/location.
+本规则不会一边把编辑限制为 `db/**`，一边又要求修改其他位置的描述文件。两个路径都必须明确进入实现范围。描述文件缺失或无法解析时必须阻塞；除非 Design 明确批准其格式和位置，否则不得自行创建替代文件。
 
-When the descriptor is JSON/YAML/XML, use a parser/serializer or established project tool. Preserve unrelated entries and formatting as far as the tool allows. Never update a deployment environment not approved by the feature.
+描述文件为 JSON/YAML/XML 时，使用 Parser/Serializer 或项目既有工具。尽量保持无关条目和格式。禁止更新 Feature 未批准的部署环境。
 
-## Required Evidence
+## 必需证据
 
-- schema source and database version;
-- DDL/migration file path and checksum;
-- deployment descriptor path/change, if required;
-- compatibility/rollback analysis;
-- sensitive-data decision;
-- query/index rationale;
-- static parse/lint or approved migration validation result.
+- Schema 来源和数据库版本；
+- DDL/迁移文件路径及校验和；
+- 需要时的部署描述文件路径和变更；
+- 兼容性与回滚分析；
+- 敏感数据决定；
+- 查询/索引依据；
+- 静态解析、Lint 或已批准迁移校验结果。
 
-## Block Conditions
+## 阻塞条件
 
-Block when engine, current migration convention, destructive impact, sensitive-data policy, deployment target, or required field semantics are unknown.
+数据库引擎、当前迁移约定、破坏性影响、敏感数据策略、部署目标或必需字段语义不明确时必须阻塞。

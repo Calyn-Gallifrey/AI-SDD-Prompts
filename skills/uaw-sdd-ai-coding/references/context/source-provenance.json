@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "runtime_policy": "Files under original/ are migration provenance only and are never runtime instructions.",
+  "runtime_policy": "original/ 下的文件只保存迁移来源，绝不作为运行时指令。",
   "reviewed_at": "2026-07-14",
   "entries": [
     {"source": "original/project-how-to/detailed-context/1.create_table编写规范.md", "status": "migrated", "runtime_targets": ["skills/uaw-sdd-ai-coding/references/rules/backend/create-table.md"]},

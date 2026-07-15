@@ -1,32 +1,32 @@
-# BO Model Rule
+# BO 模型规则
 
-## Ownership
+## 所有权
 
-A BO represents API/application business input. Create one only when it owns a real input boundary distinct from an existing compatible type.
+BO 表示 API/应用层的业务输入。只有它拥有与现有兼容类型不同的真实输入边界时才创建。
 
-## Naming And Placement
+## 命名与位置
 
-- New UAW transaction types use the exact uppercase suffix `BO` (for example, `SubmitRequestBO`) when the target module follows that convention.
-- Preserve an established target-module convention when different; record the decision in Design. Do not rename existing public types merely to normalize suffix case.
-- Place it in the feature's existing BO/request package, not a hard-coded package copied from an example.
+- 目标模块遵循该约定时，新 UAW Transaction 类型使用严格大写后缀 `BO`，例如 `SubmitRequestBO`。
+- 目标模块使用不同约定时保留其既有方式，并在 Design 中记录决定。不得只为统一后缀大小写而重命名现有公开类型。
+- 放入 Feature 既有 BO/request 包，不得照抄示例中的固定包路径。
 
-## Structure
+## 结构
 
-- Fields are private by default. Use protected base fields only when a current, justified inheritance hierarchy requires subclass access.
-- Extend an existing base BO only when its fields/validation/serialization semantics apply. Do not inherit for naming consistency alone.
-- Use Bean Validation/current module annotations at the input boundary; define groups only when the API lifecycle needs them.
-- Nested business inputs use owned BO/value types. Do not embed persistence Entity or API output VO.
-- Define null/default/collection/date/enum behavior from the approved contract.
-- Use Lombok, API-schema annotations, serialization IDs, and custom `toString` only according to current module/tool versions.
+- 字段默认使用 private。只有当前合理的继承层级确实需要子类访问时，才使用 protected 基类字段。
+- 只有现有基础 BO 的字段、校验和序列化语义都适用时才继承；不得只为命名一致而继承。
+- 在输入边界使用 Bean Validation 或当前模块注解；只有 API 生命周期确需区分时才定义校验分组。
+- 嵌套业务输入使用自身拥有的 BO/值类型，不得嵌入持久化 Entity 或 API 输出 VO。
+- 根据已批准契约定义 null、默认值、集合、日期和枚举行为。
+- Lombok、API Schema 注解、序列化 ID 和自定义 `toString` 必须与当前模块及工具版本一致。
 
-## Security And Logging
+## 安全与日志
 
-Do not include secrets, tokens, full identifiers, banking/contact data, or other sensitive values in generated `toString`/logs. A generic reflection helper is not automatically safe; exclude/redact fields or omit logging.
+生成的 `toString` 或日志不得包含密码、Token、完整标识符、银行/联系信息或其他敏感值。通用反射工具并不天然安全；应排除或脱敏字段，必要时不记录对象。
 
-## Mapping And Tests
+## 映射与测试
 
-Map BO explicitly to internal DTO/command when ownership differs. Test request validation, boundary/default behavior, nested mapping, and sensitive-data redaction where relevant.
+所有权不同时，将 BO 显式映射为内部 DTO/command。按需测试请求校验、边界/默认行为、嵌套映射和敏感数据脱敏。
 
-## Block Conditions
+## 阻塞条件
 
-Block when request ownership, field contract, validation, sensitive-data classification, or target package convention is unknown.
+请求所有权、字段契约、校验要求、敏感数据分类或目标包约定不明确时必须阻塞。

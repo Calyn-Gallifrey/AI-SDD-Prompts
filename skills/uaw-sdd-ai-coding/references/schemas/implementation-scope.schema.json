@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://uaw.internal/sdd2/implementation-scope.schema.json",
-  "title": "UAW-SDD 2.0 Implementation Scope",
+  "title": "UAW-SDD 2.0 实现范围",
   "type": "object",
   "additionalProperties": true,
   "required": [

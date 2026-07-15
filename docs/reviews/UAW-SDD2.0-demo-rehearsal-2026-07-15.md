@@ -1,7 +1,7 @@
 # UAW-SDD 2.0 Demo 预演验证报告
 
 - 日期：2026-07-15
-- 范围：仅 SDD2.0 runtime、三个 Skill 的协作合同、控制脚本、Demo Feature 流程
+- 范围：仅 SDD2.0 runtime、三个 Skill 的协作合同、控制脚本、Demo Feature 流程和简体中文主体规则
 - 入口约束：保持“简要提示词 + 调用 `uaw-sdd-ai-coding`”不变
 - 演练方式：独立 Git worktree、`execution_mode=demo`、合成 Feature、故障注入、最终不合并业务 Demo 代码
 
@@ -122,7 +122,8 @@ Brief
 
 | 证据 | 结果 |
 |---|---|
-| SDD2 控制回归测试 | 16/16 通过 |
+| SDD2 控制回归测试 | 20/20 通过，其中 4 项覆盖简体中文、必要英文和繁体拒绝边界 |
+| 静态资产与语言验证 | 53 个 runtime 文件、51 个人类可读文件、3 个历史 Feature、26 个来源档案；0 error、0 warning |
 | 控制脚本 Python 编译 | 通过 |
 | Demo 最终 Unit Test | 7/7 通过，Java 17，Maven/Surefire |
 | 最终 Scope | code revision 4，2 个允许文件，0 violation |
@@ -147,6 +148,7 @@ Brief
 | Review/Auto-fix 闭环 | 3/5 | 5/5 | 后续 Findings/Auto-fix revision 可记录并绑定当前 Scope |
 | Unit Test 与 Archive | 5/5 | 5/5 | 选择器失败和真实断言失败均阻止 Archive，最终证据闭环 |
 | 审计与跨会话 | 5/5 | 5/5 | hash、revision、resume、terminal immutability、lock release 全验证 |
+| 语言与资产一致性 | 未纳入 | 5/5 | 运行规则和新建/修订资产以简体中文为主体；必要英文受控保留；控制器硬阻塞不合规输入和资产 |
 
 **最终成熟度：5/5，仅限上述已执行的仓库控制验收边界。**
 
@@ -167,6 +169,20 @@ Brief
 - Review/Auto-fix 可跨多个 Scope revision 闭环；
 - Unit Test 失败无法 Archive；
 - 完成态可恢复、不可修改、释放锁；
+- 三项 Skill 及其人类可读运行文件以简体中文为主体，新建或修订的公开资产受语言闸门约束；
 - 所有本次发现的控制缺陷均已有回归测试。
 
 因此，可以把当前 SDD2.0 标记为“5/5（本次仓库控制验收矩阵内）”。
+
+## 11. 简体中文主体补充验证
+
+2026-07-15 在不改变开发者入口的前提下，新增并验证以下语言合同：
+
+1. `skills/uaw-sdd-ai-coding/references/language-policy.md` 是人类可读文件和生成资产语言规则的唯一来源。
+2. 三项 Skill 的说明、规则、模板、示例和代理元数据均以简体中文为主体。
+3. `init` 会在获取 Feature 锁之前校验 `brief-design.md`；`record-artifact` 会在计算哈希和写入状态之前校验九项公开资产。失败时返回非零并保持当前状态。
+4. 文件名、路径、命令、代码标识符、Schema 键、状态枚举、哈希、技术缩写和外部契约原值可保留必要英文，不要求开发者翻译机器契约。
+5. 三个 `execution_mode=historical-example` Feature 是不可变审计样例，为保持既有哈希和迁移证据不回写翻译；它们仍不能作为当前需求、审批或 Gate 证据。
+6. `original/` 是保留原文和来源哈希的导入档案，不是当前运行规则；活跃 Skill 不得直接加载，派生运行规则必须在 `references/` 中以简体中文表达。
+
+正反向验证覆盖：简体中文正文通过、含必要技术英文通过、英文主导 Brief 拒绝、英文主导过程资产拒绝、繁体正文拒绝。该加固没有增加开发者命令、表单或手工维护步骤。

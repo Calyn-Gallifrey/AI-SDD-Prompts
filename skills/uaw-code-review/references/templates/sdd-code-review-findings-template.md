@@ -1,96 +1,96 @@
-# SDD Code Review Findings
+# SDD 代码评审发现（Code Review Findings）
 
-> Immutable first-pass findings for one frozen SDD2 implementation scope. Fix status belongs in `auto-fix-summary.md`.
+> 针对一个冻结 SDD2 实现范围的不可变首次评审发现。修复状态只能记录在 `auto-fix-summary.md`。正文必须以简体中文为主体。
 
-## 1. Review Identity
+## 1. 评审信息
 
-- Entry Mode: `SDD_TASK_CODE_REVIEW`
-- Feature ID:
-- Attempt:
-- Review Time:
-- Reviewer Role: AI code reviewer
-- Conclusion: passed / failed / blocked
-- Unit tests required: yes
+- 入口模式：`SDD_TASK_CODE_REVIEW`
+- Feature ID：
+- Attempt：
+- 评审时间：
+- 评审人角色：AI 代码评审人
+- 结论：`passed` / `failed` / `blocked`
+- 是否需要单元测试：`yes`
 
-## 2. Frozen Scope Evidence
+## 2. 冻结范围证据
 
-- Repository:
-- Branch:
-- Base Commit:
-- Head Commit:
-- Head Tree:
-- Scope Snapshot SHA-256:
-- Spec Revision / SHA-256:
-- Design Revision / SHA-256:
-- Tasks Revision / SHA-256:
+- 仓库：
+- 分支：
+- Base Commit：
+- Head Commit：
+- Head Tree：
+- 范围快照 SHA-256：
+- Spec 修订/SHA-256：
+- Design 修订/SHA-256：
+- Tasks 修订/SHA-256：
 
-| Changed file | Frozen SHA-256 / deleted | Reviewed | Notes |
+| 变更文件 | 冻结 SHA-256/删除标记 | 是否已评审 | 说明 |
 |---|---|---|---|
-|  |  | yes / blocked |  |
+|  |  | `yes` / `blocked` |  |
 
-## 3. Preconditions
+## 3. 前置条件
 
-| Check | Result | Evidence |
+| 检查项 | 结果 | 证据 |
 |---|---|---|
-| SDD2 control validation | checked-pass / blocked |  |
-| Current Spec/Design/Tasks approvals | checked-pass / blocked |  |
-| Required Phase Reviews | checked-pass / blocked |  |
-| Frozen scope current and allowed | checked-pass / blocked |  |
-| Artifact hashes current | checked-pass / blocked |  |
+| SDD2 控制校验 | `checked-pass` / `blocked` |  |
+| 当前 Spec/Design/Tasks 批准 | `checked-pass` / `blocked` |  |
+| 必需 Phase Review | `checked-pass` / `blocked` |  |
+| 冻结范围当前有效且被允许 | `checked-pass` / `blocked` |  |
+| 资产哈希当前有效 | `checked-pass` / `blocked` |  |
 
-## 4. Mandatory Review Categories
+## 4. 强制评审类别
 
-| Category | Result | Evidence / finding IDs |
+| 类别 | 结果 | 证据/Finding ID |
 |---|---|---|
-| Scope and traceability | checked-pass / checked-finding / blocked |  |
-| Correctness | checked-pass / checked-finding / blocked |  |
-| Compatibility | checked-pass / checked-finding / blocked |  |
-| Security | checked-pass / checked-finding / blocked |  |
-| Transactions and concurrency | checked-pass / checked-finding / blocked |  |
-| Integration | checked-pass / checked-finding / blocked |  |
-| Persistence | checked-pass / checked-finding / blocked |  |
-| Maintainability | checked-pass / checked-finding / blocked |  |
-| Observability | checked-pass / checked-finding / blocked |  |
-| Tests | checked-pass / checked-finding / blocked |  |
+| 范围与可追溯性 | `checked-pass` / `checked-finding` / `blocked` |  |
+| 正确性 | `checked-pass` / `checked-finding` / `blocked` |  |
+| 兼容性 | `checked-pass` / `checked-finding` / `blocked` |  |
+| 安全 | `checked-pass` / `checked-finding` / `blocked` |  |
+| 事务与并发 | `checked-pass` / `checked-finding` / `blocked` |  |
+| 集成 | `checked-pass` / `checked-finding` / `blocked` |  |
+| 持久化 | `checked-pass` / `checked-finding` / `blocked` |  |
+| 可维护性 | `checked-pass` / `checked-finding` / `blocked` |  |
+| 可观测性 | `checked-pass` / `checked-finding` / `blocked` |  |
+| 测试 | `checked-pass` / `checked-finding` / `blocked` |  |
 
-No row may remain unresolved when recording a `passed` or `failed` conclusion.
+记录 `passed` 或 `failed` 结论时，任何一行都不得处于未解决状态。
 
-## 5. Findings
+## 5. 评审发现
 
-| ID | Severity | Blocking | Path | Symbol / diff location | SDD/rule evidence | Problem and consequence | Required fix |
+| ID | 严重度 | 是否阻塞 | 路径 | 符号/Diff 位置 | SDD/规则证据 | 问题与后果 | 必需修复 |
 |---|---|---|---|---|---|---|---|
-| CR-001 | P0 / P1 / P2 | yes / no |  |  |  |  |  |
+| CR-001 | P0/P1/P2 | `yes` / `no` |  |  |  |  |  |
 
-If none: `No actionable findings on the frozen scope.`
+没有问题时写：`当前冻结范围未发现可行动问题。`
 
-## 6. Requirement And Test Impact
+## 6. 需求与测试影响
 
-| Requirement / acceptance | Production symbol | Existing/required test source | Missing scenario / regression risk |
+| 需求/验收项 | 生产符号 | 既有/必需测试源码 | 缺失场景/回归风险 |
 |---|---|---|---|
 |  |  |  |  |
 
-## 7. Auto-fix Handoff
+## 7. Auto-fix 交接
 
-- Findings count: P0= / P1= / P2= / blocking P2=
-- Auto-fix required: yes / no-fix-record-required
-- Highest-priority finding:
-- Scope-changing fix expected: yes / no
-- Next artifact: `./auto-fix-summary.md`
+- Findings 数量：P0= / P1= / P2= / 阻塞 P2=
+- 是否需要 Auto-fix：`yes` / `no-fix-record-required`
+- 最高优先级 Finding：
+- 是否预计改变范围：`yes` / `no`
+- 下一资产：`./auto-fix-summary.md`
 
-Even when no code fix is required, `auto-fix-summary.md` must record `not-required` with evidence.
+即使无需修改代码，`auto-fix-summary.md` 也必须用证据记录 `not-required`。
 
-## 8. Limitations
+## 8. 限制
 
-| Limitation | Impact | Blocking | Recovery |
+| 限制 | 影响 | 是否阻塞 | 恢复方式 |
 |---|---|---|---|
-|  |  | yes / no |  |
+|  |  | `yes` / `no` |  |
 
-## 9. Gate Record
+## 9. Gate 记录
 
-- Findings Artifact SHA-256:
-- Scope Snapshot SHA-256:
-- Gate Result: passed / failed / blocked
-- Reproducible Evidence:
-- Archive Allowed: no; later SDD2 gates remain mandatory
+- Findings 资产 SHA-256：
+- 范围快照 SHA-256：
+- Gate 结果：`passed` / `failed` / `blocked`
+- 可复现证据：
+- 是否允许 Archive：否；后续 SDD2 Gate 仍为必需项
 
-After recording this artifact, do not edit it to reflect fixes. Return control to `uaw-sdd-ai-coding`.
+记录本资产后不得编辑它来反映修复。将控制权返回 `uaw-sdd-ai-coding`。

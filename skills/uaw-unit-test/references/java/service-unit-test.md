@@ -1,40 +1,40 @@
-# Service Unit-Test Rule
+# Service 单元测试规则
 
-Use for application/domain services and orchestration components. Default to a real service instance with mocked external collaborators; do not load Spring unless current architecture makes a pure unit test impossible and an approved Spring profile exists.
+用于应用/Domain Service 和编排组件。默认使用真实 Service 实例并 Mock 外部协作者；只有当前架构使纯单元测试不可行且存在已批准 Spring Profile 时，才加载 Spring。
 
 ## Fixture
 
-- Select JUnit/Mockito annotations from the routed primary profile.
-- Construct/inject the service through its real constructor or established test convention.
-- Mock repositories, gateways, remote clients, clocks, user/security providers, and message publishers at their boundaries.
-- Use real BO/DTO/VO/entity values where they improve behavioral confidence.
+- 根据路由主要 Profile 选择 JUnit/Mockito 注解。
+- 通过真实 Constructor 或既有测试约定构造/注入 Service。
+- 在边界 Mock Repository、Gateway、Remote Client、Clock、用户/安全 Provider 和 Message Publisher。
+- BO/DTO/VO/Entity 使用真实值能提高行为可信度时，优先使用真实对象。
 
-## Required Scenarios
+## 必需场景
 
-1. successful orchestration and returned/changed domain values;
-2. validation rejection with no forbidden downstream interaction;
-3. dependency empty/not-found behavior;
-4. dependency exception/error translation;
-5. important conditional branch, compatibility default, or idempotency behavior;
-6. changed regression path from Spec/Code Review.
+1. 成功编排及返回/变更的 Domain 值；
+2. 校验拒绝，且没有禁止的下游交互；
+3. 依赖空值/Not Found 行为；
+4. 依赖异常/错误转换；
+5. 重要条件分支、兼容默认值或幂等行为；
+6. Spec/Code Review 中的已变更回归路径。
 
-## Verification
+## 验证
 
-- Assert returned value or propagated domain exception.
-- Capture and assert repository/gateway command values when mapping matters.
-- Verify side-effect count and absence on rejection paths.
-- Avoid `verifyNoMoreInteractions` unless extra calls would be a contractual defect.
-- Do not claim to unit-test transaction rollback. Verify service behavior; transaction semantics need appropriate integration evidence if required.
+- 断言返回值或传播的 Domain 异常。
+- 映射相关时捕获并断言 Repository/Gateway Command 值。
+- 验证副作用次数及拒绝路径无副作用。
+- 只有额外调用属于契约缺陷时才使用 `verifyNoMoreInteractions`。
+- 不得声称单元测试能验证事务回滚。测试 Service 行为；需要时用适当集成证据验证事务语义。
 
-## Anti-Patterns
+## 反模式
 
-- Mocking the service under test.
-- Deep stubs that hide an unstable design.
-- `@SpringBootTest` for logic that needs only Mockito.
-- Assertions limited to `notNull` or “no exception”.
-- Reproducing production algorithms inside expected-value calculations.
-- Adding sleep/time dependence instead of injecting/controlling time.
+- Mock 被测 Service。
+- 使用隐藏不稳定设计的 Deep Stub。
+- 只需 Mockito 的逻辑使用 `@SpringBootTest`。
+- 断言只包含 `notNull` 或“不抛异常”。
+- 在期望值计算中复制生产算法。
+- 使用 Sleep/真实时间依赖，不注入或控制时间。
 
-## Completion Evidence
+## 完成证据
 
-Map each test to requirement/finding and record test source hash, mock boundaries, exact execution entry, counts, failures/skips, and scope SHA-256.
+把每项测试映射到需求/Finding，并记录测试源码哈希、Mock 边界、精确执行入口、数量、失败/跳过和范围 SHA-256。

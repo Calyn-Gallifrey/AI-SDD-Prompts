@@ -1,36 +1,36 @@
-# Static Method Unit-Test Rule
+# 静态 Method 单元测试规则
 
-Use for deterministic static utilities or code that must call a static boundary already present in the approved design.
+用于确定性静态工具，或必须调用已批准 Design 中既有静态边界的代码。
 
-## Pure Static Utility
+## 纯静态工具
 
-Call the public static method directly. Cover valid, boundary, null/empty, invalid, and regression inputs that apply. Assert complete outputs and exception contracts. No mocking is needed for deterministic pure functions.
+直接调用 Public Static Method。覆盖实际适用的有效、边界、null/空值、无效和回归输入，并断言完整输出与异常契约。确定性纯函数不需要 Mock。
 
-## Static Dependency
+## 静态依赖
 
-Prefer testing through the owning public behavior. Use scoped static mocking only when:
+优先通过所属 Public 行为测试。只有同时满足以下条件时才使用有作用域的 Static Mock：
 
-- current dependencies already support it;
-- refactoring the static boundary is outside approved scope;
-- the static call is a real external/non-deterministic boundary;
-- the mock is closed deterministically in the test scope.
+- 当前依赖已支持；
+- Refactor 静态边界不在已批准范围内；
+- 静态调用是真实的外部或非确定性边界；
+- Mock 能在测试作用域中确定性关闭。
 
-Do not add Mockito-inline or another engine solely for convenience without approved Design/Tasks and a new scope review.
+未经已批准 Design/Tasks 和新范围评审，不得只为方便而新增 Mockito-inline 或其他 Engine。
 
-## Required Checks
+## 必查项
 
-- static state does not leak between tests;
-- locale/timezone/clock/random inputs are controlled when behavior depends on them;
-- concurrency assumptions are identified for mutable static state;
-- exceptions and fallback values are asserted;
-- interactions are verified only when observable behavior depends on them.
+- 静态状态不会在测试之间泄露；
+- 行为依赖 Locale、Timezone、Clock 或 Random 时受到控制；
+- 可变静态状态的并发假设已识别；
+- 已断言异常和 Fallback 值；
+- 只有可观察行为依赖交互时才验证调用。
 
-## Anti-Patterns
+## 反模式
 
-- mocking the static method under test;
-- leaving a static mock open across tests;
-- relying on test execution order;
-- changing global process state without restoration;
-- asserting internal helper calls instead of output.
+- Mock 被测静态 Method；
+- 跨测试保持 Static Mock 未关闭；
+- 依赖测试执行顺序；
+- 修改全局进程状态后不恢复；
+- 断言内部 Helper 调用而不是输出。
 
-Record selected profile/modifier, static-mocking capability evidence, changed test file, execution command, and observed result.
+记录所选 Profile/修饰项、Static Mock 能力证据、已变更测试文件、执行命令和观察结果。

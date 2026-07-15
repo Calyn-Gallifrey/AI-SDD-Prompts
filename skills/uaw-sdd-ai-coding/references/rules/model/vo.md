@@ -1,28 +1,28 @@
-# VO Model Rule
+# VO 模型规则
 
-## Ownership
+## 所有权
 
-A VO represents the API/view output contract. Create one only when the response boundary needs an owned shape distinct from current compatible output.
+VO 表示 API/视图输出契约。只有响应边界需要与当前兼容输出不同且归属明确的结构时才创建。
 
-## Naming And Placement
+## 命名与位置
 
-- New UAW response types use exact suffix `VO` when the target module follows it.
-- Preserve established public type names and package conventions unless a breaking migration is explicitly approved.
-- Place under the feature's current response/VO package.
+- 目标模块遵循该约定时，新 UAW 响应类型使用严格后缀 `VO`。
+- 未明确批准破坏性迁移时，保留现有公开类型名和包约定。
+- 放入 Feature 当前 response/VO 包。
 
-## Structure
+## 结构
 
-- Include only approved client-visible fields; never expose Entity or external provider types.
-- Nested output uses VO/value types appropriate to the response contract.
-- Define null/default, empty collection, ordering, enum/unknown-value, date/timezone, precision, masking, and backward compatibility.
-- Extend a base VO only when its public fields/serialization contract apply. Inheritance must not accidentally expose irrelevant fields.
-- `Serializable`, Lombok, API-schema annotations, and custom `toString` follow current target-module/framework conventions rather than universal requirements.
-- Sensitive fields are omitted or masked per approved contract; never leak them through `toString`/logs.
+- 只包含已批准的客户端可见字段；不得暴露 Entity 或外部 Provider 类型。
+- 嵌套输出使用适合响应契约的 VO/值类型。
+- 明确定义 null/默认值、空集合、排序、枚举未知值、日期时区、精度、脱敏和向后兼容性。
+- 只有基础 VO 的公开字段和序列化契约都适用时才继承，避免意外暴露无关字段。
+- `Serializable`、Lombok、API Schema 注解和自定义 `toString` 遵循当前目标模块/框架约定，不作为通用强制项。
+- 按已批准契约省略或脱敏敏感字段，禁止通过 `toString` 或日志泄露。
 
-## Mapping And Tests
+## 映射与测试
 
-Use explicit mapping from internal DTO/domain types for renamed/defaulted/masked fields. Test serialization contract, added-field compatibility/default, nested/collection behavior, ordering, masking, and null handling.
+对重命名、默认值和脱敏字段，从内部 DTO/domain 类型执行显式映射。测试序列化契约、新增字段兼容性/默认值、嵌套/集合行为、排序、脱敏和 null 处理。
 
-## Block Conditions
+## 阻塞条件
 
-Block when response ownership, client compatibility, field semantics, masking, or current serialization convention is unknown.
+响应所有权、客户端兼容性、字段语义、脱敏方式或当前序列化约定不明确时必须阻塞。

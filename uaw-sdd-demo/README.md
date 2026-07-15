@@ -1,29 +1,29 @@
 # UAW SDD Demo
 
-Spring Boot + Maven demo project for validating the UAW-SDD workflow.
+本项目是用于验证 UAW-SDD 流程的 Spring Boot + Maven Demo。
 
-## Requirements
+## 环境要求
 
-- Java 17+ for compilation
-- Maven 3.9+
+- 使用 Java 17 或更高版本编译
+- Maven 3.9 或更高版本
 
-The `maven-surefire-plugin` configuration enables dynamic agent loading and Byte Buddy experimental mode so Mockito-based tests can run on newer local JDKs while compiling with Java 17 target compatibility. Newer JDKs may still print Byte Buddy `sun.misc.Unsafe` compatibility warnings; they do not fail the current test suite.
+`maven-surefire-plugin` 已启用动态 Agent 加载和 Byte Buddy 实验模式，使基于 Mockito 的测试可以在较新的本地 JDK 上运行，同时保持 Java 17 目标兼容性。较新 JDK 仍可能输出 Byte Buddy 关于 `sun.misc.Unsafe` 的兼容性 Warning，但不会导致当前测试失败。
 
-## Run Tests
+## 运行测试
 
 ```bash
 mvn test
 ```
 
-## Start App
+## 启动应用
 
 ```bash
 mvn spring-boot:run
 ```
 
-## APIs
+## API 示例
 
-Create a policy info change work order:
+### 创建保单信息变更工单
 
 ```http
 POST /api/work-orders/policy-info-change
@@ -38,15 +38,15 @@ Content-Type: application/json
 }
 ```
 
-Get a policy info change work order:
+### 查询保单信息变更工单
 
 ```http
 GET /api/work-orders/policy-info-change/{workOrderId}
 ```
 
-The response includes `changeSummary`, a read-only summary derived from `changeFieldType`, `oldValue`, and `newValue`.
+响应包含只读字段 `changeSummary`，其值根据 `changeFieldType`、`oldValue` 和 `newValue` 生成。
 
-Create a policy beneficiary change work order:
+### 创建保单受益人变更工单
 
 ```http
 POST /api/work-orders/policy-beneficiary-change
@@ -62,7 +62,7 @@ Content-Type: application/json
 }
 ```
 
-Create a policy beneficiary email change work order:
+### 创建保单受益人邮箱变更工单
 
 ```http
 POST /api/work-orders/policy-beneficiary-change/email
@@ -77,7 +77,7 @@ Content-Type: application/json
 }
 ```
 
-Create an I need document work order:
+### 创建资料申请工单
 
 ```http
 POST /api/work-orders/i-need-document

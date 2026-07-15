@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://uaw.internal/sdd2/feature-state.schema.json",
-  "title": "UAW-SDD 2.0 Feature State",
+  "title": "UAW-SDD 2.0 Feature 状态",
   "type": "object",
   "additionalProperties": true,
   "required": [

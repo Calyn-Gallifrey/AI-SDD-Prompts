@@ -10,6 +10,18 @@ from pathlib import Path
 
 
 SCRIPT = Path(__file__).resolve().parents[1] / "sdd2_control.py"
+PUBLIC_ASSET_NAMES = {
+    "brief-design.md",
+    "proposal-input.md",
+    "spec.md",
+    "design.md",
+    "tasks.md",
+    "code-review-findings.md",
+    "auto-fix-summary.md",
+    "unit-test-summary.md",
+    "archive.md",
+}
+VALID_CHINESE_BODY = "\n\n本资产用于控制流程测试，正文采用简体中文并记录当前阶段的真实信息。\n"
 
 
 class Sdd2ControlTest(unittest.TestCase):
@@ -40,6 +52,8 @@ class Sdd2ControlTest(unittest.TestCase):
 
     def _write(self, name: str, content: str) -> None:
         path = self.feature / name
+        if name in PUBLIC_ASSET_NAMES:
+            content += VALID_CHINESE_BODY
         path.write_text(content, encoding="utf-8")
 
     def _run(self, *args: str, expected: int = 0) -> dict:
@@ -268,7 +282,10 @@ class Sdd2ControlTest(unittest.TestCase):
 
         second = self.repo / "sdd2-features/Sprint1/second"
         second.mkdir(parents=True)
-        (second / "brief-design.md").write_text("# Brief\n", encoding="utf-8")
+        (second / "brief-design.md").write_text(
+            "# 人工简要设计\n\n这是第二个功能，用于验证同一工作区的并行锁。\n",
+            encoding="utf-8",
+        )
         locked = self._run(
             "init", "--feature-dir", str(second), "--feature-id", "second", expected=2,
         )
@@ -459,6 +476,64 @@ class Sdd2ControlTest(unittest.TestCase):
             "--approval-text", "同意风险并关闭"
         )
         self.assertEqual(closed["result"]["stage_status"], "closed-with-risk")
+
+    def test_init_rejects_english_only_brief(self) -> None:
+        self._run(
+            "close", "--feature-dir", str(self.feature), "--result", "aborted",
+            "--approval-text", "同意终止当前功能", "--message-id", "close-before-language-test",
+        )
+        english_feature = self.repo / "sdd2-features/Sprint1/english-brief"
+        english_feature.mkdir(parents=True)
+        (english_feature / "brief-design.md").write_text(
+            "# Brief Design\n\nAdd a new response field to the existing policy information API.\n",
+            encoding="utf-8",
+        )
+        result = self._run(
+            "init", "--feature-dir", str(english_feature), "--feature-id", "english-brief",
+            expected=2,
+        )
+        self.assertIn("ARTIFACT_LANGUAGE_NOT_SIMPLIFIED_CHINESE", result["error"])
+        self.assertFalse((english_feature / ".sdd2/feature-state.json").exists())
+        self.assertFalse((self.repo / ".git/sdd2-active-feature.json").exists())
+
+    def test_record_artifact_rejects_english_only_body(self) -> None:
+        (self.feature / "proposal-input.md").write_text(
+            "# Proposal Input\n\nThis document defines the feature scope, behavior, risks, and acceptance outcomes.\n",
+            encoding="utf-8",
+        )
+        result = self._run(
+            "record-artifact", "--feature-dir", str(self.feature), "--stage", "proposal-input",
+            expected=2,
+        )
+        self.assertIn("ARTIFACT_LANGUAGE_NOT_SIMPLIFIED_CHINESE", result["error"])
+        state = json.loads((self.feature / ".sdd2/feature-state.json").read_text(encoding="utf-8"))
+        self.assertNotIn("proposal-input", state["artifacts"])
+        self.assertFalse((self.feature / ".sdd2/revisions/proposal-input").exists())
+
+    def test_record_artifact_accepts_chinese_body_with_technical_terms(self) -> None:
+        (self.feature / "proposal-input.md").write_text(
+            "# Proposal 输入\n\n本功能在现有 PolicyInfoController 中新增 `summary` 字段，"
+            "保持 HTTP API、DTO 和兼容行为不变，并补充对应 JUnit 测试。\n",
+            encoding="utf-8",
+        )
+        result = self._run(
+            "record-artifact", "--feature-dir", str(self.feature), "--stage", "proposal-input",
+        )
+        self.assertEqual(result["result"]["current_stage"], "spec")
+
+    def test_record_artifact_rejects_traditional_chinese_body(self) -> None:
+        (self.feature / "proposal-input.md").write_text(
+            "# Proposal 輸入\n\n這個功能將更新現有 API，並記錄完整的測試與驗證結果。\n",
+            encoding="utf-8",
+        )
+        result = self._run(
+            "record-artifact", "--feature-dir", str(self.feature), "--stage", "proposal-input",
+            expected=2,
+        )
+        self.assertIn("TRADITIONAL_CHINESE_DETECTED", result["error"])
+        state = json.loads((self.feature / ".sdd2/feature-state.json").read_text(encoding="utf-8"))
+        self.assertNotIn("proposal-input", state["artifacts"])
+        self.assertFalse((self.feature / ".sdd2/revisions/proposal-input").exists())
 
 
 if __name__ == "__main__":

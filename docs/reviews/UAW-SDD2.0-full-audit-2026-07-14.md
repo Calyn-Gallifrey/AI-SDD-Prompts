@@ -651,7 +651,7 @@ LibreOffice 渲染的 20 页版本中，多页中文字体缺失/方框、分页
 | 状态与恢复 | 1/5 | 5/5 | `.sdd2/feature-state.json` 唯一状态源；`resume` 返回唯一动作；终态需显式 restart。 |
 | 范围与追溯 | 2/5 | 5/5 | 干净 Git 基线、worktree 锁、允许/禁止路径、base/head/tree/file/snapshot hash 全绑定。 |
 | 规则质量 | 2/5 | 5/5 | EPI/OM 分离；Backend、Model、Unit Test 冲突和失效示例已修正。 |
-| 自动校验 | 1/5 | 5/5 | Demo 修复后 16 个状态机测试、静态资产验证器、Schema、三 Skill 快速校验齐全。 |
+| 自动校验 | 1/5 | 5/5 | Demo 与语言加固后 20 个状态机/控制测试、静态资产和语言验证器、Schema、三 Skill 快速校验齐全。 |
 | 示例与文档 | 3/5 | 5/5 | 三个历史 Feature 隔离为 superseded；指南和四张规范图与当前合同一致。 |
 
 ### 13.3 P0 闭环
@@ -680,15 +680,15 @@ LibreOffice 渲染的 20 页版本中，多页中文字体缺失/方框、分页
 | P1-08 Feature 到代码缺不可变标识 | 已关闭 | base/head/tree/scope/file hashes 与 Archive evidence。 |
 | P1-09 示例越界/归档后变化 | 已关闭 | 三个既有 Feature 全部隔离为 historical-example + superseded，不作为活动证据。 |
 | P1-10 Transactions Dictionary 无来源和时效 | 已关闭 | 增加 source hash、导入 commit、freshness/use boundary；使用前核对当前源码。 |
-| P1-11 指南漂移 | 已关闭 | 重建 DOCX 与四张图；加入可复现生成脚本；13 页逐页检查通过。 |
-| P1-12 无可执行校验器 | 已关闭 | `validate_sdd2_assets.py`、Demo 修复后 16 个控制测试、三 Skill quick validator。 |
+| P1-11 指南漂移 | 已关闭 | 重建 DOCX 与四张图；加入可复现生成脚本；系统预览确认中文字形，12 页渲染确认版式。 |
+| P1-12 无可执行校验器 | 已关闭 | `validate_sdd2_assets.py`、Demo 与语言加固后 20 个控制测试、三 Skill quick validator。 |
 
 ### 13.5 P2 闭环
 
 | 原问题 | 状态 | 实施证据 |
 |---|---|---|
 | P2-01 图示重复命名 | 已关闭 | 保留四张 hyphen 规范图，删除三张 underscore 重复图。 |
-| P2-02 DOCX 渲染可移植性 | 已关闭 | 使用通用中文字体和稳定页宽/表格；macOS LibreOffice PDF 渲染 13 页无裁切。 |
+| P2-02 DOCX 渲染可移植性 | 已关闭 | 保留原中文字体合同和稳定页宽/表格；macOS Quick Look 确认中文字形，LibreOffice 12 页渲染确认无裁切和表格溢出。 |
 | P2-03 术语混用 | 已关闭 | 统一 stage/status/Gate/scope/revision 命名，指南提供唯一术语口径。 |
 
 ### 13.6 异常场景复核
@@ -709,15 +709,16 @@ LibreOffice 渲染的 20 页版本中，多页中文字体缺失/方框、分页
 
 | 验证 | 结果 |
 |---|---|
-| 控制引擎单元测试 | Demo 修复后 16/16 通过，新增自然中文 Demo 授权、否定授权、Phase Review provenance 和跨 Scope 质量产物 revision 覆盖。 |
-| 静态资产验证 | 52 个 runtime 文件、3 个历史 Feature；0 error、0 warning。 |
+| 控制引擎单元测试 | Demo 与语言加固后 20/20 通过；覆盖自然中文 Demo 授权、否定授权、Phase Review provenance、跨 Scope 质量产物 revision 及语言正反例。 |
+| 静态资产验证 | 53 个 runtime 文件、51 个人类可读文件、3 个历史 Feature、26 个来源档案；0 error、0 warning。 |
 | 历史 Feature 控制校验 | 3/3 通过，仅返回预期的 `HISTORICAL_EXAMPLE_NOT_VALID_GATE_EVIDENCE` 警告。 |
 | Python / JSON / Schema | 编译与解析全部通过。 |
 | Skill 结构校验 | `uaw-sdd-ai-coding`、`uaw-code-review`、`uaw-unit-test` 全部 valid。 |
 | 陈旧标记/引用 | 活动 Skill 中无 `[✓]`、旧 Findings 路径或历史 AI 审批标记。 |
 | 排除目录 | `git diff --name-only` 在 `sdd/` 下无结果。 |
-| DOCX 结构 | 115 paragraphs、29 tables、4 inline images；旧状态/Gate 语义扫描为 0。 |
-| DOCX 视觉 | 系统 LibreOffice 渲染 13 页，逐页检查无缺字、遮挡、裁切或表格溢出。 |
+| DOCX 结构 | 124 个段落、29 个表格、4 张内嵌图、4747 个汉字；语言合同和来源档案边界存在，旧状态/Gate 语义扫描为 0。 |
+| DOCX 视觉 | macOS Quick Look 确认中文字形正常；LibreOffice 渲染 12 页，逐页版式检查无遮挡、裁切或表格溢出。当前主机 LibreOffice 的 CJK 字体回退异常，故不以该渲染器证明中文字形。 |
+| 四张生成图 | 逐张视觉检查通过；中文标题、说明和动作文字完整，英文仅用于 Skill 名、阶段枚举、文件名及 Git/Scope/Hash 等必要标识。 |
 | Git whitespace | `git diff --check` 通过。 |
 
 ### 13.8 剩余平台边界
@@ -757,7 +758,7 @@ LibreOffice 渲染的 20 页版本中，多页中文字体缺失/方框、分页
 - 最终 Java 17 Maven 测试 7/7 通过。
 - Archive Check `valid=true`，最终状态 `archive/completed/none`。
 - 完成后写入被拒绝，`resume` 无 error/warning，活动 Feature 锁已释放。
-- 主分支 SDD2 控制回归测试 16/16 通过。
+- 主分支 SDD2 控制回归测试 20/20 通过，其中 4 项为语言合同正反例。
 
 完整场景、缺陷复现和评分见 `docs/reviews/UAW-SDD2.0-demo-rehearsal-2026-07-15.md`。
 
@@ -766,3 +767,30 @@ LibreOffice 渲染的 20 页版本中，多页中文字体缺失/方框、分页
 **当前成熟度：5/5（2026-07-15 Demo 验收矩阵和仓库可控边界内）。**
 
 开发者入口仍为“简要提示词 + 调用 `uaw-sdd-ai-coding`”，没有新增开发者命令或 `.sdd2/` 维护动作。5/5 表示多 Gate 控制、失效、恢复和证据链完整，不表示单个 AI Review 节点不会漏检；本次真实由 Unit Test 拦截了 Code Review 漏掉的短值缺陷。
+
+## 15. 2026-07-15 简体中文主体加固复核
+
+### 15.1 规则和边界
+
+- 唯一语言规则来源：`skills/uaw-sdd-ai-coding/references/language-policy.md`。
+- 三项 Skill 的人类可读说明、规则、模板、示例和代理元数据以简体中文为主体。
+- 九项公开 Feature 资产在新建或修订时必须以简体中文为主体；控制器在写状态和记录哈希之前校验，失败即硬停止。
+- 文件名、路径、命令、代码标识符、Schema 键、状态枚举、哈希、技术缩写和外部契约原值属于必要英文例外，不改变既有机器协议。
+- 三个 `execution_mode=historical-example` Feature 保持不可变，不回写翻译，以免破坏既有哈希、迁移事实和审计链；它们仍被隔离，不能作为当前审批或 Gate 证据。
+- `original/` 保留导入原文和来源哈希，不属于当前运行规则；活跃 Skill 不得直接加载，派生运行规则必须在 `references/` 中以简体中文表达。
+
+### 15.2 执行证据
+
+| 验证 | 结果 |
+|---|---|
+| 静态语言扫描 | 51 个人类可读文件全部通过（46 个 Skill 文件 + handoff、两份报告、Demo README、DOCX）；无英文主导正文或已知繁体正文 |
+| 生成图视觉检查 | 4/4 通过；中文主体清晰，必要英文未改写机器语义 |
+| Brief 负例 | 英文主导正文在 `init` 前被拒绝，未获取 Feature 锁 |
+| 资产负例 | 英文主导正文和繁体正文在 `record-artifact` 前被拒绝，未写入 revision/hash |
+| 正例 | 简体中文正文及必要技术英文、命令、路径、枚举和代码标识符通过 |
+| 控制回归 | 20/20 通过 |
+| 开发者入口 | 保持“简要提示词 + 调用 `uaw-sdd-ai-coding`”不变 |
+
+### 15.3 最终判断
+
+语言加固已进入确定性控制链，而不是只写入文档约定。新会话、新 Feature 和下游质量资产都使用同一语言合同；历史证据兼容边界明确，机器字段和现有开发入口均未改变。该维度达到 5/5（仓库可控边界内）。

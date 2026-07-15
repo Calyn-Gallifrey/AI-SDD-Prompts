@@ -1,19 +1,19 @@
-# Transaction Dictionary Snapshot
+# Transaction 字典历史快照
 
-## Provenance And Use Boundary
+## 来源与使用边界
 
-- Runtime role: context snapshot, not an authoritative current system dictionary.
-- Migration source: `original/project-how-to/detailed-context/2.transactions字典清单.md`.
-- Source/runtime content equality verified: `2026-07-14`.
-- Source SHA-256 before this provenance header: `e9afbb3222a3ca6327949810a745e3132b18ce3d236426d2bb28ef94097bb372`.
-- First runtime import commit: `03855a81255c4b8a5037758d7cba783bd56596fe`.
-- Business owner / live system of record: not recorded; must be confirmed for each use.
+- 运行时职责：上下文快照，不是当前系统字典的权威来源。
+- 迁移来源：`original/project-how-to/detailed-context/2.transactions字典清单.md`。
+- 来源内容与运行时内容一致性确认日期：`2026-07-14`。
+- 添加本来源说明前的源文件 SHA-256：`e9afbb3222a3ca6327949810a745e3132b18ce3d236426d2bb28ef94097bb372`。
+- 首次导入运行时的 Commit：`03855a81255c4b8a5037758d7cba783bd56596fe`。
+- 业务所有者/当前权威系统：未记录；每次使用都必须重新确认。
 
-Names, package candidates, sprint/readiness labels, dependencies, and dropdown values below are historical candidates. Before using one in Spec, Design, code, database scripts, or tests, verify it against current code/config/schema/API or current user confirmation and record the confirming source and timestamp. Missing values remain unknown; do not infer them.
+下列名称、候选包、Sprint/就绪标签、依赖和下拉值都是历史候选数据。在 Spec、Design、代码、数据库脚本或测试中使用前，必须用当前代码、配置、Schema、API 或当前用户确认进行核对，并记录确认来源和时间。缺失值继续视为未知，不得推断。
 
-## Extracted Snapshot
+## 提取内容
 
-The snapshot contains Transaction Type candidates and related field options.
+本快照包含候选 Transaction Type 和相关字段选项。表格内英文属于历史业务数据原值，不代表当前语言规范，也不得在未确认时直接转为需求。
 
 该表格涵盖了从“Enquiry & Information”到“Change Status”等不同模块下的所有交易类型，并补充了文件中涉及的下拉选项（如 Title、Cancel Reason 等）。
 
