@@ -10,7 +10,7 @@ import zipfile
 from pathlib import Path
 from xml.etree import ElementTree
 
-from sdd2_control import simplified_chinese_body_issues
+from sdd2_control import ControlError, simplified_chinese_body_issues, validate_state
 
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -56,6 +56,8 @@ ALLOWED_ORIGINAL_REFERENCES = {
     "skills/uaw-sdd-ai-coding/references/context/source-provenance.json",
 }
 
+LIVE_EXECUTION_MODES = {"standard", "demo"}
+
 
 def relative(path: Path) -> str:
     return path.relative_to(ROOT).as_posix()
@@ -89,6 +91,59 @@ def read_docx_text(path: Path) -> str:
                 if paragraph_text:
                     text_parts.append(paragraph_text)
     return "\n".join(text_parts)
+
+
+def validate_feature_directory(
+    feature_dir: Path,
+    errors: list[str],
+    warnings: list[str],
+) -> str:
+    """Validate one Feature according to its persisted execution mode."""
+    feature_rel = relative(feature_dir)
+    state_path = feature_dir / ".sdd2/feature-state.json"
+    state = read_json(state_path, errors) if state_path.is_file() else None
+    execution_mode = state.get("execution_mode") if isinstance(state, dict) else None
+
+    if execution_mode in LIVE_EXECUTION_MODES:
+        if Path(state.get("feature_dir", "")).is_absolute():
+            errors.append(f"NONPORTABLE_FEATURE_PATH:{relative(state_path)}")
+        for artifact in sorted(feature_dir.glob("*.md")):
+            if artifact.name not in PUBLIC_ASSETS:
+                continue
+            minimum_han = 8 if artifact.name == "brief-design.md" else 16
+            content = artifact.read_text(encoding="utf-8")
+            for issue in simplified_chinese_body_issues(content, minimum_han=minimum_han):
+                errors.append(f"LANGUAGE_POLICY_VIOLATION:{relative(artifact)}:{issue}")
+        try:
+            result = validate_state(feature_dir, state)
+        except (ControlError, KeyError, OSError, json.JSONDecodeError) as exc:
+            errors.append(f"LIVE_FEATURE_VALIDATION_FAILED:{feature_rel}:{exc}")
+        else:
+            for issue in result["errors"]:
+                errors.append(f"LIVE_FEATURE_INVALID:{feature_rel}:{issue}")
+            for issue in result["warnings"]:
+                warnings.append(f"LIVE_FEATURE_WARNING:{feature_rel}:{issue}")
+        return "live"
+
+    present = {path.name for path in feature_dir.glob("*.md")}
+    for missing in sorted(PUBLIC_ASSETS - present):
+        errors.append(f"FEATURE_ASSET_MISSING:{feature_rel}:{missing}")
+    for artifact in sorted(feature_dir.glob("*.md")):
+        content = artifact.read_text(encoding="utf-8")
+        if "HISTORICAL EXAMPLE ONLY" not in content[:800]:
+            errors.append(f"HISTORICAL_BANNER_MISSING:{relative(artifact)}")
+        if "AI-as-human-reviewer" in content:
+            errors.append(f"LEGACY_SELF_APPROVAL_NOT_QUARANTINED:{relative(artifact)}")
+    if not isinstance(state, dict):
+        errors.append(f"HISTORICAL_STATE_MISSING:{feature_rel}")
+    else:
+        if execution_mode != "historical-example" or state.get("stage_status") != "superseded":
+            errors.append(f"HISTORICAL_STATE_NOT_QUARANTINED:{feature_rel}")
+        if state.get("approvals"):
+            errors.append(f"HISTORICAL_APPROVAL_BACKFILLED:{feature_rel}")
+        if Path(state.get("feature_dir", "")).is_absolute():
+            errors.append(f"NONPORTABLE_FEATURE_PATH:{relative(state_path)}")
+    return "historical"
 
 
 def main() -> int:
@@ -186,29 +241,16 @@ def main() -> int:
         errors.append("PUBLIC_ENTRY_CONTRACT_MISSING")
 
     feature_dirs = sorted({path.parent for path in FEATURES.rglob("brief-design.md")})
+    historical_feature_count = 0
+    live_feature_count = 0
     if not feature_dirs:
-        warnings.append("NO_HISTORICAL_FEATURE_EXAMPLES")
+        warnings.append("NO_SDD2_FEATURES")
     for feature_dir in feature_dirs:
-        present = {path.name for path in feature_dir.glob("*.md")}
-        for missing in sorted(PUBLIC_ASSETS - present):
-            errors.append(f"FEATURE_ASSET_MISSING:{relative(feature_dir)}:{missing}")
-        for artifact in sorted(feature_dir.glob("*.md")):
-            content = artifact.read_text(encoding="utf-8")
-            if "HISTORICAL EXAMPLE ONLY" not in content[:800]:
-                errors.append(f"HISTORICAL_BANNER_MISSING:{relative(artifact)}")
-            if "AI-as-human-reviewer" in content:
-                errors.append(f"LEGACY_SELF_APPROVAL_NOT_QUARANTINED:{relative(artifact)}")
-        state_path = feature_dir / ".sdd2/feature-state.json"
-        state = read_json(state_path, errors) if state_path.is_file() else None
-        if not isinstance(state, dict):
-            errors.append(f"HISTORICAL_STATE_MISSING:{relative(feature_dir)}")
+        feature_kind = validate_feature_directory(feature_dir, errors, warnings)
+        if feature_kind == "live":
+            live_feature_count += 1
         else:
-            if state.get("execution_mode") != "historical-example" or state.get("stage_status") != "superseded":
-                errors.append(f"HISTORICAL_STATE_NOT_QUARANTINED:{relative(feature_dir)}")
-            if state.get("approvals"):
-                errors.append(f"HISTORICAL_APPROVAL_BACKFILLED:{relative(feature_dir)}")
-            if Path(state.get("feature_dir", "")).is_absolute():
-                errors.append(f"NONPORTABLE_FEATURE_PATH:{relative(state_path)}")
+            historical_feature_count += 1
 
     control_contract = (SKILLS / "uaw-sdd-ai-coding/references/sdd2-control-contract.md").read_text(encoding="utf-8")
     for asset in sorted(PUBLIC_ASSETS):
@@ -221,7 +263,8 @@ def main() -> int:
         "warnings": sorted(set(warnings)),
         "checked_runtime_files": len(runtime_files),
         "checked_language_files": language_checked_files,
-        "checked_historical_features": len(feature_dirs),
+        "checked_historical_features": historical_feature_count,
+        "checked_live_features": live_feature_count,
         "checked_source_archive_files": sum(1 for path in (ROOT / "original").rglob("*") if path.is_file()),
     }
     print(json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True))
