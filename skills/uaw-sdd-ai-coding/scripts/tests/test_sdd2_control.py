@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -97,6 +98,19 @@ class Sdd2ControlTest(unittest.TestCase):
             "app/src/test/**",
         )
 
+    def _start_demo_feature(self) -> None:
+        self._run(
+            "close", "--feature-dir", str(self.feature), "--result", "aborted",
+            "--approval-text", "同意终止并关闭", "--message-id", "close-before-demo",
+        )
+        shutil.rmtree(self.feature)
+        self.feature = self.repo / "sdd2-features/Sprint1/demo"
+        self.feature.mkdir(parents=True)
+        self._write("brief-design.md", "# Demo Brief\n")
+        self._run(
+            "init", "--feature-dir", str(self.feature), "--feature-id", "demo", "--mode", "demo",
+        )
+
     def test_full_success_flow_releases_lock(self) -> None:
         self._reach_tasks_approval()
         self._capture_scope()
@@ -106,6 +120,7 @@ class Sdd2ControlTest(unittest.TestCase):
         test.write_text("class AppTest {}\n", encoding="utf-8")
         self._run(
             "phase-review", "--feature-dir", str(self.feature), "--phase", "Phase1",
+            "--source", "user-message", "--approver-role", "human",
             "--approval-text", "批准 Phase1", "--message-id", "phase-1"
         )
         self._run("freeze-scope", "--feature-dir", str(self.feature))
@@ -155,6 +170,43 @@ class Sdd2ControlTest(unittest.TestCase):
             "--approval-text", "approved spec", expected=2,
         )
         self.assertIn("demo authorization", simulated["error"])
+
+    def test_natural_chinese_demo_authorization_and_negation(self) -> None:
+        self._start_demo_feature()
+        rejected = self._run(
+            "authorize-demo", "--feature-dir", str(self.feature),
+            "--authorization-text", "不要进行 demo 演练", expected=2,
+        )
+        self.assertIn("explicitly identify", rejected["error"])
+        accepted = self._run(
+            "authorize-demo", "--feature-dir", str(self.feature),
+            "--authorization-text", "做一次demo预演，验证一下整个体系是否真的达到5/5",
+            "--message-id", "demo-authorization",
+        )
+        self.assertEqual(
+            accepted["result"]["demo_authorization"]["authorization_text"],
+            "做一次demo预演，验证一下整个体系是否真的达到5/5",
+        )
+
+    def test_demo_phase_review_records_simulation_provenance(self) -> None:
+        self._start_demo_feature()
+        self._run(
+            "authorize-demo", "--feature-dir", str(self.feature),
+            "--authorization-text", "请进行 Demo 演练", "--message-id", "demo-authorization",
+        )
+        self._reach_tasks_approval()
+        self._capture_scope()
+        (self.repo / "app/src/main/java/App.java").write_text(
+            "class App { int demo; }\n", encoding="utf-8"
+        )
+        result = self._run(
+            "phase-review", "--feature-dir", str(self.feature), "--phase", "Phase1",
+            "--source", "demo-simulation", "--approver-role", "ai-as-human-reviewer",
+            "--approval-text", "批准 Phase1 Demo simulation",
+        )
+        review = result["result"]["phase_reviews"]["Phase1"]
+        self.assertEqual(review["source"], "demo-simulation")
+        self.assertEqual(review["approver_role"], "ai-as-human-reviewer")
 
     def test_quoted_or_negated_approval_is_rejected(self) -> None:
         self._record("proposal-input", "proposal-input.md", "# Proposal\n")
@@ -209,6 +261,7 @@ class Sdd2ControlTest(unittest.TestCase):
         )
         order = self._run(
             "phase-review", "--feature-dir", str(self.feature), "--phase", "Phase2",
+            "--source", "user-message", "--approver-role", "human",
             "--approval-text", "批准 Phase2", expected=2,
         )
         self.assertIn("order violation", order["error"])
@@ -288,6 +341,7 @@ class Sdd2ControlTest(unittest.TestCase):
         test.write_text("class AppTest {}\n", encoding="utf-8")
         self._run(
             "phase-review", "--feature-dir", str(self.feature), "--phase", "Phase1",
+            "--source", "user-message", "--approver-role", "human",
             "--approval-text", "通过 Phase1"
         )
         self._run("freeze-scope", "--feature-dir", str(self.feature))
@@ -309,6 +363,7 @@ class Sdd2ControlTest(unittest.TestCase):
         (self.repo / "app/src/main/java/App.java").write_text("class App { int value; }\n", encoding="utf-8")
         self._run(
             "phase-review", "--feature-dir", str(self.feature), "--phase", "Phase1",
+            "--source", "user-message", "--approver-role", "human",
             "--approval-text", "批准 Phase1"
         )
         self._run("freeze-scope", "--feature-dir", str(self.feature))
@@ -338,6 +393,7 @@ class Sdd2ControlTest(unittest.TestCase):
         test.write_text("class AppTest {}\n", encoding="utf-8")
         self._run(
             "phase-review", "--feature-dir", str(self.feature), "--phase", "Phase1",
+            "--source", "user-message", "--approver-role", "human",
             "--approval-text", "批准 Phase1"
         )
         self._run("freeze-scope", "--feature-dir", str(self.feature))

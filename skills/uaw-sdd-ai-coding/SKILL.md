@@ -60,7 +60,7 @@ At Spec, Design, Tasks, Unit Test Summary, and Archive gates, stop. Only a new u
 
 Implementation begins only after current Tasks approval. Internally capture a clean Git baseline, approved/forbidden path patterns, required phases, and test paths. One worktree supports one active feature. Freeze the exact implementation snapshot before Code Review.
 
-After each implemented Phase, stop for current human Phase Review. Phase Review does not replace SDD Code Review.
+After each implemented Phase, stop for current human Phase Review. In an explicitly authorized Demo, record the simulated reviewer with `source=demo-simulation` and `approver-role=ai-as-human-reviewer`; never label it as a real human decision. Phase Review does not replace SDD Code Review.
 
 After implementation:
 

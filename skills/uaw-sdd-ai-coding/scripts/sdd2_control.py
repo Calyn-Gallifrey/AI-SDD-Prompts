@@ -96,6 +96,15 @@ APPROVAL_META_TERMS = (
     "historical",
     "quoted",
 )
+DEMO_TERMS = ("demo", "simulation", "simulate", "模拟", "演练", "预演")
+DEMO_ACTION_TERMS = (
+    "批准", "同意", "授权", "请", "运行", "进行", "做", "开始",
+    "approve", "authorize", "run", "start",
+)
+DEMO_REJECTION_TERMS = APPROVAL_REJECTION_TERMS + (
+    "不要", "不做", "不用", "无需", "不需要", "别做", "别运行", "别进行",
+    "取消", "停止", "do not", "don't", "dont", "no demo", "without demo", "cancel", "stop",
+)
 
 DEFAULT_TEST_PATHS = (
     "**/src/test/**",
@@ -941,9 +950,9 @@ def cmd_authorize_demo(args: argparse.Namespace) -> dict[str, Any]:
     assert_control_integrity(feature_dir, state)
     lowered = args.authorization_text.lower()
     if (
-        not any(term in lowered for term in ("demo", "模拟", "演练"))
-        or any(term in lowered for term in APPROVAL_REJECTION_TERMS)
-        or not any(term in lowered for term in ("批准", "同意", "授权", "请", "运行", "进行", "approve", "authorize", "run", "start"))
+        not any(term in lowered for term in DEMO_TERMS)
+        or any(term in lowered for term in DEMO_REJECTION_TERMS)
+        or not any(term in lowered for term in DEMO_ACTION_TERMS)
     ):
         raise ControlError("Demo authorization text must explicitly identify a demo/simulation")
     state["demo_authorization"] = {
@@ -1219,10 +1228,30 @@ def cmd_phase_review(args: argparse.Namespace) -> dict[str, Any]:
         raise ControlError(f"Phase Review order violation: expected {next_phase!r}, received {args.phase!r}")
     if not direct_approval(args.approval_text, (args.phase, "phase review", "阶段")):
         raise ControlError("Phase approval must identify the phase and explicit approval result")
+    if args.message_id and any(
+        record.get("message_id") == args.message_id
+        for record in read_jsonl(feature_paths(feature_dir)["approvals"])
+    ):
+        raise ControlError("This user message ID has already been used for an SDD2 approval")
+    if args.message_id and any(
+        review.get("message_id") == args.message_id
+        for review in state.get("phase_reviews", {}).values()
+    ):
+        raise ControlError("This user message ID has already been used for an SDD2 approval")
+    if args.source == "user-message":
+        if args.approver_role not in {"human", "user"}:
+            raise ControlError("A real user-message Phase Review must use approver_role=human or user")
+    elif args.source == "demo-simulation":
+        if state["execution_mode"] != "demo" or not state.get("demo_authorization"):
+            raise ControlError("AI demo Phase Review requires prior explicit user demo authorization")
+        if args.approver_role != "ai-as-human-reviewer":
+            raise ControlError("Demo simulation must identify approver_role=ai-as-human-reviewer")
+    else:
+        raise ControlError(f"Unsupported Phase Review source: {args.source}")
     state["phase_reviews"][args.phase] = {
         "status": "approved",
-        "source": "user-message",
-        "approver_role": "human",
+        "source": args.source,
+        "approver_role": args.approver_role,
         "message_id": args.message_id,
         "approval_text": args.approval_text,
         "approved_at": utc_now(),
@@ -1239,7 +1268,12 @@ def cmd_phase_review(args: argparse.Namespace) -> dict[str, Any]:
     state["next_required_action"] = (
         f"implement-phase:{remaining[0]}" if remaining else "freeze-implementation-scope"
     )
-    append_event(feature_dir, state, "phase-approved", {"phase": args.phase})
+    append_event(
+        feature_dir,
+        state,
+        "phase-approved",
+        {"phase": args.phase, "source": args.source, "approver_role": args.approver_role},
+    )
     save_state(feature_dir, state)
     return state
 
@@ -1661,6 +1695,8 @@ def build_parser() -> argparse.ArgumentParser:
     phase = sub.add_parser("phase-review", help="Record explicit human approval for one declared implementation phase")
     phase.add_argument("--feature-dir", required=True)
     phase.add_argument("--phase", required=True)
+    phase.add_argument("--source", required=True, choices=["user-message", "demo-simulation"])
+    phase.add_argument("--approver-role", required=True)
     phase.add_argument("--approval-text", required=True)
     phase.add_argument("--message-id")
     phase.set_defaults(handler=cmd_phase_review)

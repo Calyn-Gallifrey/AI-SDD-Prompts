@@ -17,7 +17,7 @@ CONTROL=skills/uaw-sdd-ai-coding/scripts/sdd2_control.py
 | Record changed public artifact | `python3 "$CONTROL" record-artifact --feature-dir <dir> --stage <stage>` |
 | Persist explicit current approval | `python3 "$CONTROL" approve --feature-dir <dir> --stage <stage> --source user-message --approver-role human --approval-text <exact-message> --message-id <id-if-available>` |
 | Capture clean implementation scope | `python3 "$CONTROL" capture-scope --feature-dir <dir> --allowed-path <pattern> --forbidden-path <pattern> --required-phase <phase> --test-path <pattern>` |
-| Record Phase Review | `python3 "$CONTROL" phase-review --feature-dir <dir> --phase <phase> --approval-text <exact-message> --message-id <id-if-available>` |
+| Record Phase Review | `python3 "$CONTROL" phase-review --feature-dir <dir> --phase <phase> --source <user-message|demo-simulation> --approver-role <human|ai-as-human-reviewer> --approval-text <exact-message> --message-id <id-if-available>` |
 | Freeze current code/test scope | `python3 "$CONTROL" freeze-scope --feature-dir <dir>` |
 | Record quality gate | `python3 "$CONTROL" quality-gate --feature-dir <dir> --gate <code-review|auto-fix|unit-test> --result <result> --evidence <reproducible-evidence>` |
 | Prepare immutable Archive evidence | `python3 "$CONTROL" prepare-archive --feature-dir <dir>` |
@@ -40,6 +40,8 @@ For an explicitly authorized demo only:
 2. persist the separate current user authorization with `authorize-demo`;
 3. use `source=demo-simulation` and `approver-role=ai-as-human-reviewer`;
 4. label every output as simulation evidence, not human approval.
+
+The same Demo provenance is mandatory for `phase-review`; never record an AI-simulated Phase Review as `user-message/human`.
 
 ## Error Handling
 
