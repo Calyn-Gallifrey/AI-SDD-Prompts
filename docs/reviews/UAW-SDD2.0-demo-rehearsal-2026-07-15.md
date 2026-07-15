@@ -186,3 +186,95 @@ Brief
 6. `original/` 是保留原文和来源哈希的导入档案，不是当前运行规则；活跃 Skill 不得直接加载，派生运行规则必须在 `references/` 中以简体中文表达。
 
 正反向验证覆盖：简体中文正文通过、含必要技术英文通过、英文主导 Brief 拒绝、英文主导过程资产拒绝、繁体正文拒绝。该加固没有增加开发者命令、表单或手工维护步骤。
+
+## 12. 基于中文化当前提交的完整重跑
+
+### 12.1 结论更正
+
+此前第 11 节完成的是语言合同、控制回归和静态检查，**当时没有在中文化后的提交上重新走完一条 Brief 到 Archive 的完整 Demo**。本节记录用户再次要求“基于当前提交重新跑一次完整 Demo”后的实际结果，不能用此前的局部验证代替。
+
+本次只检查 SDD2.0，没有读取或修改 SDD1.0。开发者入口仍是“简要提示词 + 调用 `uaw-sdd-ai-coding`”。业务 Demo 继续位于临时 worktree，不合并到 `main`。
+
+### 12.2 入口复现与修复
+
+- 初始提交：`ec57302`
+- 用户原文：`基于当前提交重新跑一次完整 Demo。`
+- 初次结果：`authorize-demo` 退出码 2；解析器支持“做/运行/进行”等动作，但没有把“跑/重跑”识别为明确动作。
+- 修复：新增动作词 `跑`，并新增 `不跑`、`不重跑`、`别跑`、`别重跑` 否定边界。
+- 回归：用户原文通过，`不重跑 Demo` 被拒绝。
+- 修复提交：`7e81e75 fix(sdd2): accept explicit Chinese demo rerun requests`
+
+这项修复只影响 Skill 内部 Demo 授权解析，不增加或改变开发者入口。
+
+### 12.3 重跑 Feature 与完整流程
+
+- Feature：`demo-simplified-chinese-policy-summary`
+- 基线提交：`7e81e75dd93b36d2ea8aa49d5824be54e5548e94`
+- 分支：`demo/sdd2-cn-full-20260715-r2`
+- 模式：`execution_mode=demo`
+- 授权来源：当前用户消息，message ID `user-current-demo-rerun`
+- 最终状态：`archive / completed / none`
+
+```text
+中文 Brief r1
+  -> Proposal r1，发现代码枚举不匹配后修订为 r2
+  -> Spec r1/r2，发现内部残留后修订为 r3并重新批准
+  -> Design r1/r2/r3并重新批准
+  -> Tasks r1/r2/r3并重新批准
+  -> 干净基线捕获
+  -> Phase1 实现与 Demo Review
+  -> Code Review failed：CR-001 新手机号仍为明文
+  -> Auto-fix + 重新冻结 + Findings r2 passed
+  -> 上游 Spec 残留修订令 Phase/Review/Auto-fix 全部失效
+  -> 重捕获基线、重放实现、Findings r3、Auto-fix r2
+  -> 生成测试源码并重新冻结最终 Scope
+  -> Findings r4 passed、Auto-fix r3 not-required
+  -> 聚焦测试 8/8 passed
+  -> Unit Test Summary r1 + Demo approval
+  -> Archive evidence + Archive r1 + 严格检查 + Demo approval
+  -> completed / immutable / lock released
+```
+
+### 12.4 真实暴露的内容与控制问题
+
+| 编号 | 问题 | 实际行为 | 处置与验证 |
+|---|---|---|---|
+| R-01 | 初始资产引用不存在的 `ChangeFieldType.PHONE_NUMBER` | Maven 编译失败 | 按 Proposal -> Spec -> Design -> Tasks 顺序修订为 `HOLDER_PHONE`，旧批准自动失效 |
+| R-02 | 尝试同时改四项上游资产 | 控制器以 `ARTIFACT_DRIFT` 拒绝越级记录 | 恢复下游文件后逐层修订，证明唯一顺序有效 |
+| R-03 | 上游修订时工作树已有实现 | `capture-scope` 拒绝脏基线 | 暂时恢复生产文件、重捕获干净基线、再重放实现 |
+| R-04 | Spec r2 两处仍残留 `PHONE_NUMBER` | 测试映射交叉核对发现同文件冲突 | Spec r3 修正；Design/Tasks、Phase 和质量 Gate 全部失效并重跑 |
+| R-05 | 初始实现只脱敏旧手机号 | Code Review 记录 CR-001 P1，Gate=`failed` | 同时脱敏新值；重新冻结、完整复审和测试通过 |
+| R-06 | 测试源码加入后 Scope 改变 | Code Review/Auto-fix 自动失效 | Findings r4 与 Auto-fix r3 在最终 Scope 上重新关闭 |
+| R-07 | 静态验证器把受控现行 Feature 当成历史样例 | 完整 Demo 已成功，但静态检查错误要求历史 Banner 和空审批 | 按 `execution_mode` 区分 live 与 historical；live 调用状态校验，历史隔离规则保持不变；新增 2 项回归 |
+
+R-01、R-04 和 R-05 是 Demo 内容层面真实发现的问题；状态机没有掩盖这些问题，并正确完成修订、失效和重跑。R-07 是本轮发现并修复的体系验证缺陷。
+
+### 12.5 最终证据
+
+| 证据 | 最终结果 |
+|---|---|
+| 九项公开资产语言检查 | `brief-design` 至 `archive` 全部 `passed`，正文以简体中文为主体 |
+| 最终资产 revision | Brief r1、Proposal r2、Spec r3、Design r3、Tasks r3、Findings r4、Auto-fix r3、Unit Test Summary r1、Archive r1 |
+| 最终 Scope | `80223c7d70fa3986b52c15f059f7ee9bac31c5718c410324f0429ba91f0b1d59`，2 个允许文件，0 violation |
+| Code Review | Findings r4，`passed`，绑定最终 Scope |
+| Auto-fix | Summary r3，`not-required`，绑定最终 Scope |
+| 聚焦测试 | 8/8 通过，0 Failure、0 Error、0 Skipped，退出码 0 |
+| 全 Demo 模块测试 | 39/39 通过，0 Failure、0 Error、0 Skipped |
+| Unit Test 环境 | OpenJDK 26.0.1，Maven 3.9.16，编译目标 `release 17` |
+| Archive evidence | `752f6adb5a12451c08c073848b8630af696b9825d190afa162588e9a12293a62` |
+| Archive Check | `valid=true`，0 error |
+| 最终 validate | `valid=true`，0 error，0 warning |
+| 最终 resume | `archive / completed / none` |
+| 终态写保护 | 再次记录 Archive 被拒绝，退出码 2 |
+| 活动锁 | 完成后不存在 `sdd2-active-feature.json` |
+| SDD2 控制与验证器回归 | 22/22 通过 |
+| 包级静态检查 | 54 个 runtime 文件、51 个人类可读文件、3 个历史 Feature；0 error、0 warning |
+| 真实 live Feature 分类 | `kind=live, valid=true`，0 error、0 warning |
+
+JDK 26 下 Byte Buddy 输出一条 `Unsafe` API 弃用警告，但本次编译和测试均成功；该项作为非阻塞依赖升级风险保留，没有伪装成零警告的运行环境。
+
+### 12.6 最终判断
+
+本次已经在中文化后的代码基线上重新完成完整 Demo，而不是仅重跑语言检查或单元测试。重跑过程中发现的 Demo 授权词缺口和 live Feature 静态分类缺口均已修复并有回归测试；业务资产中的枚举冲突、单侧脱敏和上游残留也均通过真实 revision 与 Gate 流程关闭。
+
+因此，当前结论仍为 **5/5（本报告已执行的 SDD2.0 仓库控制验收矩阵内）**。该结论以本节的新完整 Demo 为依据，取代“中文化后是否已完整重跑”这一此前未闭合的证据缺口。

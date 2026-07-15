@@ -794,3 +794,34 @@ LibreOffice 渲染的 20 页版本中，多页中文字体缺失/方框、分页
 ### 15.3 最终判断
 
 语言加固已进入确定性控制链，而不是只写入文档约定。新会话、新 Feature 和下游质量资产都使用同一语言合同；历史证据兼容边界明确，机器字段和现有开发入口均未改变。该维度达到 5/5（仓库可控边界内）。
+
+## 16. 2026-07-15 中文化后完整 Demo 重跑
+
+### 16.1 证据缺口关闭
+
+第 15 节完成后只验证了语言合同、静态规则和控制回归，当时尚未在中文化后的提交上重新执行 Brief 到 Archive 的完整 Demo。用户再次明确要求“基于当前提交重新跑一次完整 Demo”后，使用全新临时 worktree 和 Feature `demo-simplified-chinese-policy-summary` 完成了完整重跑。
+
+本轮范围仍只包含 SDD2.0，没有读取或修改 SDD1.0；公开入口保持“简要提示词 + 调用 `uaw-sdd-ai-coding`”。
+
+### 16.2 新发现与修复
+
+| 问题 | 严重度 | 修复 | 最终验证 |
+|---|---|---|---|
+| 用户原文“重新跑一次完整 Demo”被授权解析器拒绝 | P1 | 动作词加入 `跑`，否定词加入“不跑/不重跑/别跑/别重跑” | 原文通过，否定请求拒绝；提交 `7e81e75` |
+| 静态验证器把 `standard/demo` 现行 Feature 当作历史样例 | P1 | 按 `execution_mode` 分类；live Feature 调用状态校验并检查现有资产语言，historical 继续执行隔离规则 | 新增 2 项回归；真实已完成 Feature 返回 `kind=live, valid=true` |
+
+Demo 资产还真实暴露并关闭了不存在的 `PHONE_NUMBER` 枚举、Spec 内部残留和新手机号单侧泄露 CR-001。每次上游或 Scope 变化均触发当前批准、Phase Review 和质量 Gate 正确失效，并按顺序重跑。
+
+### 16.3 最终终态与回归
+
+- 九项公开资产全部以简体中文为主体并通过语言校验。
+- 最终资产：Brief r1、Proposal r2、Spec r3、Design r3、Tasks r3、Findings r4、Auto-fix r3、Unit Test Summary r1、Archive r1。
+- 最终 Scope：`80223c7d70fa3986b52c15f059f7ee9bac31c5718c410324f0429ba91f0b1d59`，2 个允许文件，0 violation。
+- 聚焦测试 8/8 通过；全 Demo 模块测试 39/39 通过。
+- Archive Check `valid=true`；最终 `validate` 为 0 error/0 warning；`resume` 为 `archive/completed/none`。
+- 完成后再次写入被拒绝，活动 Feature 锁释放。
+- SDD2 控制与验证器回归 22/22 通过；包级静态检查 0 error/0 warning。
+
+### 16.4 最终判断
+
+中文化后的完整 Demo 已实际完成，当前 5/5 结论不再依赖第 15 节的局部语言验证。详细步骤、异常矩阵、revision、Scope、测试和 Archive 证据见 `docs/reviews/UAW-SDD2.0-demo-rehearsal-2026-07-15.md` 第 12 节。
