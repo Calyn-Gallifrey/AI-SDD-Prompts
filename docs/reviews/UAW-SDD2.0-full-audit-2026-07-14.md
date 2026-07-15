@@ -626,7 +626,7 @@ LibreOffice 渲染的 20 页版本中，多页中文字体缺失/方框、分页
 
 ### 13.1 当前结论
 
-**整改后成熟度：5/5（仓库可控边界），具备保持原入口的真实开发运行条件。**
+**静态整改阶段曾判定为 5/5；2026-07-15 的真实 Demo 预演发现 3 个剩余控制缺陷。缺陷修复并完成全链路复跑后的权威结论见第 14 节。**
 
 开发者入口未改变，仍然是：
 
@@ -651,7 +651,7 @@ LibreOffice 渲染的 20 页版本中，多页中文字体缺失/方框、分页
 | 状态与恢复 | 1/5 | 5/5 | `.sdd2/feature-state.json` 唯一状态源；`resume` 返回唯一动作；终态需显式 restart。 |
 | 范围与追溯 | 2/5 | 5/5 | 干净 Git 基线、worktree 锁、允许/禁止路径、base/head/tree/file/snapshot hash 全绑定。 |
 | 规则质量 | 2/5 | 5/5 | EPI/OM 分离；Backend、Model、Unit Test 冲突和失效示例已修正。 |
-| 自动校验 | 1/5 | 5/5 | 14 个状态机测试、静态资产验证器、Schema、三 Skill 快速校验齐全。 |
+| 自动校验 | 1/5 | 5/5 | Demo 修复后 16 个状态机测试、静态资产验证器、Schema、三 Skill 快速校验齐全。 |
 | 示例与文档 | 3/5 | 5/5 | 三个历史 Feature 隔离为 superseded；指南和四张规范图与当前合同一致。 |
 
 ### 13.3 P0 闭环
@@ -681,7 +681,7 @@ LibreOffice 渲染的 20 页版本中，多页中文字体缺失/方框、分页
 | P1-09 示例越界/归档后变化 | 已关闭 | 三个既有 Feature 全部隔离为 historical-example + superseded，不作为活动证据。 |
 | P1-10 Transactions Dictionary 无来源和时效 | 已关闭 | 增加 source hash、导入 commit、freshness/use boundary；使用前核对当前源码。 |
 | P1-11 指南漂移 | 已关闭 | 重建 DOCX 与四张图；加入可复现生成脚本；13 页逐页检查通过。 |
-| P1-12 无可执行校验器 | 已关闭 | `validate_sdd2_assets.py`、14 个控制测试、三 Skill quick validator。 |
+| P1-12 无可执行校验器 | 已关闭 | `validate_sdd2_assets.py`、Demo 修复后 16 个控制测试、三 Skill quick validator。 |
 
 ### 13.5 P2 闭环
 
@@ -709,7 +709,7 @@ LibreOffice 渲染的 20 页版本中，多页中文字体缺失/方框、分页
 
 | 验证 | 结果 |
 |---|---|
-| 控制引擎单元测试 | 14/14 通过，覆盖审批、重放、越序、脏基线、范围漂移、哈希链、锁、恢复、失败关闭和完整成功流。 |
+| 控制引擎单元测试 | Demo 修复后 16/16 通过，新增自然中文 Demo 授权、否定授权、Phase Review provenance 和跨 Scope 质量产物 revision 覆盖。 |
 | 静态资产验证 | 52 个 runtime 文件、3 个历史 Feature；0 error、0 warning。 |
 | 历史 Feature 控制校验 | 3/3 通过，仅返回预期的 `HISTORICAL_EXAMPLE_NOT_VALID_GATE_EVIDENCE` 警告。 |
 | Python / JSON / Schema | 编译与解析全部通过。 |
@@ -726,4 +726,43 @@ LibreOffice 渲染的 20 页版本中，多页中文字体缺失/方框、分页
 
 ### 13.9 最终判断
 
-当前 SDD2.0 已从文档化流程升级为可执行、可校验、可恢复的工程控制流程。最关键的成功条件不是增加开发者操作，而是在保持原入口的同时，把每个 Gate、资产 revision、Git 范围、质量结果和恢复动作变成机器可验证事实。所有原 P0、P1、P2 已按本节证据关闭。
+当前 SDD2.0 已从文档化流程升级为可执行、可校验、可恢复的工程控制流程。最关键的成功条件不是增加开发者操作，而是在保持原入口的同时，把每个 Gate、资产 revision、Git 范围、质量结果和恢复动作变成机器可验证事实。所有原 P0、P1、P2 已按本节证据关闭；Demo 实跑发现的后续问题及最终复核以第 14 节为准。
+
+## 14. 2026-07-15 Demo 实跑补充复核
+
+### 14.1 结论修正
+
+第 13 节完成的是静态整改和自动化测试复核。随后使用独立 worktree 和合成 Feature 完整执行 Brief、Proposal、Spec、Design、Tasks、Implementation、Code Review、Auto-fix、Unit Test、Summary、Archive，证明当时版本仍存在 3 个遗漏：
+
+1. 用户原文“做一次demo预演”被 Demo 授权器误拒绝；
+2. Demo Phase Review 被硬编码记录为 `user-message/human`；
+3. Auto-fix/refreeze 后无法记录 Findings 或 Auto-fix 的后续 revision，报 `Unknown workflow stage`。
+
+因此，第 13 节“整改后即为 5/5”的时间点结论不成立。上述问题修复、补充测试并完成同一 Demo 后续流程后，当前版本才达到本报告所定义的 5/5 仓库控制边界。
+
+### 14.2 修复与证据
+
+| 问题 | 严重度 | 修复 | 验证 |
+|---|---|---|---|
+| 自然中文 Demo 授权误拒绝 | P1 | 增加 Demo 词、动作词和否定词集合 | 用户原文通过；否定请求拒绝 |
+| Demo Phase Review provenance 失真 | P0 | `phase-review` 显式接收并校验 source/role | 状态记录 `demo-simulation / ai-as-human-reviewer` |
+| 质量产物后续 revision 无法记录 | P0 | 产物键映射到流程阶段后再执行失效 | Findings r1-r4、Auto-fix r1-r3 均成功绑定当前 Scope |
+
+### 14.3 完整流程终态
+
+- 首轮故障注入由 Code Review 生成 CR-001 并进入 Auto-fix。
+- Unit Test 测试源变化使 Code Review 和 Auto-fix 同时失效并强制完整复审。
+- 无效测试选择器产生 `UNIT_TEST_FAILED`，Archive Check 明确拒绝。
+- 有效测试执行又发现短值泄露，7 个测试中 1 个失败；修复后再次 refreeze、Review、Auto-fix。
+- 最终 Java 17 Maven 测试 7/7 通过。
+- Archive Check `valid=true`，最终状态 `archive/completed/none`。
+- 完成后写入被拒绝，`resume` 无 error/warning，活动 Feature 锁已释放。
+- 主分支 SDD2 控制回归测试 16/16 通过。
+
+完整场景、缺陷复现和评分见 `docs/reviews/UAW-SDD2.0-demo-rehearsal-2026-07-15.md`。
+
+### 14.4 最终判断
+
+**当前成熟度：5/5（2026-07-15 Demo 验收矩阵和仓库可控边界内）。**
+
+开发者入口仍为“简要提示词 + 调用 `uaw-sdd-ai-coding`”，没有新增开发者命令或 `.sdd2/` 维护动作。5/5 表示多 Gate 控制、失效、恢复和证据链完整，不表示单个 AI Review 节点不会漏检；本次真实由 Unit Test 拦截了 Code Review 漏掉的短值缺陷。

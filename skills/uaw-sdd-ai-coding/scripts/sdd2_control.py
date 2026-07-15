@@ -406,6 +406,13 @@ def artifact_key_for_stage(stage: str) -> str:
     return stage
 
 
+def workflow_stage_for_artifact(stage: str) -> str:
+    return {
+        "code-review-findings": "code-review",
+        "auto-fix-summary": "auto-fix",
+    }.get(stage, stage)
+
+
 def stage_index(stage: str) -> int:
     normalized = "unit-test-summary" if stage == "unit-test" else stage
     try:
@@ -1002,7 +1009,7 @@ def cmd_record_artifact(args: argparse.Namespace) -> dict[str, Any]:
     if previous:
         invalidated = invalidate_from(
             state,
-            stage,
+            workflow_stage_for_artifact(stage),
             f"{stage} changed from revision {previous['revision']} to {revision}",
         )
     artifact_record: dict[str, Any] = {
@@ -1692,7 +1699,7 @@ def build_parser() -> argparse.ArgumentParser:
     scope.add_argument("--non-production-change", action="store_true")
     scope.set_defaults(handler=cmd_capture_scope)
 
-    phase = sub.add_parser("phase-review", help="Record explicit human approval for one declared implementation phase")
+    phase = sub.add_parser("phase-review", help="Record an approval with explicit provenance for one implementation phase")
     phase.add_argument("--feature-dir", required=True)
     phase.add_argument("--phase", required=True)
     phase.add_argument("--source", required=True, choices=["user-message", "demo-simulation"])

@@ -357,6 +357,46 @@ class Sdd2ControlTest(unittest.TestCase):
         state = json.loads((self.feature / ".sdd2/feature-state.json").read_text(encoding="utf-8"))
         self.assertEqual(state["quality_gates"]["code-review"]["status"], "invalidated")
 
+        self._write("code-review-findings.md", "# Findings revision 2\n")
+        review_revision_2 = self._run(
+            "record-artifact", "--feature-dir", str(self.feature),
+            "--stage", "code-review-findings",
+        )
+        self.assertEqual(
+            review_revision_2["result"]["artifacts"]["code-review-findings"]["revision"], 2
+        )
+        self._run(
+            "quality-gate", "--feature-dir", str(self.feature), "--gate", "code-review",
+            "--result", "passed", "--evidence", "full review of revision 2 scope",
+        )
+        self._record("auto-fix-summary", "auto-fix-summary.md", "# Auto-fix revision 1\n")
+        self._run(
+            "quality-gate", "--feature-dir", str(self.feature), "--gate", "auto-fix",
+            "--result", "not-required", "--evidence", "no finding on revision 2 scope",
+        )
+
+        (self.repo / "app/src/main/java/App.java").write_text(
+            "class App { int three; }\n", encoding="utf-8"
+        )
+        self._run("freeze-scope", "--feature-dir", str(self.feature))
+        self._write("code-review-findings.md", "# Findings revision 3\n")
+        self._run(
+            "record-artifact", "--feature-dir", str(self.feature),
+            "--stage", "code-review-findings",
+        )
+        self._run(
+            "quality-gate", "--feature-dir", str(self.feature), "--gate", "code-review",
+            "--result", "passed", "--evidence", "full review of revision 3 scope",
+        )
+        self._write("auto-fix-summary.md", "# Auto-fix revision 2\n")
+        auto_fix_revision_2 = self._run(
+            "record-artifact", "--feature-dir", str(self.feature),
+            "--stage", "auto-fix-summary",
+        )
+        self.assertEqual(
+            auto_fix_revision_2["result"]["artifacts"]["auto-fix-summary"]["revision"], 2
+        )
+
     def test_unit_test_gate_requires_changed_test_source(self) -> None:
         self._reach_tasks_approval()
         self._capture_scope()
