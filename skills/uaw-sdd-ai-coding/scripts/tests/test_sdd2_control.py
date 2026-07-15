@@ -192,14 +192,19 @@ class Sdd2ControlTest(unittest.TestCase):
             "--authorization-text", "不要进行 demo 演练", expected=2,
         )
         self.assertIn("explicitly identify", rejected["error"])
+        rerun_rejected = self._run(
+            "authorize-demo", "--feature-dir", str(self.feature),
+            "--authorization-text", "不重跑 Demo", expected=2,
+        )
+        self.assertIn("explicitly identify", rerun_rejected["error"])
         accepted = self._run(
             "authorize-demo", "--feature-dir", str(self.feature),
-            "--authorization-text", "做一次demo预演，验证一下整个体系是否真的达到5/5",
+            "--authorization-text", "基于当前提交重新跑一次完整 Demo。",
             "--message-id", "demo-authorization",
         )
         self.assertEqual(
             accepted["result"]["demo_authorization"]["authorization_text"],
-            "做一次demo预演，验证一下整个体系是否真的达到5/5",
+            "基于当前提交重新跑一次完整 Demo。",
         )
 
     def test_demo_phase_review_records_simulation_provenance(self) -> None:

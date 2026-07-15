@@ -98,11 +98,11 @@ APPROVAL_META_TERMS = (
 )
 DEMO_TERMS = ("demo", "simulation", "simulate", "模拟", "演练", "预演")
 DEMO_ACTION_TERMS = (
-    "批准", "同意", "授权", "请", "运行", "进行", "做", "开始",
+    "批准", "同意", "授权", "请", "运行", "进行", "做", "跑", "开始",
     "approve", "authorize", "run", "start",
 )
 DEMO_REJECTION_TERMS = APPROVAL_REJECTION_TERMS + (
-    "不要", "不做", "不用", "无需", "不需要", "别做", "别运行", "别进行",
+    "不要", "不做", "不跑", "不重跑", "不用", "无需", "不需要", "别做", "别跑", "别重跑", "别运行", "别进行",
     "取消", "停止", "do not", "don't", "dont", "no demo", "without demo", "cancel", "stop",
 )
 
