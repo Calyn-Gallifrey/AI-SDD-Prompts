@@ -52,13 +52,17 @@ sdd2-features/<SprintN>/<feature-name>/
 
 ```text
 Brief -> Proposal -> Spec 批准 -> Design 批准 -> Tasks 批准
--> 分 Phase 实现 + Phase Review
+-> 实现许可 -> 分 Phase 实现 + Phase Review
 -> uaw-code-review / SDD_TASK_CODE_REVIEW
 -> Auto-fix + 范围变化时完整复审
 -> uaw-unit-test / SDD mode
 -> Unit Test Summary 批准
 -> Archive 证据 -> Archive 批准 -> completed
 ```
+
+Spec、Design、Tasks 的每个箭头都跨越独立 assistant 回合：生成并记录当前 Gate 资产后必须结束回合，等待用户新消息批准。Tasks 批准后仍不能直接写代码；只有内部捕获范围并签发活动 `implementation_permit` 后才能进入实现。
+
+实现许可绑定当前 Attempt、三项资产修订/哈希、三项人工批准 ID、Git 基线和范围契约哈希。任一绑定变化都会拒绝后续实现与质量动作。
 
 ### Code Review 交接
 
@@ -86,6 +90,10 @@ Unit Test Skill 必须先生成或更新测试代码，再生成 Summary。无�
 ## 变更处理
 
 用户需求变化不是非正式编辑。更新最早受影响的资产并记录，让控制器确定性失效下游结果，再重复所有已过期的批准和 Gate。请求实际属于另一个 Feature 时，新建独立 Feature/worktree，不得重定向活动状态。
+
+首次实现许可签发前，Feature 目录外出现代码、测试、配置、构建或 Git HEAD 变化时，流程立即阻塞并保存原人工 Gate。恢复到规划基线后才能回到原 Gate；提前实现不能通过补文档获得追认。
+
+Git 提交和推送不属于本流程的产物或阶段。活动 Feature 的 Guard 阻止提交/推送；Archive 最终批准后 Skill 结束回合，不自动执行 Git 命令。
 
 ## 非目标
 

@@ -92,6 +92,13 @@ superseded
 
 每个活动状态都记录 Feature/worktree 绑定、Attempt、修订、当前阶段、状态、下一必需动作、资产、批准、Phase Review、质量 Gate、失效记录和阻塞恢复条件。
 
+活动 Attempt 还必须记录：
+
+- 初始化时 Feature 目录外工作区的规划基线；
+- 是否已经进入过实现；
+- 绑定当前 Spec、Design、Tasks 批准和实现范围的 `implementation_permit`；
+- 已失效实现许可的历史记录。
+
 ## 5. 初始化与 worktree 隔离
 
 保存 `brief-design.md` 后初始化控制状态：
@@ -104,6 +111,10 @@ python3 scripts/sdd2_control.py init \
 ```
 
 一个 Git worktree 只能有一个活动 SDD2 Feature。并行 Feature 必须使用不同 Git worktree。实现前捕获干净的 Git 基线和批准路径。存在预先变更文件、禁止路径、范围外路径、detached HEAD、分支漂移、锁缺失或过宽路径模式时，必须阻塞执行。
+
+`init` 必须保存 Feature 目录外的规划期 Git 快照。首次实现许可签发前，分支、HEAD 或任一代码、测试、配置、构建及其他 Feature 外文件发生变化，都记录为 `PREMATURE_IMPLEMENTATION_CHANGE` 并进入 `blocked`。只有恢复到原规划基线后，`resume` 才能返回原人工 Gate。
+
+`init` 和活动 Feature 的 `resume` 必须透明安装 Git Guard，并遵循仓库当前的 `core.hooksPath`。Guard 通过 Git `prepare-commit-msg` 拒绝活动 Attempt 下的所有提交，因此 `git commit --no-verify` 也不能绕过；普通 `git push` 由 `pre-push` 同步拒绝。已有同名 Hook 必须保留并在 Guard 放行时继续执行。
 
 ## 6. 资产记录与人工 Gate
 
@@ -120,6 +131,8 @@ python3 scripts/sdd2_control.py init \
 
 到达人工 Gate 后，记录资产并停止。不得生成下一资产、修改生产/测试代码、调用下一 Skill 或宣称已越过 Gate。
 
+“停止”是 assistant 回合边界：生成并记录 Gate 资产后，只能输出当前阶段、资产修订/哈希、所需人工动作和阻塞影响，然后立即结束当前回合。此后不得再调用任何工具。生成 Gate 资产的同一回合永远不能执行 `approve`。
+
 ## 7. 精确执行流程
 
 1. 保存 Brief Design 并初始化状态。
@@ -127,7 +140,7 @@ python3 scripts/sdd2_control.py init \
 3. 生成并记录 `spec.md`；停止；记录明确的 Spec 批准。
 4. 生成并记录 `design.md`；停止；记录明确的 Design 批准。
 5. 生成并记录 `tasks.md`；停止；记录明确的 Tasks 批准。
-6. 捕获实现范围，包括基线提交、分支、允许/禁止路径、必需 Phase 和测试路径模式。
+6. 捕获实现范围，包括基线提交、分支、允许/禁止路径、必需 Phase 和测试路径模式；校验三项当前批准后，签发绑定 Attempt、Spec/Design/Tasks 修订与哈希、批准 ID 和范围契约哈希的 `implementation_permit`。
 7. 实现一个已批准 Phase；停止；记录明确的 Phase Review 后才能进入下一 Phase。
 8. 冻结实现快照。之后任何生产代码、测试代码、配置、Spec、Design 或 Tasks 变更都会使受影响的下游结果失效。
 9. 以 `SDD_TASK_CODE_REVIEW` 模式调用 `uaw-code-review`；针对冻结快照记录评审发现和 Code Review Gate。
@@ -136,7 +149,9 @@ python3 scripts/sdd2_control.py init \
 12. 记录 `unit-test-summary.md` 和 Unit Test 证据；停止；记录明确的 Unit Test Summary 批准。
 13. 根据 Git base/head/tree、冻结范围哈希和逐文件哈希准备不可变 Archive 证据。
 14. 生成并记录 `archive.md`；执行 Archive 检查；停止；记录最终 Archive 批准。
-15. 只有最终 Archive 批准才能设置 `completed` 并释放 worktree 锁。
+15. 只有最终 Archive 批准才能设置 `completed` 并释放 worktree 锁；批准成功后立即结束回合，不执行任何 Git 提交或推送。
+
+生产代码、测试、配置或构建文件只能在活动 `implementation_permit` 校验成功后修改。后续实现、冻结、Code Review、Auto-fix、Unit Test 和 Archive 动作都必须重新校验该许可；许可缺失、失效、哈希不匹配或批准不再有效时立即停止。
 
 ## 8. 质量 Gate 结果
 
@@ -174,10 +189,18 @@ Archive 要求以下条件全部绑定到同一个当前快照：
 
 `resume` 会校验哈希、资产、锁、分支和范围，并且只返回一个 `next_required_action`。控制状态存在时，禁止根据聊天记忆或 Markdown 文字重建状态。
 
+`resume` 还必须检查规划基线和实现许可。规划期出现提前实现时保存原 Gate 恢复点并进入 `blocked`；变更恢复后只回到原 Gate，不得把提前代码视为已完成阶段。
+
 对于可恢复的阻塞阶段，修复记录中的原因并重复同一个必需动作。阻塞或终态 Attempt 之后需要重新执行时，`restart-attempt` 必须由新的明确用户重试/重启消息触发；它会增加 Attempt、使旧批准失效、清空质量结果和范围，并从最早需要重新批准的持久化阶段开始。
 
 历史 Feature 样例迁移为 `historical-example` 和 `superseded`。不回填或接受其旧批准。它们只供参考，不能恢复执行，也不因当前语言规范而改写其不可变内容。
 
-## 11. 失败规则
+## 11. Git 提交与推送规则
+
+自动提交不是 SDD2 流程节点。本 Skill 不得执行 `git add`、`git commit` 或 `git push`，也不得因代码生成、测试通过、Archive 完成或上层通用工作流规则而推断提交授权。
+
+活动 Attempt 的 Git Guard 是第二道确定性防线。它只在 worktree 的活动锁存在时拒绝操作，流程完成或明确关闭并释放锁后恢复原有 Git 行为。流程结束后的提交仍需用户在新的明确消息中另行要求；不得复用 Brief、阶段批准或 Archive 批准作为提交授权。
+
+## 12. 失败规则
 
 任何控制命令返回非零都必须立即停止。将错误记录为阻塞原因，不得手工绕过；只有状态恢复有效，或用户明确关闭/重启 Attempt 后才能继续。

@@ -2,86 +2,110 @@
 
 ## 当前任务
 
-基于中文化后的当前提交重新执行 UAW-SDD 2.0 完整 Demo，验证 Brief 到 Archive 的真实闭环，并修复重跑中发现的体系问题。
+修复 UAW-SDD 2.0 在弱模型上的 P0 流程漏洞：Spec、Design 或 Tasks 未经当前人工确认时，模型仍可能提前生成生产代码，并在生成后自动提交。
 
-开发者入口保持为：提交简要提示词并调用 `uaw-sdd-ai-coding`。
+开发者入口保持不变：提交简要提示词并调用 `uaw-sdd-ai-coding`。
 
 ## 范围与约束
 
 - 范围只包含 SDD2.0。
 - `sdd/` 属于 SDD1.0，本轮未读取、未修改。
-- 开发者不需要运行控制脚本、维护 `.sdd2/`、提供 Git 哈希或填写新增表单。
-- 九项公开资产及体系人类可读文件以简体中文为主体；路径、命令、代码标识符、状态、哈希和必要技术英文保持精确。
-- `original/` 是来源档案，不是当前运行规则。
-- 三个 `execution_mode=historical-example` Feature 保持不可变，不能作为当前审批或 Gate 证据。
+- 未新增开发者命令、参数、表单或手工控制文件。
+- 运行规则、指南和新建或修订的公开资产以简体中文为主体；机器契约、路径、命令和必要技术英文保持精确。
 - 无关未跟踪文件 `docs/.DS_Store` 保持未暂存、未修改。
 
-## 当前状态
+## 根因
 
-- 完整 Demo 已完成，最终状态为 `archive / completed / none`。
-- 当前结论：在本轮实际执行的 SDD2 仓库控制、语言、测试和 Archive 验收矩阵内达到 5/5。
-- 临时 Demo worktree 与分支已经删除；业务 Demo 代码和 Feature 资产没有合并到 `main`。
-- 所有可复用证据已写入两份正式报告。
-- 剩余外部阻塞只有本机 GitHub HTTPS 身份验证。
+1. 原 Skill 虽规定人工 Gate，但没有“记录 Gate 资产后立即结束 assistant 回合”的最高优先级协议，弱模型可能在同一回合继续执行。
+2. 控制器只会拒绝越序的控制命令，没有在规划期保存 Feature 外 Git 基线；模型直接写代码后，后续审批可能继续被记录。
+3. 实现入口只依赖 Tasks 状态和范围文件，没有独立许可同时绑定当前 Spec、Design、Tasks 的批准、修订、哈希、Attempt 与范围契约。
+4. SDD2 没有 Git 层提交保护，弱模型可在流程进行中执行 `git commit`，包括 `--no-verify`。
 
-## 本轮发现与修复
+## 已实施修复
 
-1. 用户原文 `基于当前提交重新跑一次完整 Demo。` 最初被授权解析器拒绝。已增加动作词 `跑` 和对应否定边界；原文通过，`不重跑 Demo` 被拒绝。
-2. 静态资产验证器原先把所有 `sdd2-features/` 目录都视为历史样例，导致一个合法完成的 live Demo 被错误要求历史 Banner 和空审批。现在按 `execution_mode` 分类：`standard/demo` 调用当前状态校验并检查已存在资产语言，`historical-example` 继续执行严格隔离规则。
-3. Demo 内容中的不存在枚举 `PHONE_NUMBER`、Spec 内部残留和新手机号单侧泄露 CR-001 均按真实 revision、批准失效、Scope 重冻结和质量 Gate 流程关闭。
+### 1. 回合硬停止
 
-## 本轮提交
+- `skills/uaw-sdd-ai-coding/SKILL.md` 新增最高优先级 `P0 回合硬停止协议`。
+- 每个 assistant 回合先执行 `resume`，只服从一个 `next_required_action`。
+- 记录 Spec、Design、Tasks、Unit Test Summary 或 Archive 后，立即请求当前阶段批准并结束回合，不再调用工具。
+- 只有 Gate 到达后的新用户消息可以批准当前阶段。
+- Skill 在任何阶段都不得自动执行 `git add`、`git commit` 或 `git push`；Archive 批准也不构成 Git 授权。
 
-- `7e81e75 fix(sdd2): accept explicit Chinese demo rerun requests`
-- `d6b83f9 fix(sdd2): distinguish live features from historical examples`
-- 报告与本 handoff 已通过提交 `docs: record complete post-language SDD2 demo rerun` 收尾。
+### 2. 规划期基线与可恢复阻塞
 
-## 长期产物
+- `init` 保存 Feature 目录外的分支、HEAD、tree、变更路径及文件哈希。
+- 实现许可签发前，任何代码、测试、配置、构建文件或 Git HEAD 漂移都会写入 `PREMATURE_IMPLEMENTATION_CHANGE`，保存原 Gate 恢复点并进入 `blocked`。
+- 提前变更撤销后，`resume` 精确恢复到原来的 Gate、状态和唯一下一动作；不得通过补写 Tasks 或手工改状态追认。
 
-- 语言规则：`skills/uaw-sdd-ai-coding/references/language-policy.md`
-- 控制合同：`skills/uaw-sdd-ai-coding/references/sdd2-control-contract.md`
-- Demo 报告：`docs/reviews/UAW-SDD2.0-demo-rehearsal-2026-07-15.md`，本轮证据见第 12 节
-- 全盘审查报告：`docs/reviews/UAW-SDD2.0-full-audit-2026-07-14.md`，本轮结论见第 16 节
-- 操作指南：`docs/UAW-SDD2.0 Skill化方案说明与操作指南.docx`
+### 3. 批准绑定实现许可
 
-## Demo 最终证据
+- `capture-scope` 只有在当前 Spec、Design、Tasks 三项批准全部有效后才签发 `implementation_permit`。
+- 许可绑定 Feature、Attempt、三项资产 revision/hash、三项 approval ID、范围契约哈希和许可自身哈希。
+- 实现、Phase Review、Freeze、Review、Auto-fix、Unit Test 与 Archive 都会复核许可。
+- 规划资产修订会撤销许可、删除旧范围，并强制重新批准和捕获。
 
-- Feature：`demo-simplified-chinese-policy-summary`
-- 基线提交：`7e81e75dd93b36d2ea8aa49d5824be54e5548e94`
-- 最终资产：Brief r1、Proposal r2、Spec r3、Design r3、Tasks r3、Findings r4、Auto-fix r3、Unit Test Summary r1、Archive r1。
-- 九项资产语言检查：9/9 通过。
-- 最终 Scope：`80223c7d70fa3986b52c15f059f7ee9bac31c5718c410324f0429ba91f0b1d59`，2 个允许文件，0 violation。
-- 聚焦测试：8/8 通过，0 Failure、0 Error、0 Skipped。
-- 全 Demo 模块测试：39/39 通过，0 Failure、0 Error、0 Skipped。
-- 运行环境：OpenJDK 26.0.1、Maven 3.9.16、编译目标 `release 17`。
-- Archive evidence：`752f6adb5a12451c08c073848b8630af696b9825d190afa162588e9a12293a62`。
-- Archive Check：`valid=true`，0 error。
-- 最终 `validate`：`valid=true`，0 error，0 warning。
-- 最终 `resume`：`archive / completed / none`。
-- 终态写保护：再次记录 Archive 被拒绝，退出码 2。
-- 活动 Feature 锁：完成后释放。
+### 4. Git Guard
 
-## 仓库回归
+- `init` 和活动 Feature 的 `resume` 透明安装 `prepare-commit-msg` 与 `pre-push` Guard。
+- 活动锁存在时，所有普通提交以及 `git commit --no-verify` 都被拒绝；普通 `git push` 被拒绝。
+- Guard 遵循仓库 `core.hooksPath`，已有同名 Hook 保存为 `.sdd2-original`，锁释放后继续执行原 Hook。
+- Guard 不改变公开入口，也不要求开发者安装或运行额外命令。
 
-- SDD2 控制与验证器测试：22/22 通过。
-- 包级静态资产与语言验证：54 个 runtime 文件、51 个人类可读文件、3 个历史 Feature、26 个来源档案；0 error、0 warning。
-- 真实完成的 Demo Feature 使用新分类器验证：`kind=live, valid=true`，0 error、0 warning。
-- Git whitespace：最终提交前重新检查。
-- JDK 26 下 Byte Buddy 输出 `Unsafe` API 弃用警告，但业务测试全部通过；该项是非阻塞依赖升级风险。
+## 修改文件
+
+- `skills/uaw-sdd-ai-coding/SKILL.md`
+- `skills/uaw-sdd-ai-coding/references/sdd2-control-contract.md`
+- `skills/uaw-sdd-ai-coding/references/process-control.md`
+- `skills/uaw-sdd-ai-coding/references/sdd2-workflow.md`
+- `skills/uaw-sdd-ai-coding/references/context/routing-index.md`
+- `skills/uaw-sdd-ai-coding/references/schemas/feature-state.schema.json`
+- `skills/uaw-sdd-ai-coding/references/schemas/implementation-scope.schema.json`
+- `skills/uaw-sdd-ai-coding/scripts/sdd2_control.py`
+- `skills/uaw-sdd-ai-coding/scripts/validate_sdd2_assets.py`
+- `skills/uaw-sdd-ai-coding/scripts/tests/test_sdd2_control.py`
+- `skills/uaw-sdd-ai-coding/scripts/tests/test_validate_sdd2_assets.py`
+- `docs/generate_sdd2_guide.py`
+- `docs/UAW-SDD2.0 Skill化方案说明与操作指南.docx`
+- `CODEX_HANDOFF.md`
+
+## 攻击式完整 Demo
+
+新增永久回归用例 `test_weak_model_bypass_demo_recovers_and_archives`，在同一临时 Git Feature 中执行：
+
+1. 生成并记录 Proposal 与 Spec。
+2. 在 Spec 批准前修改生产代码。
+3. Spec 批准被拒绝，状态写为 `blocked / PREMATURE_IMPLEMENTATION_CHANGE`。
+4. 暂存代码并执行 `git commit --no-verify`，提交被 `SDD2_COMMIT_BLOCKED` 拒绝，HEAD 不变。
+5. 恢复生产代码并执行 `resume`，精确回到 `spec / awaiting-approval / request-spec-approval`。
+6. 依次完成 Spec、Design、Tasks 当前人工批准并签发实现许可。
+7. 完成实现、Phase Review、范围冻结、Code Review、Auto-fix、Unit Test Summary、Archive 和最终批准。
+8. 最终 `validate.valid=true`，活动 Feature 锁释放。
+
+该 Demo 单独执行通过，并随全量回归再次通过。
+
+## 验证结果
+
+- Python 语法编译：通过。
+- SDD2 控制与验证器单元测试：30/30 通过。
+- 关键新增覆盖：提前代码漂移、原 Gate 恢复、实现许可签发与篡改、`--no-verify` 提交阻断、推送阻断、默认 Hook 兼容、自定义 `core.hooksPath` 兼容、完整成功路径。
+- 静态资产与语言验证：54 个运行文件、51 个人类可读文件、3 个历史 Feature、26 个来源档案；0 error、0 warning。
+- 三个 Skill 的 `quick_validate.py`：全部通过。
+- 操作指南：重新生成，共 16 页；逐页检查无截断、重叠、缺字和编号续接错误。
+- Git whitespace：`git diff --check` 通过。
+
+## 验收判断与边界
+
+- 本轮 P0 漏洞在 SDD2 仓库可控边界内关闭：规划 Gate 有明确停轮规则，提前实现不可被后续控制追认，实施必须持有批准绑定许可，活动 Attempt 不能自动提交或普通推送。
+- 仓库控制器不能从 Git 内部证明聊天平台 UI 的真实用户身份；有平台 message ID 时应记录，平台未提供时仍依赖 Skill 的新消息硬停止协议。文档不得把模型传入的身份字段描述为平台级身份认证。
+- 对主动关闭 Hook、改写控制器或完全绕过 Skill 初始化的恶意执行者，不宣称安全隔离；本次目标是约束实际调用 Skill 的弱模型错误行为。
 
 ## Git 与同步
 
 - 分支：`main`；上游：`origin/main`。
-- 本轮开始时已执行 `git fetch origin`，当时 ahead 7、behind 0。
-- 2026-07-15 收尾提交后重新执行 `git fetch origin`，确认相对上游 ahead 10、behind 0。
-- 随后执行 `git push origin main`，因本机缺少 GitHub HTTPS 凭据失败，退出码 128：
-
-```text
-fatal: could not read Username for 'https://github.com': Device not configured
-```
-
-- 恢复方式：为当前 `origin` 配置身份验证后运行 `git push origin main`。
+- 本轮开始时已同步并确认 `main` 与 `origin/main` 一致，起始提交为 `a553b0f`。
+- 本文件与 P0 修复使用同一提交。接手时先用上游对比确认同步状态；若本地 ahead，则直接重试 `git push origin main`。
+- 不得暂存或提交 `docs/.DS_Store`。
 
 ## 下一步 P0
 
-为 Git 配置身份验证并推送 `main`。当前没有其他 SDD2 代码、文档、语言或 Demo 整改待办；继续保持 `docs/.DS_Store` 未暂存。
+发布后在真实弱模型环境用“简要提示词 + 调用 Skill”再观察一轮，重点确认每个规划 Gate 都在记录资产后结束回合，并收集平台是否提供稳定 message ID。当前仓库内没有未完成的 P0 代码或文档修复。

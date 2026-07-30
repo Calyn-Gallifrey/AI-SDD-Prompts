@@ -32,31 +32,33 @@ class ValidateSdd2AssetsTest(unittest.TestCase):
             json.dumps(state, ensure_ascii=False), encoding="utf-8"
         )
 
-    def test_live_demo_feature_is_not_treated_as_historical(self) -> None:
-        (self.feature / "brief-design.md").write_text(CHINESE_BODY, encoding="utf-8")
-        self._write_state(
-            {
-                "execution_mode": "demo",
-                "stage_status": "awaiting-approval",
-                "feature_dir": "sdd2-features/Sprint1/example",
-            }
-        )
-        errors: list[str] = []
-        warnings: list[str] = []
+    def test_real_and_demo_features_are_not_treated_as_historical(self) -> None:
+        for execution_mode in ("real", "demo"):
+            with self.subTest(execution_mode=execution_mode):
+                (self.feature / "brief-design.md").write_text(CHINESE_BODY, encoding="utf-8")
+                self._write_state(
+                    {
+                        "execution_mode": execution_mode,
+                        "stage_status": "awaiting-approval",
+                        "feature_dir": "sdd2-features/Sprint1/example",
+                    }
+                )
+                errors: list[str] = []
+                warnings: list[str] = []
 
-        with (
-            patch.object(validator, "ROOT", self.root),
-            patch.object(
-                validator,
-                "validate_state",
-                return_value={"errors": [], "warnings": []},
-            ),
-        ):
-            kind = validator.validate_feature_directory(self.feature, errors, warnings)
+                with (
+                    patch.object(validator, "ROOT", self.root),
+                    patch.object(
+                        validator,
+                        "validate_state",
+                        return_value={"errors": [], "warnings": []},
+                    ),
+                ):
+                    kind = validator.validate_feature_directory(self.feature, errors, warnings)
 
-        self.assertEqual(kind, "live")
-        self.assertEqual(errors, [])
-        self.assertEqual(warnings, [])
+                self.assertEqual(kind, "live")
+                self.assertEqual(errors, [])
+                self.assertEqual(warnings, [])
 
     def test_historical_feature_still_requires_quarantine_assets(self) -> None:
         (self.feature / "brief-design.md").write_text(CHINESE_BODY, encoding="utf-8")

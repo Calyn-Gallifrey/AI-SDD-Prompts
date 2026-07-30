@@ -31,6 +31,9 @@ EVENT_FILE = "events.jsonl"
 SCOPE_FILE = "implementation-scope.json"
 ARCHIVE_EVIDENCE_FILE = "archive-evidence.json"
 REVISION_DIR = "revisions"
+PREMATURE_CHANGE_BLOCK = "PREMATURE_IMPLEMENTATION_CHANGE"
+COMMIT_GUARD_MARKER = "# UAW-SDD2 GIT GUARD v1"
+COMMIT_GUARD_HOOKS = ("prepare-commit-msg", "pre-push")
 
 ARTIFACT_FILES = {
     "brief-design": "brief-design.md",
@@ -281,6 +284,63 @@ def git_path(repo_root: Path, name: str) -> Path:
     value = run_git(repo_root, "rev-parse", "--git-path", name)
     path = Path(value)
     return path if path.is_absolute() else (repo_root / path).resolve()
+
+
+def git_hooks_path(repo_root: Path) -> Path:
+    configured = run_git(
+        repo_root,
+        "config",
+        "--path",
+        "--get",
+        "core.hooksPath",
+        check=False,
+    )
+    if not configured:
+        return git_path(repo_root, "hooks")
+    path = Path(configured)
+    return path if path.is_absolute() else (repo_root / path).resolve()
+
+
+def git_guard_script(hook_name: str) -> bytes:
+    original_name = f"{hook_name}.sdd2-original"
+    script = f"""#!/bin/sh
+{COMMIT_GUARD_MARKER}
+active_lock="$(git rev-parse --git-path sdd2-active-feature.json 2>/dev/null)"
+if [ -n "$active_lock" ] && [ -f "$active_lock" ]; then
+  echo "SDD2_COMMIT_BLOCKED: 当前 worktree 存在未结束的 SDD2 Feature，禁止提交或推送。" >&2
+  echo "请先完成或明确关闭当前 SDD2 Attempt；本 Skill 不会自动执行 git add、git commit 或 git push。" >&2
+  exit 1
+fi
+hook_dir="$(dirname "$0")"
+original_hook="$hook_dir/{original_name}"
+if [ -x "$original_hook" ]; then
+  exec "$original_hook" "$@"
+fi
+exit 0
+"""
+    return script.encode("utf-8")
+
+
+def install_git_guards(repo_root: Path) -> list[str]:
+    hooks_dir = git_hooks_path(repo_root)
+    hooks_dir.mkdir(parents=True, exist_ok=True)
+    installed: list[str] = []
+    for hook_name in COMMIT_GUARD_HOOKS:
+        hook = hooks_dir / hook_name
+        backup = hooks_dir / f"{hook_name}.sdd2-original"
+        if hook.is_file() and COMMIT_GUARD_MARKER in hook.read_text(encoding="utf-8", errors="replace"):
+            hook.chmod(hook.stat().st_mode | 0o111)
+            continue
+        if hook.exists():
+            if backup.exists():
+                raise ControlError(
+                    f"Cannot install SDD2 Git guard because both {hook} and {backup} exist"
+                )
+            os.replace(hook, backup)
+        atomic_write_bytes(hook, git_guard_script(hook_name))
+        hook.chmod(0o755)
+        installed.append(hook_name)
+    return installed
 
 
 def repository_id(repo_root: Path) -> str:
@@ -589,6 +649,127 @@ def changed_paths(repo_root: Path, base_commit: str) -> list[str]:
     return sorted(paths)
 
 
+def planning_snapshot(repo_root: Path, feature_repo_path: str) -> dict[str, Any]:
+    head_commit = run_git(repo_root, "rev-parse", "HEAD")
+    feature_prefix = feature_repo_path.rstrip("/") + "/"
+    files: list[dict[str, str]] = []
+    for relative in changed_paths(repo_root, head_commit):
+        if relative == feature_repo_path or relative.startswith(feature_prefix):
+            continue
+        path = repo_root / relative
+        files.append(
+            {
+                "path": relative,
+                "sha256": sha256_file(path) if path.is_file() else "<deleted>",
+            }
+        )
+    payload = {
+        "branch": run_git(repo_root, "branch", "--show-current"),
+        "head_commit": head_commit,
+        "head_tree": run_git(repo_root, "rev-parse", "HEAD^{tree}"),
+        "files": files,
+    }
+    return {
+        "captured_at": utc_now(),
+        **payload,
+        "snapshot_sha256": sha256_bytes(canonical_json(payload).encode("utf-8")),
+    }
+
+
+def planning_guard_errors(feature_dir: Path, state: dict[str, Any]) -> list[str]:
+    if (
+        state.get("execution_mode") == "historical-example"
+        or state.get("stage_status") in TERMINAL_STATUSES
+        or state.get("implementation_started") is True
+        or state.get("implementation_permit") is not None
+    ):
+        return []
+    baseline = state.get("planning_baseline")
+    if not isinstance(baseline, dict):
+        return ["PLANNING_BASELINE_MISSING"]
+    current = planning_snapshot(
+        state_repo_root(feature_dir, state),
+        state["feature_repo_path"],
+    )
+    errors: list[str] = []
+    if current["branch"] != baseline.get("branch"):
+        errors.append(
+            f"PRE_IMPLEMENTATION_BRANCH_CHANGE:{baseline.get('branch')}->{current['branch'] or '<detached>'}"
+        )
+    if current["head_commit"] != baseline.get("head_commit"):
+        errors.append(
+            f"PRE_IMPLEMENTATION_GIT_HEAD_CHANGE:{baseline.get('head_commit')}->{current['head_commit']}"
+        )
+    baseline_files = {
+        item["path"]: item["sha256"] for item in baseline.get("files", [])
+    }
+    current_files = {
+        item["path"]: item["sha256"] for item in current.get("files", [])
+    }
+    for path in sorted(set(baseline_files) | set(current_files)):
+        if baseline_files.get(path) != current_files.get(path):
+            errors.append(f"PRE_IMPLEMENTATION_CHANGE:{path}")
+    if (
+        not errors
+        and current["snapshot_sha256"] != baseline.get("snapshot_sha256")
+    ):
+        errors.append("PRE_IMPLEMENTATION_SNAPSHOT_MISMATCH")
+    return errors
+
+
+def block_premature_implementation_change(
+    feature_dir: Path,
+    state: dict[str, Any],
+    errors: list[str],
+) -> None:
+    current_block = state.get("blocked") or {}
+    if current_block.get("code") == PREMATURE_CHANGE_BLOCK:
+        return
+    resume_state = {
+        "current_stage": state["current_stage"],
+        "stage_status": state["stage_status"],
+        "next_required_action": state["next_required_action"],
+    }
+    state["blocked"] = {
+        "code": PREMATURE_CHANGE_BLOCK,
+        "reason": ", ".join(errors),
+        "recovery": "撤销或移走所有提前产生的代码、测试、配置和 Git 提交，然后再次恢复当前 Gate。",
+        "resume_state": resume_state,
+    }
+    state["stage_status"] = "blocked"
+    state["next_required_action"] = "restore-planning-baseline-before-current-gate"
+    state["revision"] += 1
+    append_event(
+        feature_dir,
+        state,
+        "premature-implementation-blocked",
+        {"errors": errors, "resume_state": resume_state},
+    )
+    save_state(feature_dir, state)
+
+
+def restore_premature_change_block(feature_dir: Path, state: dict[str, Any]) -> None:
+    block = state.get("blocked") or {}
+    if block.get("code") != PREMATURE_CHANGE_BLOCK:
+        return
+    resume_state = block.get("resume_state") or {}
+    required = {"current_stage", "stage_status", "next_required_action"}
+    if not required.issubset(resume_state):
+        raise ControlError("PREMATURE_IMPLEMENTATION_BLOCK_RESUME_STATE_MISSING")
+    state["current_stage"] = resume_state["current_stage"]
+    state["stage_status"] = resume_state["stage_status"]
+    state["next_required_action"] = resume_state["next_required_action"]
+    state["blocked"] = None
+    state["revision"] += 1
+    append_event(
+        feature_dir,
+        state,
+        "premature-implementation-restored",
+        {"restored": resume_state},
+    )
+    save_state(feature_dir, state)
+
+
 def path_matches(path: str, patterns: Iterable[str]) -> bool:
     return any(path == pattern or fnmatch.fnmatchcase(path, pattern) for pattern in patterns)
 
@@ -651,7 +832,10 @@ def load_scope(feature_dir: Path) -> dict[str, Any]:
 def scope_drift(feature_dir: Path, state: dict[str, Any]) -> list[str]:
     scope_path = feature_paths(feature_dir)["scope"]
     if not scope_path.exists():
-        if stage_index(state["current_stage"]) >= stage_index("implementation"):
+        if (
+            stage_index(state["current_stage"]) >= stage_index("implementation")
+            and state.get("next_required_action") != "capture-implementation-scope"
+        ):
             return ["SCOPE_MANIFEST_MISSING"]
         return []
     scope = load_scope(feature_dir)
@@ -682,6 +866,139 @@ def approval_errors(feature_dir: Path, state: dict[str, Any], stage: str) -> lis
     if actual != approval.get("artifact_sha256"):
         errors.append(f"APPROVAL_ARTIFACT_DRIFT:{stage}")
     return errors
+
+
+def scope_contract_payload(scope: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "feature_id": scope["feature_id"],
+        "attempt": scope["attempt"],
+        "repository_id": scope["repository_id"],
+        "feature_repo_path": scope["feature_repo_path"],
+        "branch": scope["branch"],
+        "base_commit": scope["base_commit"],
+        "allowed_paths": scope["allowed_paths"],
+        "forbidden_paths": scope["forbidden_paths"],
+        "required_phases": scope["required_phases"],
+        "production_change": scope["production_change"],
+        "test_path_patterns": scope["test_path_patterns"],
+    }
+
+
+def issue_implementation_permit(
+    feature_dir: Path,
+    state: dict[str, Any],
+    scope: dict[str, Any],
+) -> dict[str, Any]:
+    approved_artifacts: dict[str, Any] = {}
+    errors: list[str] = []
+    for stage in ("spec", "design", "tasks"):
+        errors.extend(approval_errors(feature_dir, state, stage))
+        artifact = state["artifacts"].get(stage)
+        approval = state["approvals"].get(stage)
+        if artifact and approval:
+            approved_artifacts[stage] = {
+                "revision": artifact["revision"],
+                "sha256": artifact["sha256"],
+                "approval_id": approval["approval_id"],
+            }
+    if errors:
+        raise ControlError(
+            "IMPLEMENTATION_PERMIT_REJECTED:" + ",".join(sorted(set(errors)))
+        )
+    scope_contract_sha256 = sha256_bytes(
+        canonical_json(scope_contract_payload(scope)).encode("utf-8")
+    )
+    permit: dict[str, Any] = {
+        "status": "active",
+        "feature_id": state["feature_id"],
+        "attempt": state["attempt"],
+        "issued_at": utc_now(),
+        "approved_artifacts": approved_artifacts,
+        "scope_contract_sha256": scope_contract_sha256,
+    }
+    permit["permit_sha256"] = sha256_bytes(
+        canonical_json(permit).encode("utf-8")
+    )
+    scope["scope_contract_sha256"] = scope_contract_sha256
+    scope["implementation_permit_sha256"] = permit["permit_sha256"]
+    return permit
+
+
+def implementation_permit_errors(
+    feature_dir: Path,
+    state: dict[str, Any],
+    scope: dict[str, Any] | None = None,
+) -> list[str]:
+    permit = state.get("implementation_permit")
+    if not isinstance(permit, dict) or permit.get("status") != "active":
+        return ["IMPLEMENTATION_PERMIT_MISSING_OR_INACTIVE"]
+    errors: list[str] = []
+    if permit.get("feature_id") != state.get("feature_id"):
+        errors.append("IMPLEMENTATION_PERMIT_FEATURE_MISMATCH")
+    if permit.get("attempt") != state.get("attempt"):
+        errors.append("IMPLEMENTATION_PERMIT_ATTEMPT_MISMATCH")
+    body = dict(permit)
+    actual_permit_sha256 = body.pop("permit_sha256", None)
+    expected_permit_sha256 = sha256_bytes(canonical_json(body).encode("utf-8"))
+    if actual_permit_sha256 != expected_permit_sha256:
+        errors.append("IMPLEMENTATION_PERMIT_HASH_MISMATCH")
+    for stage in ("spec", "design", "tasks"):
+        errors.extend(approval_errors(feature_dir, state, stage))
+        artifact = state.get("artifacts", {}).get(stage) or {}
+        approval = state.get("approvals", {}).get(stage) or {}
+        binding = permit.get("approved_artifacts", {}).get(stage) or {}
+        if binding.get("revision") != artifact.get("revision"):
+            errors.append(f"IMPLEMENTATION_PERMIT_ARTIFACT_REVISION_MISMATCH:{stage}")
+        if binding.get("sha256") != artifact.get("sha256"):
+            errors.append(f"IMPLEMENTATION_PERMIT_ARTIFACT_HASH_MISMATCH:{stage}")
+        if binding.get("approval_id") != approval.get("approval_id"):
+            errors.append(f"IMPLEMENTATION_PERMIT_APPROVAL_MISMATCH:{stage}")
+    if scope is None:
+        scope_path = feature_paths(feature_dir)["scope"]
+        if not scope_path.is_file():
+            errors.append("IMPLEMENTATION_PERMIT_SCOPE_MISSING")
+            return sorted(set(errors))
+        scope = load_scope(feature_dir)
+    expected_scope_sha256 = sha256_bytes(
+        canonical_json(scope_contract_payload(scope)).encode("utf-8")
+    )
+    if scope.get("scope_contract_sha256") != expected_scope_sha256:
+        errors.append("IMPLEMENTATION_PERMIT_SCOPE_CONTRACT_HASH_MISMATCH")
+    if permit.get("scope_contract_sha256") != expected_scope_sha256:
+        errors.append("IMPLEMENTATION_PERMIT_SCOPE_BINDING_MISMATCH")
+    if scope.get("implementation_permit_sha256") != actual_permit_sha256:
+        errors.append("IMPLEMENTATION_PERMIT_SCOPE_PERMIT_MISMATCH")
+    return sorted(set(errors))
+
+
+def assert_implementation_permit(
+    feature_dir: Path,
+    state: dict[str, Any],
+    scope: dict[str, Any] | None = None,
+) -> None:
+    errors = implementation_permit_errors(feature_dir, state, scope)
+    if errors:
+        raise ControlError("IMPLEMENTATION_PERMIT_INVALID:" + ",".join(errors))
+
+
+def revoke_implementation_permit(
+    feature_dir: Path,
+    state: dict[str, Any],
+    reason: str,
+) -> bool:
+    permit = state.get("implementation_permit")
+    if not isinstance(permit, dict):
+        return False
+    historical = dict(permit)
+    historical["status"] = "invalidated"
+    historical["invalidated_at"] = utc_now()
+    historical["invalidated_reason"] = reason
+    state.setdefault("implementation_permit_history", []).append(historical)
+    state["implementation_permit"] = None
+    state["required_phases"] = []
+    feature_paths(feature_dir)["scope"].unlink(missing_ok=True)
+    feature_paths(feature_dir)["archive_evidence"].unlink(missing_ok=True)
+    return True
 
 
 def quality_gate_errors(feature_dir: Path, state: dict[str, Any]) -> list[str]:
@@ -790,6 +1107,9 @@ def validate_state(feature_dir: Path, state: dict[str, Any]) -> dict[str, list[s
         "approvals",
         "quality_gates",
         "phase_reviews",
+        "planning_baseline",
+        "implementation_started",
+        "implementation_permit",
         "next_required_action",
     }
     missing = sorted(required - set(state))
@@ -805,7 +1125,10 @@ def validate_state(feature_dir: Path, state: dict[str, Any]) -> dict[str, list[s
     errors.extend(validate_hash_chain(feature_paths(feature_dir)["events"], "event_hash"))
     errors.extend(validate_hash_chain(feature_paths(feature_dir)["approvals"], "record_hash"))
     if state.get("execution_mode") != "historical-example":
+        errors.extend(planning_guard_errors(feature_dir, state))
         errors.extend(scope_drift(feature_dir, state))
+        if state.get("implementation_permit") is not None or feature_paths(feature_dir)["scope"].exists():
+            errors.extend(implementation_permit_errors(feature_dir, state))
     else:
         warnings.append("HISTORICAL_EXAMPLE_NOT_VALID_GATE_EVIDENCE")
     return {"errors": sorted(set(errors)), "warnings": sorted(set(warnings))}
@@ -826,6 +1149,19 @@ def assert_control_integrity(
         if ignore_artifact_stage and error.startswith((f"ARTIFACT_DRIFT:{ignore_artifact_stage}:", f"ARTIFACT_MISSING:{ignore_artifact_stage}:")):
             continue
         errors.append(error)
+    premature_errors = planning_guard_errors(feature_dir, state)
+    if premature_errors:
+        block_premature_implementation_change(
+            feature_dir,
+            state,
+            premature_errors,
+        )
+        errors.extend(premature_errors)
+    if (
+        (state.get("implementation_permit") is not None or feature_paths(feature_dir)["scope"].exists())
+        and ignore_artifact_stage not in {"brief-design", "proposal-input", "spec", "design", "tasks"}
+    ):
+        errors.extend(implementation_permit_errors(feature_dir, state))
     if not allow_scope_drift and state.get("execution_mode") != "historical-example":
         errors.extend(scope_drift(feature_dir, state))
     if errors:
@@ -913,9 +1249,11 @@ def cmd_init(args: argparse.Namespace) -> dict[str, Any]:
     branch = run_git(repo_root, "branch", "--show-current")
     if not branch:
         raise ControlError("Detached HEAD is not allowed for an active SDD2 feature")
+    installed_guards = install_git_guards(repo_root)
     acquire_lock(repo_root, feature_dir, args.feature_id)
     brief_digest = sha256_file(brief)
     brief_snapshot = persist_artifact_snapshot(feature_dir, "brief-design", 1, brief_digest)
+    baseline = planning_snapshot(repo_root, feature_repo_path)
     state: dict[str, Any] = {
         "schema_version": SCHEMA_VERSION,
         "feature_id": args.feature_id,
@@ -956,6 +1294,10 @@ def cmd_init(args: argparse.Namespace) -> dict[str, Any]:
         "phase_reviews": {},
         "invalidations": [],
         "demo_authorization": None,
+        "planning_baseline": baseline,
+        "implementation_started": False,
+        "implementation_permit": None,
+        "implementation_permit_history": [],
         "created_at": utc_now(),
         "updated_at": utc_now(),
     }
@@ -963,7 +1305,16 @@ def cmd_init(args: argparse.Namespace) -> dict[str, Any]:
     paths["approvals"].touch()
     paths["events"].touch()
     save_state(feature_dir, state)
-    append_event(feature_dir, state, "feature-initialized", {"mode": args.mode})
+    append_event(
+        feature_dir,
+        state,
+        "feature-initialized",
+        {
+            "mode": args.mode,
+            "planning_baseline_sha256": baseline["snapshot_sha256"],
+            "git_guards_installed": installed_guards,
+        },
+    )
     return state
 
 
@@ -1021,6 +1372,10 @@ def cmd_migrate_legacy(args: argparse.Namespace) -> dict[str, Any]:
         "phase_reviews": {},
         "invalidations": [],
         "demo_authorization": None,
+        "planning_baseline": None,
+        "implementation_started": False,
+        "implementation_permit": None,
+        "implementation_permit_history": [],
         "created_at": utc_now(),
         "updated_at": utc_now(),
     }
@@ -1090,12 +1445,20 @@ def cmd_record_artifact(args: argparse.Namespace) -> dict[str, Any]:
     snapshot_path = persist_artifact_snapshot(feature_dir, stage, revision, digest)
     state["revision"] += 1
     invalidated: list[str] = []
+    permit_revoked = False
     if previous:
+        change_reason = f"{stage} changed from revision {previous['revision']} to {revision}"
         invalidated = invalidate_from(
             state,
             workflow_stage_for_artifact(stage),
-            f"{stage} changed from revision {previous['revision']} to {revision}",
+            change_reason,
         )
+        if stage in {"brief-design", "proposal-input", "spec", "design", "tasks"}:
+            permit_revoked = revoke_implementation_permit(
+                feature_dir,
+                state,
+                change_reason,
+            )
     artifact_record: dict[str, Any] = {
         "path": ARTIFACT_FILES[stage],
         "revision": revision,
@@ -1126,7 +1489,13 @@ def cmd_record_artifact(args: argparse.Namespace) -> dict[str, Any]:
         feature_dir,
         state,
         "artifact-recorded",
-        {"stage": stage, "artifact_revision": revision, "sha256": digest, "invalidated": invalidated},
+        {
+            "stage": stage,
+            "artifact_revision": revision,
+            "sha256": digest,
+            "invalidated": invalidated,
+            "implementation_permit_revoked": permit_revoked,
+        },
     )
     save_state(feature_dir, state)
     return state
@@ -1283,7 +1652,10 @@ def cmd_capture_scope(args: argparse.Namespace) -> dict[str, Any]:
             "Implementation scope must start from a clean baseline; pre-existing changes found: " + dirty
         )
     scope["initial_snapshot"] = initial
+    permit = issue_implementation_permit(feature_dir, state, scope)
     atomic_write_json(feature_paths(feature_dir)["scope"], scope)
+    state["implementation_started"] = True
+    state["implementation_permit"] = permit
     state["required_phases"] = scope["required_phases"]
     state["current_stage"] = "implementation"
     state["stage_status"] = "executing"
@@ -1293,7 +1665,12 @@ def cmd_capture_scope(args: argparse.Namespace) -> dict[str, Any]:
         feature_dir,
         state,
         "implementation-scope-captured",
-        {"base_commit": base_commit, "allowed_paths": scope["allowed_paths"], "required_phases": scope["required_phases"]},
+        {
+            "base_commit": base_commit,
+            "allowed_paths": scope["allowed_paths"],
+            "required_phases": scope["required_phases"],
+            "implementation_permit_sha256": permit["permit_sha256"],
+        },
     )
     save_state(feature_dir, state)
     return scope
@@ -1418,6 +1795,7 @@ def cmd_freeze_scope(args: argparse.Namespace) -> dict[str, Any]:
 
 def require_current_scope(feature_dir: Path, state: dict[str, Any]) -> tuple[dict[str, Any], dict[str, Any]]:
     scope = load_scope(feature_dir)
+    assert_implementation_permit(feature_dir, state, scope)
     snapshot = snapshot_for_scope(scope_repo_root(feature_dir, scope), scope)
     if snapshot["violations"]:
         raise ControlError("Scope violation: " + ", ".join(snapshot["violations"]))
@@ -1627,12 +2005,24 @@ def cmd_prepare_archive(args: argparse.Namespace) -> dict[str, Any]:
 def cmd_resume(args: argparse.Namespace) -> dict[str, Any]:
     feature_dir = normalize_feature_dir(args.feature_dir)
     state = load_state(feature_dir)
+    installed_guards: list[str] = []
     if state["execution_mode"] != "historical-example" and state["stage_status"] not in TERMINAL_STATUSES:
+        repo_root = state_repo_root(feature_dir, state)
         acquire_lock(
-            state_repo_root(feature_dir, state),
+            repo_root,
             feature_dir,
             state["feature_id"],
         )
+        installed_guards = install_git_guards(repo_root)
+        premature_errors = planning_guard_errors(feature_dir, state)
+        if premature_errors:
+            block_premature_implementation_change(
+                feature_dir,
+                state,
+                premature_errors,
+            )
+        elif (state.get("blocked") or {}).get("code") == PREMATURE_CHANGE_BLOCK:
+            restore_premature_change_block(feature_dir, state)
     validation = validate_state(feature_dir, state)
     return {
         "feature_id": state["feature_id"],
@@ -1643,6 +2033,10 @@ def cmd_resume(args: argparse.Namespace) -> dict[str, Any]:
         "blocked": state.get("blocked"),
         "revision": state["revision"],
         "attempt": state["attempt"],
+        "implementation_permit_status": (
+            state.get("implementation_permit") or {}
+        ).get("status"),
+        "git_guards_installed": installed_guards,
         "validation": validation,
     }
 
@@ -1686,6 +2080,13 @@ def cmd_restart_attempt(args: argparse.Namespace) -> dict[str, Any]:
     feature_dir = normalize_feature_dir(args.feature_dir)
     state = load_state(feature_dir)
     assert_history_and_lock(feature_dir, state)
+    if (state.get("blocked") or {}).get("code") == PREMATURE_CHANGE_BLOCK:
+        errors = planning_guard_errors(feature_dir, state)
+        if errors:
+            raise ControlError(
+                "Premature implementation changes must be restored before restart: "
+                + ", ".join(errors)
+            )
     if state["execution_mode"] == "historical-example":
         raise ControlError("Historical examples cannot start a new attempt")
     if state["stage_status"] != "blocked" and state["stage_status"] not in TERMINAL_STATUSES:
@@ -1707,6 +2108,18 @@ def cmd_restart_attempt(args: argparse.Namespace) -> dict[str, Any]:
     state["quality_gates"] = {}
     state["phase_reviews"] = {}
     state["required_phases"] = []
+    if state.get("implementation_permit") is not None:
+        revoke_implementation_permit(
+            feature_dir,
+            state,
+            f"Attempt {old_attempt} ended",
+        )
+    state["planning_baseline"] = planning_snapshot(
+        state_repo_root(feature_dir, state),
+        state["feature_repo_path"],
+    )
+    state["implementation_started"] = False
+    state["implementation_permit"] = None
     state["blocked"] = None
     state["last_completed_stage"] = "brief-design"
     if "spec" in state["artifacts"]:

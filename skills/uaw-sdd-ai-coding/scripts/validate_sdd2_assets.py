@@ -56,7 +56,7 @@ ALLOWED_ORIGINAL_REFERENCES = {
     "skills/uaw-sdd-ai-coding/references/context/source-provenance.json",
 }
 
-LIVE_EXECUTION_MODES = {"standard", "demo"}
+LIVE_EXECUTION_MODES = {"real", "demo"}
 
 
 def relative(path: Path) -> str:
@@ -237,8 +237,27 @@ def main() -> int:
         errors.append("EPI_RULE_DUPLICATES_OM_RULE")
 
     entry_marker = "short brief prompt + invoke this Skill"
-    if entry_marker not in (SKILLS / "uaw-sdd-ai-coding/SKILL.md").read_text(encoding="utf-8"):
+    skill_text = (SKILLS / "uaw-sdd-ai-coding/SKILL.md").read_text(encoding="utf-8")
+    if entry_marker not in skill_text:
         errors.append("PUBLIC_ENTRY_CONTRACT_MISSING")
+    for marker in (
+        "P0 回合硬停止协议",
+        "implementation_permit",
+        "不得自动执行 `git add`、`git commit` 或 `git push`",
+    ):
+        if marker not in skill_text:
+            errors.append(f"P0_GATE_GUARD_MISSING:{marker}")
+
+    control_text = (
+        SKILLS / "uaw-sdd-ai-coding/scripts/sdd2_control.py"
+    ).read_text(encoding="utf-8")
+    for marker in (
+        "PREMATURE_IMPLEMENTATION_CHANGE",
+        "prepare-commit-msg",
+        "implementation_permit_sha256",
+    ):
+        if marker not in control_text:
+            errors.append(f"P0_DETERMINISTIC_GUARD_MISSING:{marker}")
 
     feature_dirs = sorted({path.parent for path in FEATURES.rglob("brief-design.md")})
     historical_feature_count = 0

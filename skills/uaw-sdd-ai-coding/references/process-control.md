@@ -30,6 +30,21 @@ CONTROL=skills/uaw-sdd-ai-coding/scripts/sdd2_control.py
 
 只有已批准 Tasks 不包含生产代码变更时，才能使用 `--non-production-change`。理由必须记录在 Design 和 Tasks 中。不得用它绕过测试源码要求。
 
+`init` 会保存规划期 Git 基线并安装 Git Guard；活动 Feature 的 `resume` 会复核并补装 Guard。`capture-scope` 成功结果必须同时包含 `implementation_permit_sha256`，状态中的 `implementation_permit.status` 必须为 `active`。缺少这两个结果时禁止任何实现编辑。
+
+## 每回合分派
+
+每个 assistant 回合只按以下顺序分派：
+
+1. 首次启动执行 `init` 后调用 `resume`；已有状态直接调用 `resume`。
+2. 读取唯一的 `next_required_action`。
+3. 若动作是 `request-*-approval`，且当前用户新消息不是该阶段的明确批准，只输出审批请求并结束回合。
+4. 若本回合刚记录 Spec、Design、Tasks、Unit Test Summary 或 Archive，输出审批请求并结束回合；不再调用工具。
+5. 若动作是 `capture-implementation-scope`，只有命令成功并返回活动实现许可后才允许编辑 Feature 目录外文件。
+6. 若状态为 `blocked` 或控制命令非零，报告阻塞并结束回合。
+
+禁止把一个回合中的多条后续动作预先串联执行。
+
 ## 批准处理
 
 不得在生成 Gate 资产的同一个 assistant turn 中执行 `approve`。等待用户新消息，并原样传入批准文字，不得改写。平台提供稳定消息 ID 时必须记录；否则保留时间戳、原始文字、资产修订、资产哈希和批准哈希链证据。
@@ -52,6 +67,16 @@ CONTROL=skills/uaw-sdd-ai-coding/scripts/sdd2_control.py
 - `2`：命令或状态转换被拒绝。
 
 退出码为 `1` 或 `2` 时立即停止。保留返回错误；人类可读资产中的状态只能作为 `.sdd2/feature-state.json` 的投影；按照 `resume.next_required_action` 恢复。禁止手工编辑控制 JSON/JSONL。
+
+`PRE_IMPLEMENTATION_CHANGE` 表示实现许可签发前发生了 Feature 目录外变更。控制器会保存原 Gate 恢复点并进入 `blocked`。必须撤销或移走提前代码、测试、配置、构建变更及提前 Git 提交，再调用 `resume`；不得通过补写 Tasks、手工编辑状态或重新捕获范围来追认。
+
+`IMPLEMENTATION_PERMIT_*` 表示批准、资产、Attempt、范围或许可哈希不一致。立即停止并从最早失效资产重新审批；不得继续实现或复用旧快照。
+
+## Git 写操作
+
+本 Skill 不执行 `git add`、`git commit` 或 `git push`。活动锁存在时，内部 `prepare-commit-msg` Guard 会阻止所有提交，包括带 `--no-verify` 的提交；`pre-push` Guard 会阻止普通推送。Guard 遵循仓库当前的 `core.hooksPath`，保留既有同名 Hook，流程释放活动锁后自动放行并继续执行原 Hook。
+
+Archive 批准不是 Git 授权。完成 Archive 后立即结束当前回合；只有用户在后续新消息中明确要求，才可由 SDD2 之外的 Git 工作流处理提交。
 
 ## 恢复规则
 

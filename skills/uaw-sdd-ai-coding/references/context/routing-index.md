@@ -15,6 +15,8 @@ skills/uaw-sdd-ai-coding/references/context/routing-index.md
 
 请求补充缺失 Brief 字段前加载 `input-examples.md`。示例始终不具权威性。
 
+先执行 `resume` 再加载阶段内容。`next_required_action` 为人工审批请求或状态为 `blocked` 时，不加载下一阶段模板、实现规则、Code Review Skill 或 Unit Test Skill；输出当前停止点后结束回合。只有活动 `implementation_permit` 已签发时，才加载生产代码实现规则。
+
 ## 2. 运行时资产
 
 公开 Feature 资产：
@@ -43,6 +45,8 @@ archive.md
 ```
 
 公开入口仍是简要提示词加 Skill 调用。内部控制资产不要求开发者执行任何动作。公开资产正文必须通过简体中文主体校验。
+
+`.git` 下的活动 Feature 锁与 Git Guard 属于透明控制设施。它们不改变公开入口，不是业务资产，也不能作为人工批准证据。
 
 ## 3. 模板路由
 

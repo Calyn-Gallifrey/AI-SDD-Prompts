@@ -35,7 +35,7 @@ MUTED = "637384"
 LINE = "A8BBCB"
 PANEL = "F7F9FB"
 WHITE = "FFFFFF"
-BODY_FONT = "Arial Unicode MS"
+BODY_FONT = "Hiragino Sans GB"
 
 
 def set_cell_shading(cell, fill: str) -> None:
@@ -221,8 +221,16 @@ def add_bullets(doc: Document, items: list[str]) -> None:
 
 
 def add_numbered(doc: Document, items: list[str]) -> None:
+    numbering = doc.part.numbering_part.element
+    style_num_id = doc.styles["List Number"].element.pPr.numPr.numId.val
+    style_num = numbering.num_having_numId(style_num_id)
+    sequence = numbering.add_num(style_num.abstractNumId.val)
+    sequence.add_lvlOverride(ilvl=0).add_startOverride(1)
     for item in items:
         paragraph = doc.add_paragraph(style="List Number")
+        num_pr = paragraph._p.get_or_add_pPr().get_or_add_numPr()
+        num_pr.get_or_add_ilvl().val = 0
+        num_pr.get_or_add_numId().val = sequence.numId
         run = paragraph.add_run(item)
         set_run_font(run)
         set_repeat_keep(paragraph, keep_together=True)
@@ -367,7 +375,7 @@ def build_document() -> Document:
     add_callout(
         doc,
         "核心承诺",
-        "开发者仍然只需提交简要提示词并调用 uaw-sdd-ai-coding；状态、审批、Git 范围、失效和恢复全部由 Skill 内部处理，新生成过程资产以简体中文为主体。",
+        "开发者仍然只需提交简要提示词并调用 uaw-sdd-ai-coding；每个规划 Gate 强制跨回合人工批准，实现许可和 Git Guard 阻止提前写代码及自动提交，新生成过程资产以简体中文为主体。",
         kind="gate",
     )
     doc.add_paragraph().paragraph_format.space_after = Pt(145)
@@ -379,7 +387,7 @@ def build_document() -> Document:
         metadata.rows,
         [
             ("适用范围", "UAW-SDD 2.0 当前运行基线"),
-            ("文档版本", "2.0-hardened / 2026-07-15"),
+            ("文档版本", "2.0-p0-gate-hardened / 2026-07-30"),
             ("成熟度目标", "5/5（仓库可控边界）"),
             ("权威规则", "skills/uaw-sdd-ai-coding/references/sdd2-control-contract.md"),
         ],
@@ -413,7 +421,8 @@ def build_document() -> Document:
             "总控 uaw-sdd-ai-coding：接收简要需求、编排阶段、生成资产、停在人工 Gate、调度评审和单测。",
             "uaw-code-review：在 SDD 模式下只审查当前冻结范围，输出 Markdown Findings，不修改代码。",
             "uaw-unit-test：先生成或更新真实测试源码；范围重新冻结并复审后，再执行测试并生成 Summary。",
-            "控制引擎：绑定 Feature、worktree、分支、Git 基线、审批 revision/hash、范围哈希和归档证据。",
+            "控制引擎：绑定规划基线、Feature、worktree、分支、审批 revision/hash、实现许可、范围哈希和归档证据。",
+            "Git Guard：活动 Attempt 下拒绝提交和推送；不覆盖既有 Hook，释放锁后恢复原行为。",
         ],
     )
     add_figure(doc, "sdd2-skill-structure.png", "图 1  SDD2.0 Skill 结构与不变入口")
@@ -518,7 +527,7 @@ def build_document() -> Document:
         [
             "feature-state.json：唯一当前状态和唯一 next_required_action。",
             "gate-approvals.jsonl / events.jsonl：追加式 SHA-256 哈希链。",
-            "implementation-scope.json：Git base/head/tree、文件清单和文件哈希。",
+            "implementation-scope.json：Git base/head/tree、文件清单、文件哈希、范围契约哈希和实现许可哈希。",
             "archive-evidence.json：归档前生成的不可变证据。",
             "revisions/：公开资产的内容寻址 revision 快照。",
         ],
@@ -536,8 +545,8 @@ def build_document() -> Document:
             ["Spec", "Proposal 当前", "spec.md", "停止；新消息批准当前 revision/hash"],
             ["Design", "Spec 当前且已批", "design.md", "停止；新消息批准当前 revision/hash"],
             ["Tasks", "Design 当前且已批", "tasks.md", "停止；新消息批准当前 revision/hash"],
-            ["Scope Capture", "Tasks 当前且已批", "干净 Git 基线、路径、Phase、测试路径", "校验通过才实施"],
-            ["Implementation", "范围有效", "逐 Phase 生产代码/配置", "每个 Phase 后停止并人工 Review"],
+            ["Scope Capture", "Spec/Design/Tasks 当前且已批", "干净 Git 基线、路径、Phase、测试路径、实现许可", "许可签发成功才实施"],
+            ["Implementation", "活动实现许可和范围有效", "逐 Phase 生产代码/配置", "每个 Phase 后停止并人工 Review"],
             ["Freeze", "Phase 全部获批", "固定 base/head/tree/files/hash", "范围完整且无漂移"],
             ["Code Review", "当前冻结范围", "Findings + passed/failed/blocked", "必须在同一 scope 通过"],
             ["Auto-fix", "Review 发现或无问题", "Summary + 修复/处置", "代码变化必须 refreeze + full re-review"],
@@ -552,7 +561,7 @@ def build_document() -> Document:
     add_callout(
         doc,
         "硬停止规则",
-        "到达 Spec、Design、Tasks、Unit Test Summary 或 Archive 人工 Gate 后，不得生成下一阶段资产、改代码、调用下游 Skill 或宣称已越过 Gate。",
+        "生成并记录 Spec、Design、Tasks、Unit Test Summary 或 Archive 后，必须立即结束当前 assistant 回合，不再调用任何工具。只有 Gate 到达后的新用户消息能批准当前阶段。",
         kind="gate",
     )
 
@@ -644,8 +653,9 @@ def build_document() -> Document:
     add_bullets(
         doc,
         [
-            "Tasks 获批后，Skill 内部捕获干净基线、当前分支、允许/禁止路径、Phase 和测试路径。",
-            "预存未提交改动、detached HEAD、分支漂移、缺失锁、越界路径或过宽通配符都会阻塞实施。",
+            "初始化时保存 Feature 目录外的规划基线；首次实现许可前任何文件或 Git HEAD 漂移都会保存原 Gate 并 blocked。",
+            "Spec、Design、Tasks 均获批后，Skill 内部捕获干净基线、当前分支、允许/禁止路径、Phase 和测试路径，并签发批准绑定实现许可。",
+            "预存未提交改动、detached HEAD、分支漂移、缺失锁、许可不一致、越界路径或过宽通配符都会阻塞实施。",
             "冻结 scope 包含 base/head/tree、精确文件清单、每个文件哈希和整体 snapshot hash。",
             "一个 Git worktree 同时只允许一个 active Feature；并行 Feature 使用独立 worktree。",
             "Feature 路径与仓库身份使用可移植标识，不把本机绝对路径当作跨设备身份。",
@@ -747,8 +757,9 @@ def build_document() -> Document:
         doc,
         ["场景", "系统行为", "恢复方式"],
         [
-            ["跳过 Spec/Design 直接改代码", "控制状态拒绝后续记录并 blocked", "回到最早缺失资产与审批"],
+            ["跳过 Spec/Design/Tasks 直接改代码", "规划基线发现 Feature 外漂移并保存原 Gate 后 blocked", "撤销提前变更，再 resume 回原 Gate"],
             ["无人工审批继续", "approve 解析拒绝模糊/旧/引用消息", "等待新的阶段明确批准"],
+            ["生成代码后自动提交", "prepare-commit-msg Guard 即使在 --no-verify 下也拒绝", "完成或关闭 Attempt；提交需后续新消息明确要求"],
             ["把示例 approved 当审批", "示例为非权威；历史 Feature 为 superseded", "只接受当前用户新消息"],
             ["部分实现后直接 Unit Test", "缺少 Phase Review / Freeze / Review 时阻塞", "按唯一 next action 补齐"],
             ["Auto-fix 后未复审", "scope hash 变化使 Review/Auto-fix 失效", "重新冻结并完整 Review"],
@@ -769,7 +780,7 @@ def build_document() -> Document:
     add_heading(doc, "15. 路由、规则与来源边界", 1)
     add_paragraph(
         doc,
-        "总控先读取 references/context/routing-index.md，只按当前模块、调用链、模型和测试目标加载最小必要规则。规则选择以当前代码、依赖、附近实现和已批准 Design 为证据，不能仅凭文件名或框架版本猜测。",
+        "总控先执行 resume，再读取 references/context/routing-index.md。处于人工 Gate 或 blocked 时不加载下一阶段内容并结束回合；活动实现许可签发后，才按当前模块、调用链、模型和测试目标加载最小必要实现规则。规则选择以当前代码、依赖、附近实现和已批准 Design 为证据。",
     )
     add_table(
         doc,
@@ -806,7 +817,7 @@ def build_document() -> Document:
             ["init / resume", "初始化或验证唯一恢复点", "非零即硬停止"],
             ["record-artifact", "记录 revision/hash 和快照并触发失效", "资产缺失/越序/漂移即停止"],
             ["approve / phase-review", "绑定当前消息、attempt、revision/hash", "模糊/复用/历史消息拒绝"],
-            ["capture-scope / freeze-scope", "绑定基线、路径、Git IDs 和文件哈希", "脏基线/越界/分支漂移拒绝"],
+            ["capture-scope / freeze-scope", "签发/复核批准绑定实现许可并固定 Git 范围", "脏基线/越界/许可或分支漂移拒绝"],
             ["quality-gate", "记录 Review、Auto-fix、Unit Test 结果", "必须绑定当前 scope"],
             ["prepare-archive / archive-check", "生成 evidence 并校验成功归档资格", "任一 Gate 失败即拒绝"],
             ["close / restart-attempt", "显式风险关闭、终止或新尝试", "必须有当前用户明确指令"],
@@ -824,7 +835,9 @@ def build_document() -> Document:
             ["入口稳定", "开发者仍为简要提示词 + Skill", "静态契约与 Skill 描述检查"],
             ["阶段闭环", "所有阶段有入口、产物、Gate、失败与恢复", "控制状态机单元测试"],
             ["审批可信", "新消息、阶段、attempt、revision/hash 全绑定", "正反例与重放测试"],
-            ["范围确定", "干净基线、路径约束、冻结 manifest/hash", "Git 临时仓库场景测试"],
+            ["规划硬停止", "Gate 后结束回合；许可前 Feature 外变更立即 blocked", "提前代码漂移与恢复测试"],
+            ["范围确定", "三项批准绑定实现许可、干净基线、路径约束、冻结 manifest/hash", "Git 临时仓库场景测试"],
+            ["提交隔离", "活动 Attempt 禁止自动 commit/push，既有 Hook 可继续使用", "--no-verify 与 Hook 兼容测试"],
             ["变更失效", "生产/测试/配置变化强制 refreeze + full review", "scope drift / invalidation 测试"],
             ["评审闭环", "Findings、Auto-fix、复审同 scope", "质量 Gate 顺序测试"],
             ["测试真实性", "测试源码 + 可执行证据；失败不可 Archive", "双阶段测试与归档拒绝测试"],
@@ -856,7 +869,7 @@ def build_document() -> Document:
     add_bullets(
         doc,
         [
-            "控制单测必须覆盖审批歧义、消息重放、越序资产、脏基线、范围漂移、测试失败、锁、恢复和完整成功路径。",
+            "控制单测必须覆盖审批歧义、消息重放、越序资产、提前代码漂移、实现许可、--no-verify 提交阻断、既有 Hook 兼容、范围漂移、测试失败、锁、恢复和完整成功路径。",
             "静态验证必须覆盖运行资产、简体中文主体、Schema、引用、来源映射、历史样例隔离和不变入口。",
             "三个 Skill 必须分别通过 Skill 结构验证。",
             "指南和四张图必须重新生成并完成逐页/逐图视觉检查。",
@@ -870,6 +883,9 @@ def build_document() -> Document:
         [
             ["开发者入口", "未引入新命令、参数或手工控制文件"],
             ["控制契约", "与脚本、Schema、Workflow、三 Skill 无冲突"],
+            ["人工 Gate", "五个 Gate 资产记录后强制结束 assistant 回合"],
+            ["实现许可", "Spec/Design/Tasks 当前批准与范围契约全部绑定"],
+            ["Git Guard", "活动 Attempt 的 commit/push 被拒绝，既有 Hook 可继续执行"],
             ["九个公开资产", "模板齐全，职责、输入、输出和 Gate 可追溯"],
             ["语言规范", "运行规则及新建或修订资产以简体中文为主体，必要英文不改变机器契约"],
             ["异常路径", "失败/阻塞/重试/风险关闭/中止均有确定行为"],
@@ -883,7 +899,7 @@ def build_document() -> Document:
     add_callout(
         doc,
         "成熟度结论",
-        "当本章全部通过时，SDD2.0 在仓库可控边界达到 5/5：入口稳定、中文资产一致、流程闭环、审批可追溯、范围确定、质量 Gate 可验证、失败可恢复且归档不可伪成功。",
+        "当本章全部通过时，SDD2.0 在仓库可控边界达到 5/5：入口稳定、中文资产一致、规划 Gate 强制停轮、实现许可可验证、自动提交受阻、流程闭环、失败可恢复且归档不可伪成功。",
         kind="success",
     )
 

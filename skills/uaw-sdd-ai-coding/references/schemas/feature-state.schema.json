@@ -19,6 +19,9 @@
     "approvals",
     "quality_gates",
     "phase_reviews",
+    "planning_baseline",
+    "implementation_started",
+    "implementation_permit",
     "next_required_action"
   ],
   "properties": {
@@ -51,6 +54,43 @@
     "approvals": {"type": "object"},
     "quality_gates": {"type": "object"},
     "phase_reviews": {"type": "object"},
+    "planning_baseline": {
+      "anyOf": [
+        {"type": "null"},
+        {
+          "type": "object",
+          "required": ["captured_at", "branch", "head_commit", "head_tree", "files", "snapshot_sha256"],
+          "properties": {
+            "branch": {"type": "string", "minLength": 1},
+            "head_commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+            "head_tree": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+            "files": {"type": "array"},
+            "snapshot_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+          }
+        }
+      ]
+    },
+    "implementation_started": {"type": "boolean"},
+    "implementation_permit": {
+      "anyOf": [
+        {"type": "null"},
+        {
+          "type": "object",
+          "required": [
+            "status", "feature_id", "attempt", "issued_at", "approved_artifacts",
+            "scope_contract_sha256", "permit_sha256"
+          ],
+          "properties": {
+            "status": {"const": "active"},
+            "feature_id": {"type": "string", "minLength": 1},
+            "attempt": {"type": "integer", "minimum": 1},
+            "approved_artifacts": {"type": "object"},
+            "scope_contract_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+            "permit_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+          }
+        }
+      ]
+    },
     "next_required_action": {"type": "string", "minLength": 1}
   }
 }

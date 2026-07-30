@@ -112,23 +112,10 @@ class Sdd2ControlTest(unittest.TestCase):
             "app/src/test/**",
         )
 
-    def _start_demo_feature(self) -> None:
-        self._run(
-            "close", "--feature-dir", str(self.feature), "--result", "aborted",
-            "--approval-text", "同意终止并关闭", "--message-id", "close-before-demo",
+    def _complete_implementation_and_archive(self) -> None:
+        (self.repo / "app/src/main/java/App.java").write_text(
+            "class App { int value = 1; }\n", encoding="utf-8"
         )
-        shutil.rmtree(self.feature)
-        self.feature = self.repo / "sdd2-features/Sprint1/demo"
-        self.feature.mkdir(parents=True)
-        self._write("brief-design.md", "# Demo Brief\n")
-        self._run(
-            "init", "--feature-dir", str(self.feature), "--feature-id", "demo", "--mode", "demo",
-        )
-
-    def test_full_success_flow_releases_lock(self) -> None:
-        self._reach_tasks_approval()
-        self._capture_scope()
-        (self.repo / "app/src/main/java/App.java").write_text("class App { int value = 1; }\n", encoding="utf-8")
         test = self.repo / "app/src/test/java/AppTest.java"
         test.parent.mkdir(parents=True)
         test.write_text("class AppTest {}\n", encoding="utf-8")
@@ -159,7 +146,9 @@ class Sdd2ControlTest(unittest.TestCase):
             "archive", "archive.md", f"# Archive\nEvidence: {evidence['evidence_sha256']}\n"
         )
         self.assertTrue(
-            self._run("archive-check", "--feature-dir", str(self.feature), "--require-archive")["result"]["valid"]
+            self._run(
+                "archive-check", "--feature-dir", str(self.feature), "--require-archive"
+            )["result"]["valid"]
         )
         self._approve("archive")
         result = self._run("validate", "--feature-dir", str(self.feature))
@@ -168,6 +157,24 @@ class Sdd2ControlTest(unittest.TestCase):
         if not git_dir.is_absolute():
             git_dir = self.repo / git_dir
         self.assertFalse((git_dir / "sdd2-active-feature.json").exists())
+
+    def _start_demo_feature(self) -> None:
+        self._run(
+            "close", "--feature-dir", str(self.feature), "--result", "aborted",
+            "--approval-text", "同意终止并关闭", "--message-id", "close-before-demo",
+        )
+        shutil.rmtree(self.feature)
+        self.feature = self.repo / "sdd2-features/Sprint1/demo"
+        self.feature.mkdir(parents=True)
+        self._write("brief-design.md", "# Demo Brief\n")
+        self._run(
+            "init", "--feature-dir", str(self.feature), "--feature-id", "demo", "--mode", "demo",
+        )
+
+    def test_full_success_flow_releases_lock(self) -> None:
+        self._reach_tasks_approval()
+        self._capture_scope()
+        self._complete_implementation_and_archive()
 
     def test_ambiguous_and_self_approval_are_rejected(self) -> None:
         self._record("proposal-input", "proposal-input.md", "# Proposal\n")
@@ -269,7 +276,243 @@ class Sdd2ControlTest(unittest.TestCase):
             "capture-scope", "--feature-dir", str(self.feature),
             "--allowed-path", "app/**", "--required-phase", "Phase1", expected=2,
         )
-        self.assertIn("clean baseline", result["error"])
+        self.assertIn("PRE_IMPLEMENTATION_CHANGE", result["error"])
+
+    def test_premature_code_change_blocks_gate_until_restored(self) -> None:
+        self._record("proposal-input", "proposal-input.md", "# Proposal\n")
+        self._record("spec", "spec.md", "# Spec\n")
+        app = self.repo / "app/src/main/java/App.java"
+        original = app.read_text(encoding="utf-8")
+        app.write_text("class App { int premature; }\n", encoding="utf-8")
+
+        blocked = self._run(
+            "approve", "--feature-dir", str(self.feature), "--stage", "spec",
+            "--source", "user-message", "--approver-role", "human",
+            "--approval-text", "批准 spec", "--message-id", "premature-spec-approval",
+            expected=2,
+        )
+        self.assertIn("PRE_IMPLEMENTATION_CHANGE", blocked["error"])
+        state = json.loads((self.feature / ".sdd2/feature-state.json").read_text(encoding="utf-8"))
+        self.assertEqual(state["stage_status"], "blocked")
+        self.assertEqual(state["blocked"]["code"], "PREMATURE_IMPLEMENTATION_CHANGE")
+
+        app.write_text(original, encoding="utf-8")
+        resumed = self._run("resume", "--feature-dir", str(self.feature))
+        self.assertEqual(resumed["result"]["current_stage"], "spec")
+        self.assertEqual(resumed["result"]["stage_status"], "awaiting-approval")
+        self.assertEqual(resumed["result"]["next_required_action"], "request-spec-approval")
+
+    def test_weak_model_bypass_demo_recovers_and_archives(self) -> None:
+        self._record("proposal-input", "proposal-input.md", "# Proposal\n")
+        self._record("spec", "spec.md", "# Spec\n")
+        app = self.repo / "app/src/main/java/App.java"
+        original = app.read_text(encoding="utf-8")
+        app.write_text("class App { int premature; }\n", encoding="utf-8")
+        self._git("add", "app/src/main/java/App.java")
+
+        blocked_approval = self._run(
+            "approve", "--feature-dir", str(self.feature), "--stage", "spec",
+            "--source", "user-message", "--approver-role", "human",
+            "--approval-text", "批准 spec", "--message-id", "premature-spec-approval",
+            expected=2,
+        )
+        self.assertIn("PRE_IMPLEMENTATION_CHANGE", blocked_approval["error"])
+
+        blocked_commit = subprocess.run(
+            ["git", "commit", "--no-verify", "-m", "premature"],
+            cwd=self.repo,
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        self.assertNotEqual(blocked_commit.returncode, 0)
+        self.assertIn("SDD2_COMMIT_BLOCKED", blocked_commit.stdout + blocked_commit.stderr)
+        self.assertEqual(self._git("rev-list", "--count", "HEAD"), "1")
+
+        app.write_text(original, encoding="utf-8")
+        self._git("add", "app/src/main/java/App.java")
+        resumed = self._run("resume", "--feature-dir", str(self.feature))
+        self.assertEqual(resumed["result"]["current_stage"], "spec")
+        self.assertEqual(resumed["result"]["stage_status"], "awaiting-approval")
+        self.assertEqual(resumed["result"]["next_required_action"], "request-spec-approval")
+
+        self._approve("spec")
+        self._record("design", "design.md", "# Design\n")
+        self._approve("design")
+        self._record("tasks", "tasks.md", "# Tasks\n")
+        self._approve("tasks")
+        self._capture_scope()
+        self._complete_implementation_and_archive()
+
+    def test_capture_scope_issues_approval_bound_implementation_permit(self) -> None:
+        self._reach_tasks_approval()
+        scope = self._run(
+            "capture-scope", "--feature-dir", str(self.feature),
+            "--allowed-path", "app/**", "--required-phase", "Phase1",
+            "--test-path", "app/src/test/**",
+        )["result"]
+        state = json.loads((self.feature / ".sdd2/feature-state.json").read_text(encoding="utf-8"))
+        permit = state["implementation_permit"]
+
+        self.assertEqual(permit["status"], "active")
+        self.assertEqual(permit["attempt"], state["attempt"])
+        self.assertEqual(scope["implementation_permit_sha256"], permit["permit_sha256"])
+        for stage in ("spec", "design", "tasks"):
+            self.assertEqual(
+                permit["approved_artifacts"][stage]["sha256"],
+                state["artifacts"][stage]["sha256"],
+            )
+            self.assertEqual(
+                permit["approved_artifacts"][stage]["approval_id"],
+                state["approvals"][stage]["approval_id"],
+            )
+
+    def test_tampered_implementation_permit_blocks_implementation_action(self) -> None:
+        self._reach_tasks_approval()
+        self._capture_scope()
+        state_path = self.feature / ".sdd2/feature-state.json"
+        state = json.loads(state_path.read_text(encoding="utf-8"))
+        state["implementation_permit"]["permit_sha256"] = "0" * 64
+        state_path.write_text(json.dumps(state, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+        blocked = self._run(
+            "phase-review", "--feature-dir", str(self.feature), "--phase", "Phase1",
+            "--source", "user-message", "--approver-role", "human",
+            "--approval-text", "批准 Phase1", "--message-id", "tampered-permit",
+            expected=2,
+        )
+        self.assertIn("IMPLEMENTATION_PERMIT", blocked["error"])
+
+    def test_active_feature_blocks_commit_even_with_no_verify(self) -> None:
+        (self.repo / "README.md").write_text("premature commit\n", encoding="utf-8")
+        self._git("add", "README.md")
+        process = subprocess.run(
+            ["git", "commit", "--no-verify", "-m", "premature"],
+            cwd=self.repo,
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        self.assertNotEqual(process.returncode, 0)
+        self.assertIn("SDD2_COMMIT_BLOCKED", process.stdout + process.stderr)
+        self.assertEqual(self._git("rev-list", "--count", "HEAD"), "1")
+
+    def test_active_feature_blocks_push(self) -> None:
+        remote = self.repo / "remote.git"
+        subprocess.run(
+            ["git", "init", "--bare", "-q", str(remote)],
+            cwd=self.repo,
+            text=True,
+            capture_output=True,
+            check=True,
+        )
+        self._git("remote", "add", "origin", str(remote))
+
+        process = subprocess.run(
+            ["git", "push", "origin", "HEAD:refs/heads/main"],
+            cwd=self.repo,
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        self.assertNotEqual(process.returncode, 0)
+        self.assertIn("SDD2_COMMIT_BLOCKED", process.stdout + process.stderr)
+
+        remote_ref = subprocess.run(
+            ["git", "--git-dir", str(remote), "show-ref", "--verify", "refs/heads/main"],
+            cwd=self.repo,
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        self.assertNotEqual(remote_ref.returncode, 0)
+
+    def test_git_guard_preserves_existing_hook_and_releases_after_close(self) -> None:
+        self._run(
+            "close", "--feature-dir", str(self.feature), "--result", "aborted",
+            "--approval-text", "同意终止并关闭", "--message-id", "close-before-hook-test",
+        )
+        hooks = Path(self._git("rev-parse", "--git-path", "hooks"))
+        if not hooks.is_absolute():
+            hooks = self.repo / hooks
+        hook = hooks / "prepare-commit-msg"
+        backup = hooks / "prepare-commit-msg.sdd2-original"
+        hook.unlink()
+        backup.unlink(missing_ok=True)
+        hook.write_text(
+            "#!/bin/sh\n"
+            "touch \"$(git rev-parse --git-dir)/existing-hook-ran\"\n",
+            encoding="utf-8",
+        )
+        hook.chmod(0o755)
+
+        self.feature = self.repo / "sdd2-features/Sprint1/hook-compatible"
+        self.feature.mkdir(parents=True)
+        self._write("brief-design.md", "# Hook 兼容性验证\n")
+        self._run(
+            "init", "--feature-dir", str(self.feature), "--feature-id", "hook-compatible",
+        )
+        self.assertTrue(backup.is_file())
+
+        blocked = subprocess.run(
+            ["git", "commit", "--allow-empty", "--no-verify", "-m", "blocked"],
+            cwd=self.repo,
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        self.assertNotEqual(blocked.returncode, 0)
+        self.assertFalse((self.repo / ".git/existing-hook-ran").exists())
+
+        self._run(
+            "close", "--feature-dir", str(self.feature), "--result", "aborted",
+            "--approval-text", "同意终止并关闭", "--message-id", "close-hook-compatible",
+        )
+        self._git("commit", "--allow-empty", "--no-verify", "-m", "allowed after close")
+        self.assertTrue((self.repo / ".git/existing-hook-ran").is_file())
+
+    def test_git_guard_supports_custom_hooks_path(self) -> None:
+        self._run(
+            "close", "--feature-dir", str(self.feature), "--result", "aborted",
+            "--approval-text", "同意终止并关闭", "--message-id", "close-before-custom-hooks",
+        )
+        custom_hooks = self.repo / ".custom-hooks"
+        custom_hooks.mkdir()
+        existing = custom_hooks / "prepare-commit-msg"
+        existing.write_text(
+            "#!/bin/sh\n"
+            "touch \"$(git rev-parse --git-dir)/custom-hook-ran\"\n",
+            encoding="utf-8",
+        )
+        existing.chmod(0o755)
+        self._git("config", "core.hooksPath", ".custom-hooks")
+
+        self.feature = self.repo / "sdd2-features/Sprint1/custom-hooks"
+        self.feature.mkdir(parents=True)
+        self._write("brief-design.md", "# 自定义 Hook 路径验证\n")
+        self._run(
+            "init", "--feature-dir", str(self.feature), "--feature-id", "custom-hooks",
+        )
+        self.assertIn("UAW-SDD2 GIT GUARD", existing.read_text(encoding="utf-8"))
+        self.assertTrue((custom_hooks / "prepare-commit-msg.sdd2-original").is_file())
+
+        blocked = subprocess.run(
+            ["git", "commit", "--allow-empty", "--no-verify", "-m", "blocked"],
+            cwd=self.repo,
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        self.assertNotEqual(blocked.returncode, 0)
+        self.assertIn("SDD2_COMMIT_BLOCKED", blocked.stdout + blocked.stderr)
+        self.assertFalse((self.repo / ".git/custom-hook-ran").exists())
+
+        self._run(
+            "close", "--feature-dir", str(self.feature), "--result", "aborted",
+            "--approval-text", "同意终止并关闭", "--message-id", "close-custom-hooks",
+        )
+        self._git("commit", "--allow-empty", "--no-verify", "-m", "allowed after close")
+        self.assertTrue((self.repo / ".git/custom-hook-ran").is_file())
 
     def test_phase_order_and_parallel_feature_lock_are_enforced(self) -> None:
         self._reach_tasks_approval()

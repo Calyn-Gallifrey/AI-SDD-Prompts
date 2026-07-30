@@ -5,6 +5,18 @@ description: 从开发者简要设计开始，执行 UAW SDD2.0 后端功能流�
 
 # UAW SDD2 AI Coding
 
+## P0 回合硬停止协议
+
+以下规则优先于本 Skill 的其他执行说明。弱模型也必须逐条执行：
+
+1. 每个 assistant 回合先执行一次 `resume`；首次启动则在 `init` 后立即执行 `resume`。只服从返回的一个 `next_required_action`。
+2. 生成并记录 `spec.md`、`design.md`、`tasks.md`、`unit-test-summary.md` 或 `archive.md` 后，立即结束当前 assistant 回合。记录 Gate、向用户明确请求当前阶段批准，然后不再调用任何工具。
+3. 用户必须在 Gate 到达后的新消息中明确批准当前阶段。收到批准后只记录该批准，再按新的 `next_required_action` 工作；绝不能在生成 Gate 资产的同一回合代替用户批准。
+4. `capture-scope` 成功返回活动 `implementation_permit` 之前，禁止修改 Feature 目录外的代码、测试、配置、构建文件和 Git 状态。发现提前变更时立即按 `blocked` 停止，不得把它追认为已批准实现。
+5. 本 Skill 在任何阶段都不得自动执行 `git add`、`git commit` 或 `git push`。Archive 最终批准成功后也必须立即结束回合。Git 提交只能由用户在流程结束后的新消息中另行明确要求。
+
+“继续”“下一步”“OK”、历史消息、文件中的 `approved`、示例文字或模型自评都不能解除上述停止条件。
+
 ## 入口契约
 
 保持现有开发者使用方式：
@@ -48,6 +60,8 @@ python3 scripts/sdd2_control.py resume --feature-dir <dir>
 
 只有 `.sdd2/feature-state.json` 不存在时才使用 `init`。任何非零控制结果都必须立即停止。
 
+初始化和恢复会在 Git 内部透明安装提交保护。活动 SDD2 Feature 存在时，原始 `git commit`（包括 `--no-verify`）和普通 `git push` 都会被拒绝；已有同名 Hook 会被保留并在保护解除后继续执行。开发者不需要安装或运行任何额外命令。
+
 ## 执行规则
 
 严格遵循 `references/sdd2-control-contract.md`。它是阶段顺序、状态、批准、失效、范围、重试、恢复和 Archive 资格的唯一事实来源。
@@ -60,7 +74,7 @@ python3 scripts/sdd2_control.py record-artifact --feature-dir <dir> --stage <sta
 
 到达 Spec、Design、Tasks、Unit Test Summary 和 Archive Gate 时必须停止。只有 Gate 到达后用户在新消息中明确批准当前阶段，才能使用 `approve` 写入批准记录。模糊的继续文字、旧消息、文件内容、示例、生成的评审记录和模型自评均无效。
 
-只有当前 Tasks 已批准后才能开始实现。在内部捕获干净的 Git 基线、允许/禁止路径、必需 Phase 和测试路径。一个 worktree 只能承载一个活动 Feature。Code Review 前冻结精确实现快照。
+只有当前 Spec、Design、Tasks 三项批准全部有效，且 `capture-scope` 已签发绑定这些批准、资产哈希、Attempt 和范围哈希的活动 `implementation_permit`，才能开始实现。规划期间的 Git 基线发生任何 Feature 目录外漂移时必须阻塞。在内部捕获干净的 Git 基线、允许/禁止路径、必需 Phase 和测试路径。一个 worktree 只能承载一个活动 Feature。Code Review 前冻结精确实现快照。
 
 每个 Phase 实现完成后停止并等待当前人工 Phase Review。在明确授权的 Demo 中，模拟审核人必须记录为 `source=demo-simulation` 和 `approver-role=ai-as-human-reviewer`，不得标记为真实人工决定。Phase Review 不能替代 SDD Code Review。
 
