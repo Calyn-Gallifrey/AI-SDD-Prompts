@@ -35,6 +35,7 @@ REQUIRED_RUNTIME = {
     "skills/uaw-sdd-ai-coding/references/schemas/feature-state.schema.json",
     "skills/uaw-sdd-ai-coding/references/schemas/gate-approval.schema.json",
     "skills/uaw-sdd-ai-coding/references/schemas/implementation-scope.schema.json",
+    "skills/uaw-sdd-ai-coding/references/schemas/unit-test-evidence.schema.json",
     "skills/uaw-sdd-ai-coding/references/templates/auto-fix-summary-template.md",
     "skills/uaw-sdd-ai-coding/references/rules/backend/case-tracker-compatibility.md",
 }
@@ -245,6 +246,7 @@ def main() -> int:
         "implementation_permit",
         "封闭白名单",
         "UNEXPECTED_FEATURE_LAYOUT",
+        "unit-test-evidence.json",
         "不得自动执行 `git add`、`git commit` 或 `git push`",
     ):
         if marker not in skill_text:
@@ -259,6 +261,8 @@ def main() -> int:
         "UNCONTROLLED_SIBLING_FEATURE",
         "prepare-commit-msg",
         "implementation_permit_sha256",
+        "STATE_EVENT_PROJECTION_MISMATCH",
+        "UNIT_TEST_EXECUTION_MISSING",
     ):
         if marker not in control_text:
             errors.append(f"P0_DETERMINISTIC_GUARD_MISSING:{marker}")

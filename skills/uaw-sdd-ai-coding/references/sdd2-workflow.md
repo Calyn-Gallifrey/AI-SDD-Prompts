@@ -16,7 +16,7 @@ sdd2-features/<SprintN>/<feature-name>/
 
 所有人类可读资产遵循 `language-policy.md`，以简体中文为主体。
 
-初始化前，唯一 Feature 目录只能包含 `brief-design.md`。初始化后只能逐阶段生成本文件列出的九项公开资产；`.sdd2` 下的状态、审批、事件、范围、归档证据和修订快照由控制器生成。其他说明文件、候选输出、临时目录、软链接、错误绝对路径文件和重复 Feature 目录均不属于流程资产。
+初始化前，唯一 Feature 目录只能包含 `brief-design.md`。初始化后只能逐阶段生成本文件列出的九项公开资产；`.sdd2` 下的状态、审批、事件、范围、真实测试执行证据、归档证据和修订快照由控制器生成。其他说明文件、候选输出、临时目录、软链接、错误绝对路径文件和重复 Feature 目录均不属于流程资产。
 
 ## 资产映射
 
@@ -29,7 +29,7 @@ sdd2-features/<SprintN>/<feature-name>/
 | `tasks.md` | 定义受限 Phase 和文件 | 已批准 Design | 人工 Tasks 审核、实现范围 | 已记录并明确批准 |
 | `code-review-findings.md` | 保存不可变的首次评审发现 | 冻结范围与已批准 SDD 资产 | Auto-fix | 针对同一范围记录 Gate |
 | `auto-fix-summary.md` | 映射每项发现的修复/处置 | Findings 与代码变更 | 复审、Unit Test | Gate 在同一已评审范围上关闭 |
-| `unit-test-summary.md` | 记录测试源码变更和结果 | 已评审范围与测试执行 | 人工 Unit Test Summary 审核 | Unit Test 通过且 Summary 已批准 |
+| `unit-test-summary.md` | 记录测试源码变更和控制器观察结果 | 已评审范围与 `.sdd2/unit-test-evidence.json` | 人工 Unit Test Summary 审核 | 真实执行 Gate 通过且 Summary 已批准 |
 | `archive.md` | 最终可追溯交付记录 | 全部当前资产与 Archive 证据 | 最终人工审核 | Archive 检查通过且最终批准已记录 |
 
 `proposal-input.md` 是内部资产。参考示例和模板不是业务需求。
@@ -58,6 +58,7 @@ Brief -> Proposal -> Spec 批准 -> Design 批准 -> Tasks 批准
 -> uaw-code-review / SDD_TASK_CODE_REVIEW
 -> Auto-fix + 范围变化时完整复审
 -> uaw-unit-test / SDD mode
+-> 控制器真实执行测试并固化证据
 -> Unit Test Summary 批准
 -> Archive 证据 -> Archive 批准 -> completed
 ```
@@ -87,7 +88,7 @@ Code Review Skill 必须使用固定范围，不得根据 `git status`、上游�
 - 已识别的项目测试栈和路由测试配置；
 - 目标测试源码路径和必需执行证据。
 
-Unit Test Skill 必须先生成或更新测试代码，再生成 Summary。无法确认目标代码、测试框架或可执行测试入口时记录 `blocked`；不得用文字计划或手工检查代替单元测试源码。
+Unit Test Skill 必须先生成或更新测试代码；该变化进入冻结范围并完成复审后，由控制器实际执行受支持测试入口并生成 `.sdd2/unit-test-evidence.json`，最后才根据该证据生成 Summary。无法确认目标代码、测试框架或可执行测试入口时记录 `blocked`；不得用文字计划、手工检查、零测试或模型自述代替单元测试源码和真实执行证据。
 
 ## 变更处理
 

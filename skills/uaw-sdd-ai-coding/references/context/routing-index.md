@@ -40,6 +40,7 @@ archive.md
 .sdd2/gate-approvals.jsonl
 .sdd2/events.jsonl
 .sdd2/implementation-scope.json
+.sdd2/unit-test-evidence.json
 .sdd2/archive-evidence.json
 .sdd2/revisions/<artifact-stage>/r<revision>-<sha256>.md
 ```

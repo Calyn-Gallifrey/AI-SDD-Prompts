@@ -30,6 +30,7 @@
 - Git Head Commit：
 - Git Head Tree：
 - 冻结范围 SHA-256：
+- Unit Test 执行证据 SHA-256：
 - Archive 证据 SHA-256：
 
 ### 变更文件清单
@@ -92,6 +93,7 @@
 - 退出码/结果：
 - 通过/失败/跳过数量：
 - 范围 SHA-256：
+- 控制器执行证据 SHA-256：
 - Gate 结果：`passed`
 
 `failed`、`blocked` 或 `not-run` 不满足成功 Archive 条件。必须由用户明确决定将 Attempt 关闭为 `closed-with-risk` 或 `aborted`。

@@ -91,6 +91,27 @@
         }
       ]
     },
+    "unit_test_execution": {
+      "anyOf": [
+        {"type": "null"},
+        {
+          "type": "object",
+          "required": [
+            "feature_id", "attempt", "scope_sha256", "code_revision",
+            "outcome", "evidence_sha256", "recorded_at"
+          ],
+          "properties": {
+            "feature_id": {"type": "string", "minLength": 1},
+            "attempt": {"type": "integer", "minimum": 1},
+            "scope_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+            "code_revision": {"type": "integer", "minimum": 1},
+            "outcome": {"enum": ["passed", "failed", "blocked"]},
+            "evidence_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+            "recorded_at": {"type": "string", "format": "date-time"}
+          }
+        }
+      ]
+    },
     "next_required_action": {"type": "string", "minLength": 1}
   }
 }

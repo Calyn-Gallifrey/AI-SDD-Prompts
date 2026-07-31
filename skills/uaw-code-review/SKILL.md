@@ -25,7 +25,7 @@ description: 以三种明确模式之一评审 UAW 代码变更：使用固定 S
 - 包含当前冻结快照的 `.sdd2/implementation-scope.json`；
 - 精确变更文件清单和输出路径。
 
-评审前运行 SDD2 控制校验器。实现范围只能使用冻结清单和哈希，不得根据上游漂移、`git status` 或 Feature 目录推断。输入缺失或过期时返回 `blocked`，不得降级为 Standalone 模式。
+评审前运行 SDD2 控制校验器，并要求结果为 `valid=true`。当前状态必须匹配事件链状态投影，Spec/Design/Tasks 与每项 Phase Review 必须绑定仅追加批准链。实现范围只能使用冻结清单和哈希，不得根据上游漂移、`git status` 或 Feature 目录推断。输入缺失、过期、被改写或串到其他 Feature 时返回 `blocked`，不得降级为 Standalone 模式。
 
 不得读取 HTML 模板、创建 `reports/code-review`、修复代码或生成测试/Archive 内容。使用 `references/templates/sdd-code-review-findings-template.md` 写入不可变的首次 Findings，再把控制权返回 `uaw-sdd-ai-coding` 执行 Auto-fix。
 

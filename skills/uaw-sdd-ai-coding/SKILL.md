@@ -15,6 +15,8 @@ description: 从开发者简要设计开始，执行 UAW SDD2.0 后端功能流�
 4. `capture-scope` 成功返回活动 `implementation_permit` 之前，禁止修改 Feature 目录外的代码、测试、配置、构建文件和 Git 状态。发现提前变更时立即按 `blocked` 停止，不得把它追认为已批准实现。
 5. Feature 目录实行封闭白名单：只能存在九项固定公开资产及规定的 `.sdd2` 控制证据；公开资产只能在当前 `next_required_action` 所属阶段生成。同一 worktree 不得额外生成第二个未受控 Feature 目录。发现额外文件、目录、软链接或提前阶段资产时立即按 `blocked` 停止并列出路径，不得自动删除或追认为流程资产。
 6. 本 Skill 在任何阶段都不得自动执行 `git add`、`git commit` 或 `git push`。Archive 最终批准成功后也必须立即结束回合。Git 提交只能由用户在流程结束后的新消息中另行明确要求。
+7. `resume` 或任一控制动作返回非零、`valid=false` 或任何校验错误时，立即停止。不得继续服从返回中的旧动作，也不得手工编辑 `.sdd2` 文件解除错误。
+8. Unit Test 的 `passed` 只能来自控制器实际运行受支持测试入口后生成的 `.sdd2/unit-test-evidence.json`；模型自述、手工验证、零测试、被篡改证据或测试期间发生范围变化都不能通过。
 
 “继续”“下一步”“OK”、历史消息、文件中的 `approved`、示例文字或模型自评都不能解除上述停止条件。
 
@@ -63,7 +65,7 @@ python3 scripts/sdd2_control.py resume --feature-dir <dir>
 
 初始化和恢复会在 Git 内部透明安装提交保护。活动 SDD2 Feature 存在时，原始 `git commit`（包括 `--no-verify`）和普通 `git push` 都会被拒绝；已有同名 Hook 会被保留并在保护解除后继续执行。开发者不需要安装或运行任何额外命令。
 
-`.sdd2/feature-state.json`、审批/事件 JSONL、范围与归档证据以及 `.sdd2/revisions/<stage>/r<revision>-<sha256>.md` 是规定的内部可追溯证据，不属于乱生成文件。除此之外的 Feature 内路径均无效。
+`.sdd2/feature-state.json`、审批/事件 JSONL、范围、`.sdd2/unit-test-evidence.json`、归档证据以及 `.sdd2/revisions/<stage>/r<revision>-<sha256>.md` 是规定的内部可追溯证据，不属于乱生成文件。除此之外的 Feature 内路径均无效。
 
 ## 执行规则
 
@@ -81,7 +83,7 @@ python3 scripts/sdd2_control.py record-artifact --feature-dir <dir> --stage <sta
 
 每次 `resume` 和控制动作都会校验 Feature 目录布局。只允许已记录资产和当前动作对应的待记录资产；提前生成下游 Markdown、任意 notes/plan/result 文件、临时目录、错误绝对路径文件或第二个未受控 Feature 时，控制器写入 `UNEXPECTED_FEATURE_LAYOUT` 并停止。移走违规路径后只恢复原阶段和原 `next_required_action`。
 
-每个 Phase 实现完成后停止并等待当前人工 Phase Review。在明确授权的 Demo 中，模拟审核人必须记录为 `source=demo-simulation` 和 `approver-role=ai-as-human-reviewer`，不得标记为真实人工决定。Phase Review 不能替代 SDD Code Review。
+每个 Phase 实现完成后停止并等待当前人工 Phase Review。Phase Review 与阶段 Gate 使用同一仅追加批准哈希链，并绑定当前 Tasks 修订和哈希；状态投影无法代替批准链记录。在明确授权的 Demo 中，模拟审核人必须记录为 `source=demo-simulation` 和 `approver-role=ai-as-human-reviewer`，不得标记为真实人工决定。Phase Review 不能替代 SDD Code Review。
 
 实现完成后：
 
@@ -89,9 +91,10 @@ python3 scripts/sdd2_control.py record-artifact --feature-dir <dir> --stage <sta
 2. 保存 `code-review-findings.md`，并将 Code Review Gate 绑定到冻结快照。
 3. 保存 `auto-fix-summary.md`。任何代码、测试或配置变更都要求重新冻结并完整复审。
 4. 只有 Code Review 通过且 Auto-fix 在同一快照上关闭后，才能以 SDD 模式调用 `uaw-unit-test`。
-5. 生产代码有变更时，必须生成或更新单元测试源码。保存并记录 `unit-test-summary.md`，其中包含可复现的命令、环境和结果证据。
-6. 停止并等待 Unit Test Summary 批准。
-7. 准备不可变 Archive 证据，生成 `archive.md`，执行 Archive 检查并等待最终 Archive 批准。
+5. 生产代码有变更时，必须生成或更新单元测试源码；测试源码进入当前冻结范围并完成复审后，由主 Skill 内部调用 `run-unit-test` 实际执行受支持的测试入口。
+6. 只根据 `.sdd2/unit-test-evidence.json` 生成并记录 `unit-test-summary.md`，Summary 必须包含当前执行证据 SHA-256 和范围 SHA-256。零测试、超时、启动失败、非零退出或范围变化按观察结果记录，禁止改写为通过。
+7. 停止并等待 Unit Test Summary 批准。
+8. 准备不可变 Archive 证据，生成 `archive.md`，执行 Archive 检查并等待最终 Archive 批准。
 
 只有最终 Archive 批准才能将 Feature 标记为 `completed`。测试为 `failed`、`blocked` 或 `not-run` 时不得完成；应根据用户明确决定使用 `closed-with-risk` 或 `aborted`。
 
@@ -99,7 +102,7 @@ python3 scripts/sdd2_control.py record-artifact --feature-dir <dir> --stage <sta
 
 始终先调用 `resume`，并且只执行其返回的唯一 `next_required_action`。控制状态存在时，不得根据聊天记录或 Markdown 自行重建进度。
 
-必需的批准、资产、锁、范围、哈希、Feature 布局、Phase Review 或质量结果缺失、过期或越界时，将 Feature 保持为 `blocked` 并停止。如果 Gate 之后已错误生成内容、额外文件或修改代码，必须报告具体路径，不得静默接受下游工作，也不得自动删除。
+必需的批准、资产、锁、范围、状态投影哈希、Feature 布局、Phase Review、真实测试证据或质量结果缺失、过期、被改写或越界时，将 Feature 保持为 `blocked` 并停止。如果 Gate 之后已错误生成内容、额外文件或修改代码，必须报告具体路径，不得静默接受下游工作，也不得自动删除。
 
 Feature 阻塞或进入终态后，用户明确要求重试或重启时，在内部使用 `restart-attempt`；旧 Attempt 的批准不得继承。
 
@@ -113,3 +116,4 @@ Feature 阻塞或进入终态后，用户明确要求重试或重启时，在内
 - `references/templates/`：公开资产模板。
 - `references/rules/`：后端和模型实现约束。
 - `scripts/sdd2_control.py`：确定性执行器，不得暴露为开发者入口。
+- `scripts/demo_sdd2_small_feature.py`：维护者使用的隔离端到端 Demo，不改变开发者入口。

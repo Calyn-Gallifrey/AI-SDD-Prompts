@@ -48,11 +48,12 @@ archive.md
 .sdd2/gate-approvals.jsonl
 .sdd2/events.jsonl
 .sdd2/implementation-scope.json
+.sdd2/unit-test-evidence.json
 .sdd2/archive-evidence.json
 .sdd2/revisions/<artifact-stage>/r<revision>-<sha256>.md
 ```
 
-`feature-state.json` 是当前状态的权威来源。Markdown 状态块只提供可读投影。批准和事件 JSONL 记录使用仅追加的 SHA-256 哈希链。每个活动资产修订都会复制为不可变、按内容寻址的快照。资产批准只对记录中的 Attempt、资产修订和资产 SHA-256 有效。
+`feature-state.json` 是当前状态的权威来源，但它不能脱离控制证据单独授权流程前进。Markdown 状态块只提供可读投影。批准和事件 JSONL 记录使用仅追加的 SHA-256 哈希链；每个新事件还绑定事件发生后的完整控制状态投影 SHA-256。状态与最新事件投影不一致时立即停止。每个活动资产修订都会复制为不可变、按内容寻址的快照。阶段批准和 Phase Review 都写入批准链，只对记录中的 Attempt、阶段、资产修订和资产 SHA-256 有效。
 
 Feature 目录是封闭资产空间。除上述九项公开资产和内部控制路径外，不允许出现其他文件、目录、软链接、候选输出、临时说明或错误拼接路径。公开资产只能在已记录状态或当前 `next_required_action` 对应阶段存在；例如等待 Spec 批准时出现 `design.md` 或 `tasks.md` 属于违规。`.sdd2/revisions/` 下只有阶段已经记录、修订号不超过当前修订且文件内容 SHA-256 与文件名一致的快照才是规定审计证据；提前伪造的范围、归档或修订文件仍属于违规。
 
@@ -100,6 +101,7 @@ superseded
 - 是否已经进入过实现；
 - 绑定当前 Spec、Design、Tasks 批准和实现范围的 `implementation_permit`；
 - 已失效实现许可的历史记录。
+- 绑定当前冻结范围、真实测试命令、观察结果和证据哈希的 `unit_test_execution`。
 
 ## 5. 初始化与 worktree 隔离
 
@@ -129,6 +131,8 @@ python3 scripts/sdd2_control.py init \
 3. 记录 `source=user-message`、人工/用户角色、可用时的消息 ID、资产修订和资产哈希；
 4. 不得从 `continue`、`next`、`ok`、文件、示例、旧消息、生成的评审文字或模型自评中推断。
 
+每项 Phase Review 遵循相同来源要求，并作为 `phase-review:<phase-id>` 写入同一批准链，绑定当前 Tasks 修订与哈希。状态中的 `approved` 字段只有在能反向找到唯一匹配批准链记录时才有效。
+
 `AI-as-human-reviewer` 在 real 模式中无效。在 demo 模式中，只有用户先用单独的当前消息明确授权 Demo/模拟并完成记录后才有效。
 
 到达人工 Gate 后，记录资产并停止。不得生成下一资产、修改生产/测试代码、调用下一 Skill 或宣称已越过 Gate。
@@ -147,8 +151,8 @@ python3 scripts/sdd2_control.py init \
 8. 冻结实现快照。之后任何生产代码、测试代码、配置、Spec、Design 或 Tasks 变更都会使受影响的下游结果失效。
 9. 以 `SDD_TASK_CODE_REVIEW` 模式调用 `uaw-code-review`；针对冻结快照记录评审发现和 Code Review Gate。
 10. 生成 `auto-fix-summary.md`。修复改变快照时，重新冻结并完整执行 Code Review。只有 Code Review 在同一快照上通过后，才能将 Auto-fix 记录为 `passed` 或 `not-required`。
-11. 以 SDD 模式调用 `uaw-unit-test`。生产代码变更必须至少生成或更新一个匹配已捕获测试路径的测试源码。测试代码改变快照时，先重新冻结、完整复审并再次关闭 Auto-fix，之后才能记录 Unit Test。
-12. 记录 `unit-test-summary.md` 和 Unit Test 证据；停止；记录明确的 Unit Test Summary 批准。
+11. 以 SDD 模式调用 `uaw-unit-test`。生产代码变更必须至少生成或更新一个匹配已捕获测试路径的测试源码。测试代码改变快照时，先重新冻结、完整复审并再次关闭 Auto-fix。随后由控制器使用受支持测试 Runner 实际执行测试，生成 `.sdd2/unit-test-evidence.json`。
+12. 只根据当前执行证据记录 `unit-test-summary.md`；Summary 必须包含执行证据 SHA-256 和范围 SHA-256。记录确定性 Unit Test 结果；停止；记录明确的 Unit Test Summary 批准。
 13. 根据 Git base/head/tree、冻结范围哈希和逐文件哈希准备不可变 Archive 证据。
 14. 生成并记录 `archive.md`；执行 Archive 检查；停止；记录最终 Archive 批准。
 15. 只有最终 Archive 批准才能设置 `completed` 并释放 worktree 锁；批准成功后立即结束回合，不执行任何 Git 提交或推送。
@@ -159,6 +163,15 @@ python3 scripts/sdd2_control.py init \
 
 Code Review 接受 `passed`、`failed` 或 `blocked`。Auto-fix 接受 `passed`、`not-required`、`failed` 或 `blocked`。Unit Test 接受 `passed`、`failed`、`blocked` 或 `not-run`。
 
+Unit Test 的 `passed` 还必须同时满足：
+
+- 控制器实际启动受支持测试 Runner，未通过 Shell 包装或跳过测试参数；
+- 观察到至少一项测试通过，失败与 Error 为零，退出码为零；
+- 执行前后实现范围 SHA-256 相同；
+- `.sdd2/unit-test-evidence.json` 内容哈希有效，状态、Gate、Summary 和 Archive 证据均绑定同一证据 SHA-256。
+
+模型自述、手工验证、零测试、超时、启动失败、证据改写或测试期间范围变化都不能得到 `passed`。
+
 Archive 要求以下条件全部绑定到同一个当前快照：
 
 - 当前 Spec、Design、Tasks 和 Unit Test Summary 均已批准；
@@ -166,6 +179,7 @@ Archive 要求以下条件全部绑定到同一个当前快照：
 - Code Review 为 `passed`；
 - Auto-fix 为 `passed` 或 `not-required`；
 - Unit Test 为 `passed`；
+- Unit Test Gate 和 Archive 证据绑定同一真实测试执行证据 SHA-256；
 - 九项公开资产均已记录且未变化；
 - 当前不可变 Archive 证据有效；
 - 不存在阻塞、范围漂移、哈希链损坏、分支不匹配或锁不匹配。
@@ -183,13 +197,14 @@ Archive 要求以下条件全部绑定到同一个当前快照：
 | Findings | Code Review 及后续 Gate |
 | Auto-fix Summary | Auto-fix 及后续 Gate |
 | Unit Test Summary | 当前批准和 Archive |
+| Unit Test 执行证据 | Unit Test Gate、Unit Test Summary 批准和 Archive |
 | Archive | 仅最终 Archive 批准 |
 
 失效结果保留在历史记录中，但不能再授权流程前进。
 
 ## 10. 恢复、继续与重复执行
 
-`resume` 会校验哈希、资产、锁、分支和范围，并且只返回一个 `next_required_action`。控制状态存在时，禁止根据聊天记忆或 Markdown 文字重建状态。
+`resume` 会校验状态事件投影、批准链、哈希、资产、锁、分支、范围和测试执行证据，并且只返回一个 `next_required_action`。存在任何校验错误时返回非零并硬停止；不得继续执行返回中的旧动作。控制状态存在时，禁止根据聊天记忆或 Markdown 文字重建状态。
 
 `resume` 还必须检查规划基线和实现许可。规划期出现提前实现时保存原 Gate 恢复点并进入 `blocked`；变更恢复后只回到原 Gate，不得把提前代码视为已完成阶段。
 
@@ -210,3 +225,5 @@ Archive 要求以下条件全部绑定到同一个当前快照：
 任何控制命令返回非零都必须立即停止。将错误记录为阻塞原因，不得手工绕过；只有状态恢复有效，或用户明确关闭/重启 Attempt 后才能继续。
 
 `FEATURE_GENERATION_BOUNDARY_REJECTED` 表示初始化前已出现额外文件、错误 Feature 路径或未受控兄弟 Feature。`UNEXPECTED_FEATURE_LAYOUT` 表示活动流程中检测到白名单外路径或提前阶段资产。两者都必须报告完整相对路径；先由人确认后移走或删除，再执行 `resume`，不得自动清理。
+
+`STATE_EVENT_PROJECTION_MISMATCH` 或批准链绑定错误表示控制状态被改写、丢失或无法追溯，必须停止并保留证据。`UNIT_TEST_EXECUTION_*`、`UNIT_TEST_EVIDENCE_*` 或 `UNIT_TEST_SCOPE_CHANGED` 表示测试未被真实观察、证据无效或测试过程改变范围，必须从当前有效范围恢复并重走必要质量 Gate。

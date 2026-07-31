@@ -14,7 +14,12 @@
     "timestamp": {"type": "string", "format": "date-time"},
     "feature_id": {"type": "string", "minLength": 1},
     "attempt": {"type": "integer", "minimum": 1},
-    "stage": {"enum": ["spec", "design", "tasks", "unit-test-summary", "archive"]},
+    "stage": {
+      "oneOf": [
+        {"enum": ["spec", "design", "tasks", "unit-test-summary", "archive"]},
+        {"type": "string", "pattern": "^phase-review:.+$"}
+      ]
+    },
     "result": {"const": "approved"},
     "source": {"enum": ["user-message", "demo-simulation"]},
     "approver_role": {"type": "string", "minLength": 1},

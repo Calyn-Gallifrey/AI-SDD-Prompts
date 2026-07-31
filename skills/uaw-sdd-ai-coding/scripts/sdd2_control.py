@@ -30,6 +30,7 @@ APPROVAL_FILE = "gate-approvals.jsonl"
 EVENT_FILE = "events.jsonl"
 SCOPE_FILE = "implementation-scope.json"
 ARCHIVE_EVIDENCE_FILE = "archive-evidence.json"
+UNIT_TEST_EVIDENCE_FILE = "unit-test-evidence.json"
 REVISION_DIR = "revisions"
 PREMATURE_CHANGE_BLOCK = "PREMATURE_IMPLEMENTATION_CHANGE"
 FEATURE_LAYOUT_BLOCK = "UNEXPECTED_FEATURE_LAYOUT"
@@ -63,6 +64,7 @@ NEXT_ACTION_ARTIFACT_STAGE = {
     "run-code-review": "code-review-findings",
     "record-auto-fix-not-required-or-current-fixes": "auto-fix-summary",
     "apply-review-findings": "auto-fix-summary",
+    "generate-unit-test-summary-from-evidence": "unit-test-summary",
     "generate-archive-from-evidence": "archive",
 }
 REVISION_SNAPSHOT_PATTERN = re.compile(
@@ -396,6 +398,7 @@ def feature_paths(feature_dir: Path) -> dict[str, Path]:
         "approvals": control / APPROVAL_FILE,
         "events": control / EVENT_FILE,
         "scope": control / SCOPE_FILE,
+        "unit_test_evidence": control / UNIT_TEST_EVIDENCE_FILE,
         "archive_evidence": control / ARCHIVE_EVIDENCE_FILE,
         "revisions": control / REVISION_DIR,
     }
@@ -446,6 +449,8 @@ def feature_layout_errors(
     }
     if state is not None and state.get("implementation_permit") is not None:
         allowed_control_files.add(f"{CONTROL_DIR}/{SCOPE_FILE}")
+    if state is not None and state.get("unit_test_execution") is not None:
+        allowed_control_files.add(f"{CONTROL_DIR}/{UNIT_TEST_EVIDENCE_FILE}")
     if state is not None and (
         "archive" in recorded_stages
         or state.get("next_required_action") == "generate-archive-from-evidence"
@@ -477,6 +482,7 @@ def feature_layout_errors(
             and relative.startswith(f"{CONTROL_DIR}/")
             and relative.rsplit("/", 1)[-1] in {
                 SCOPE_FILE,
+                UNIT_TEST_EVIDENCE_FILE,
                 ARCHIVE_EVIDENCE_FILE,
             }
         ):
@@ -607,6 +613,35 @@ def append_chained_record(path: Path, record: dict[str, Any], hash_field: str) -
     return record
 
 
+def state_projection_sha256(state: dict[str, Any]) -> str:
+    payload = {
+        key: value
+        for key, value in state.items()
+        if key != "updated_at"
+    }
+    return sha256_bytes(canonical_json(payload).encode("utf-8"))
+
+
+def state_event_projection_errors(feature_dir: Path, state: dict[str, Any]) -> list[str]:
+    events = read_jsonl(feature_paths(feature_dir)["events"])
+    if not events:
+        return ["STATE_EVENT_HISTORY_MISSING"]
+    latest = events[-1]
+    expected = latest.get("state_sha256")
+    if expected is None:
+        return []
+    errors: list[str] = []
+    if expected != state_projection_sha256(state):
+        errors.append("STATE_EVENT_PROJECTION_MISMATCH")
+    if latest.get("feature_id") != state.get("feature_id"):
+        errors.append("STATE_EVENT_FEATURE_MISMATCH")
+    if latest.get("attempt") != state.get("attempt"):
+        errors.append("STATE_EVENT_ATTEMPT_MISMATCH")
+    if latest.get("revision") != state.get("revision"):
+        errors.append("STATE_EVENT_REVISION_MISMATCH")
+    return errors
+
+
 def append_event(feature_dir: Path, state: dict[str, Any], event_type: str, payload: dict[str, Any]) -> None:
     append_chained_record(
         feature_paths(feature_dir)["events"],
@@ -618,6 +653,7 @@ def append_event(feature_dir: Path, state: dict[str, Any], event_type: str, payl
             "attempt": state["attempt"],
             "revision": state["revision"],
             "payload": payload,
+            "state_sha256": state_projection_sha256(state),
         },
         "event_hash",
     )
@@ -1086,8 +1122,258 @@ def snapshot_for_scope(repo_root: Path, scope: dict[str, Any]) -> dict[str, Any]
 def changed_test_paths(scope: dict[str, Any], snapshot: dict[str, Any]) -> list[str]:
     patterns = scope.get("test_path_patterns") or list(DEFAULT_TEST_PATHS)
     return sorted(
-        item["path"] for item in snapshot.get("files", []) if path_matches(item["path"], patterns)
+        item["path"]
+        for item in snapshot.get("files", [])
+        if item.get("sha256") != "<deleted>"
+        and path_matches(item["path"], patterns)
     )
+
+
+def test_command_kind(command: list[str]) -> str:
+    if not command:
+        raise ControlError("Unit Test execution requires a test command after --")
+    if any("\x00" in value or "\n" in value for value in command):
+        raise ControlError("Unit Test command contains an invalid argument")
+    executable = Path(command[0]).name.lower()
+    arguments = [value.lower() for value in command[1:]]
+    if executable.startswith("python"):
+        if len(arguments) >= 2 and arguments[0] == "-m" and arguments[1] in {"unittest", "pytest"}:
+            return f"python-{arguments[1]}"
+    elif executable in {"pytest", "py.test"}:
+        return "pytest"
+    elif executable in {"mvn", "mvnw"}:
+        if (
+            "test" in arguments
+            and not any(
+                value in {"-dskiptests", "-dmaven.test.skip=true"}
+                or value.startswith("-dskiptests=")
+                for value in arguments
+            )
+        ):
+            return "maven-test"
+    elif executable in {"gradle", "gradlew"}:
+        if (
+            any(value == "test" or value.endswith(":test") for value in arguments)
+            and not any(
+                arguments[index : index + 2] == ["-x", "test"]
+                for index in range(max(0, len(arguments) - 1))
+            )
+        ):
+            return "gradle-test"
+    elif executable in {"npm", "pnpm", "yarn", "bun"}:
+        if "test" in arguments:
+            return f"{executable}-test"
+    elif executable == "dotnet" and arguments and arguments[0] == "test":
+        return "dotnet-test"
+    elif executable == "go" and arguments and arguments[0] == "test":
+        return "go-test"
+    elif executable == "cargo" and arguments and arguments[0] == "test":
+        return "cargo-test"
+    raise ControlError(
+        "Unsupported or non-test command. Use a recognized test runner without shell wrappers or skip-test flags."
+    )
+
+
+def parsed_test_counts(stdout: str, stderr: str) -> dict[str, Any]:
+    output = f"{stdout}\n{stderr}"
+
+    maven = re.findall(
+        r"Tests run:\s*(\d+),\s*Failures:\s*(\d+),\s*Errors:\s*(\d+),\s*Skipped:\s*(\d+)",
+        output,
+        re.IGNORECASE,
+    )
+    if maven:
+        total, failed, errors, skipped = (int(value) for value in maven[-1])
+        return {
+            "total": total,
+            "passed": max(0, total - failed - errors - skipped),
+            "failed": failed,
+            "errors": errors,
+            "skipped": skipped,
+            "source": "maven-surefire-output",
+        }
+
+    unittest_match = re.search(r"Ran\s+(\d+)\s+tests?", output, re.IGNORECASE)
+    if unittest_match:
+        total = int(unittest_match.group(1))
+        failed = 0
+        errors = 0
+        skipped = 0
+        failed_match = re.search(r"FAILED\s*\(([^)]*)\)", output, re.IGNORECASE)
+        if failed_match:
+            values = {
+                key.lower(): int(value)
+                for key, value in re.findall(
+                    r"(failures|errors|skipped)\s*=\s*(\d+)",
+                    failed_match.group(1),
+                    re.IGNORECASE,
+                )
+            }
+            failed = values.get("failures", 0)
+            errors = values.get("errors", 0)
+            skipped = values.get("skipped", 0)
+        else:
+            skipped_match = re.search(r"OK\s*\(\s*skipped\s*=\s*(\d+)\s*\)", output, re.IGNORECASE)
+            if skipped_match:
+                skipped = int(skipped_match.group(1))
+        return {
+            "total": total,
+            "passed": max(0, total - failed - errors - skipped),
+            "failed": failed,
+            "errors": errors,
+            "skipped": skipped,
+            "source": "python-unittest-output",
+        }
+
+    pytest_lines = [
+        line
+        for line in output.splitlines()
+        if re.search(r"\b(?:passed|failed|error|errors|skipped)\b", line, re.IGNORECASE)
+    ]
+    if pytest_lines:
+        summary = pytest_lines[-1]
+        values = {
+            label.lower(): int(value)
+            for value, label in re.findall(
+                r"(\d+)\s+(passed|failed|errors?|skipped)",
+                summary,
+                re.IGNORECASE,
+            )
+        }
+        if values:
+            passed = values.get("passed", 0)
+            failed = values.get("failed", 0)
+            errors = values.get("error", 0) + values.get("errors", 0)
+            skipped = values.get("skipped", 0)
+            return {
+                "total": passed + failed + errors + skipped,
+                "passed": passed,
+                "failed": failed,
+                "errors": errors,
+                "skipped": skipped,
+                "source": "pytest-output",
+            }
+
+    cargo = re.findall(
+        r"test result:\s*\w+\.\s*(\d+)\s+passed;\s*(\d+)\s+failed;\s*(\d+)\s+ignored",
+        output,
+        re.IGNORECASE,
+    )
+    if cargo:
+        passed = sum(int(item[0]) for item in cargo)
+        failed = sum(int(item[1]) for item in cargo)
+        skipped = sum(int(item[2]) for item in cargo)
+        return {
+            "total": passed + failed + skipped,
+            "passed": passed,
+            "failed": failed,
+            "errors": 0,
+            "skipped": skipped,
+            "source": "cargo-output",
+        }
+
+    jest = re.findall(
+        r"Tests:\s*(?:(\d+)\s+failed,\s*)?(?:(\d+)\s+skipped,\s*)?(\d+)\s+passed,\s*(\d+)\s+total",
+        output,
+        re.IGNORECASE,
+    )
+    if jest:
+        failed, skipped, passed, total = jest[-1]
+        return {
+            "total": int(total),
+            "passed": int(passed),
+            "failed": int(failed or 0),
+            "errors": 0,
+            "skipped": int(skipped or 0),
+            "source": "jest-output",
+        }
+
+    return {
+        "total": 0,
+        "passed": 0,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 0,
+        "source": "unverified",
+    }
+
+
+def bounded_output(value: str, limit: int = 8000) -> str:
+    if len(value) <= limit:
+        return value
+    half = limit // 2
+    return value[:half] + "\n...[output truncated by SDD2 controller]...\n" + value[-half:]
+
+
+def unit_test_execution_errors(
+    feature_dir: Path,
+    state: dict[str, Any],
+    required_outcome: str | None = None,
+) -> list[str]:
+    projection = state.get("unit_test_execution")
+    if not isinstance(projection, dict):
+        return ["UNIT_TEST_EXECUTION_MISSING"]
+    path = feature_paths(feature_dir)["unit_test_evidence"]
+    if not path.is_file():
+        return ["UNIT_TEST_EVIDENCE_FILE_MISSING"]
+    try:
+        evidence = read_json(path)
+    except ControlError:
+        return ["UNIT_TEST_EVIDENCE_INVALID"]
+    if not isinstance(evidence, dict):
+        return ["UNIT_TEST_EVIDENCE_INVALID"]
+    body = dict(evidence)
+    actual_hash = body.pop("evidence_sha256", None)
+    expected_hash = sha256_bytes(canonical_json(body).encode("utf-8"))
+    errors: list[str] = []
+    if actual_hash != expected_hash:
+        errors.append("UNIT_TEST_EVIDENCE_HASH_MISMATCH")
+    expected = {
+        "feature_id": state.get("feature_id"),
+        "attempt": state.get("attempt"),
+        "evidence_sha256": actual_hash,
+        "scope_sha256": evidence.get("scope_sha256"),
+        "code_revision": evidence.get("code_revision"),
+        "outcome": evidence.get("outcome"),
+    }
+    for field, value in expected.items():
+        if projection.get(field) != value:
+            errors.append(f"UNIT_TEST_STATE_EVIDENCE_MISMATCH:{field}")
+    try:
+        scope = load_scope(feature_dir)
+        frozen = scope.get("frozen_snapshot") or {}
+        expected_paths = changed_test_paths(scope, frozen)
+        expected_sources = [
+            item
+            for item in frozen.get("files", [])
+            if item.get("path") in expected_paths
+        ]
+        if evidence.get("scope_sha256") != frozen.get("snapshot_sha256"):
+            errors.append("UNIT_TEST_EVIDENCE_SCOPE_MISMATCH")
+        if evidence.get("changed_test_paths") != expected_paths:
+            errors.append("UNIT_TEST_EVIDENCE_TEST_PATH_MISMATCH")
+        if evidence.get("changed_test_sources") != expected_sources:
+            errors.append("UNIT_TEST_EVIDENCE_TEST_SOURCE_HASH_MISMATCH")
+    except (ControlError, KeyError, TypeError, ValueError):
+        errors.append("UNIT_TEST_EVIDENCE_SCOPE_INVALID")
+    if required_outcome and evidence.get("outcome") != required_outcome:
+        errors.append(
+            f"UNIT_TEST_OBSERVED_OUTCOME_MISMATCH:{evidence.get('outcome')}!={required_outcome}"
+        )
+    counts = evidence.get("test_counts")
+    if not isinstance(counts, dict):
+        errors.append("UNIT_TEST_COUNTS_MISSING")
+        counts = {}
+    if evidence.get("outcome") == "passed":
+        if evidence.get("exit_code") != 0:
+            errors.append("UNIT_TEST_PASSED_WITH_NONZERO_EXIT")
+        if counts.get("total", 0) <= 0 or counts.get("passed", 0) <= 0:
+            errors.append("UNIT_TEST_PASSED_WITHOUT_OBSERVED_TEST")
+        if counts.get("failed", 0) or counts.get("errors", 0):
+            errors.append("UNIT_TEST_PASSED_WITH_FAILURES")
+        if evidence.get("scope_changed_during_test") is not False:
+            errors.append("UNIT_TEST_PASSED_WITH_SCOPE_CHANGE")
+    return errors
 
 
 def load_scope(feature_dir: Path) -> dict[str, Any]:
@@ -1116,6 +1402,124 @@ def scope_drift(feature_dir: Path, state: dict[str, Any]) -> list[str]:
     return []
 
 
+def approval_record_binding_errors(
+    feature_dir: Path,
+    state: dict[str, Any],
+    stage: str,
+    approval: dict[str, Any],
+) -> list[str]:
+    approval_id = approval.get("approval_id")
+    records = read_jsonl(feature_paths(feature_dir)["approvals"])
+    matches = [
+        record
+        for record in records
+        if record.get("approval_id") == approval_id
+    ]
+    if len(matches) != 1:
+        code = "MISSING" if not matches else "DUPLICATED"
+        return [f"APPROVAL_CHAIN_RECORD_{code}:{stage}"]
+    record = matches[0]
+    expected = {
+        "feature_id": state.get("feature_id"),
+        "stage": stage,
+        "result": "approved",
+        "attempt": approval.get("attempt"),
+        "artifact_revision": approval.get("artifact_revision"),
+        "artifact_sha256": approval.get("artifact_sha256"),
+        "record_hash": approval.get("record_hash"),
+    }
+    return [
+        f"APPROVAL_CHAIN_BINDING_MISMATCH:{stage}:{field}"
+        for field, value in expected.items()
+        if record.get(field) != value
+    ]
+
+
+def phase_review_record_binding_errors(
+    feature_dir: Path,
+    state: dict[str, Any],
+    phase: str,
+    review: dict[str, Any],
+) -> list[str]:
+    errors: list[str] = []
+    approval_id = review.get("approval_id")
+    if approval_id:
+        projection = {
+            "approval_id": approval_id,
+            "attempt": review.get("attempt"),
+            "artifact_revision": review.get("tasks_revision"),
+            "artifact_sha256": review.get("tasks_sha256"),
+            "record_hash": review.get("record_hash"),
+        }
+        errors.extend(
+            approval_record_binding_errors(
+                feature_dir,
+                state,
+                f"phase-review:{phase}",
+                projection,
+            )
+        )
+        return errors
+
+    legacy_matches = [
+        event
+        for event in read_jsonl(feature_paths(feature_dir)["events"])
+        if event.get("event_type") == "phase-approved"
+        and event.get("attempt") == state.get("attempt")
+        and event.get("payload", {}).get("phase") == phase
+        and event.get("payload", {}).get("source") == review.get("source")
+        and event.get("payload", {}).get("approver_role") == review.get("approver_role")
+    ]
+    if not legacy_matches:
+        errors.append(f"PHASE_REVIEW_APPROVAL_CHAIN_MISSING:{phase}")
+    return errors
+
+
+def approval_projection_errors(feature_dir: Path, state: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    for stage, approval in state.get("approvals", {}).items():
+        if not isinstance(approval, dict):
+            errors.append(f"APPROVAL_STATE_INVALID:{stage}")
+            continue
+        errors.extend(
+            approval_record_binding_errors(feature_dir, state, stage, approval)
+        )
+    for phase, review in state.get("phase_reviews", {}).items():
+        if not isinstance(review, dict):
+            errors.append(f"PHASE_REVIEW_STATE_INVALID:{phase}")
+            continue
+        errors.extend(
+            phase_review_record_binding_errors(
+                feature_dir,
+                state,
+                phase,
+                review,
+            )
+        )
+    return errors
+
+
+def phase_review_errors(
+    feature_dir: Path,
+    state: dict[str, Any],
+    phase: str,
+) -> list[str]:
+    review = state.get("phase_reviews", {}).get(phase)
+    if not isinstance(review, dict) or review.get("status") != "approved":
+        return [f"PHASE_REVIEW_NOT_APPROVED:{phase}"]
+    errors = phase_review_record_binding_errors(
+        feature_dir,
+        state,
+        phase,
+        review,
+    )
+    if review.get("tasks_revision") != state.get("artifacts", {}).get("tasks", {}).get("revision"):
+        errors.append(f"PHASE_REVIEW_TASKS_REVISION_MISMATCH:{phase}")
+    if review.get("tasks_sha256") != state.get("artifacts", {}).get("tasks", {}).get("sha256"):
+        errors.append(f"PHASE_REVIEW_TASKS_HASH_MISMATCH:{phase}")
+    return errors
+
+
 def approval_errors(feature_dir: Path, state: dict[str, Any], stage: str) -> list[str]:
     approval = state.get("approvals", {}).get(stage)
     artifact = state.get("artifacts", {}).get(stage)
@@ -1133,6 +1537,256 @@ def approval_errors(feature_dir: Path, state: dict[str, Any], stage: str) -> lis
     actual = current_artifact_hash(feature_dir, stage)
     if actual != approval.get("artifact_sha256"):
         errors.append(f"APPROVAL_ARTIFACT_DRIFT:{stage}")
+    errors.extend(
+        approval_record_binding_errors(feature_dir, state, stage, approval)
+    )
+    return errors
+
+
+def state_transition_errors(state: dict[str, Any]) -> list[str]:
+    stage = state.get("current_stage")
+    status = state.get("stage_status")
+    action = state.get("next_required_action")
+    blocked = state.get("blocked")
+    errors: list[str] = []
+
+    if status == "blocked":
+        if not isinstance(blocked, dict) or not blocked.get("code"):
+            return ["BLOCKED_STATE_REASON_MISSING"]
+        expected_by_code = {
+            PREMATURE_CHANGE_BLOCK: "restore-planning-baseline-before-current-gate",
+            FEATURE_LAYOUT_BLOCK: "remove-unexpected-feature-paths-before-current-action",
+            "IMPLEMENTATION_SCOPE_VIOLATION": "resolve-scope-violation",
+            "CODE_REVIEW_BLOCKED": "resolve-code-review",
+            "AUTO_FIX_FAILED": "resolve-auto-fix",
+            "AUTO_FIX_BLOCKED": "resolve-auto-fix",
+            "UNIT_TEST_FAILED": "resolve-unit-test",
+            "UNIT_TEST_BLOCKED": "resolve-unit-test",
+            "UNIT_TEST_NOT_RUN": "resolve-unit-test",
+            "UNIT_TEST_SCOPE_CHANGED": "resolve-unit-test",
+        }
+        expected = expected_by_code.get(blocked.get("code"))
+        if expected is None:
+            errors.append(f"UNKNOWN_BLOCKED_STATE:{blocked.get('code')}")
+        elif action != expected:
+            errors.append("BLOCKED_NEXT_ACTION_MISMATCH")
+        return errors
+
+    if status in TERMINAL_STATUSES:
+        terminal_actions = {
+            "completed": ("archive", "none"),
+            "closed-with-risk": ("archive", "none"),
+            "aborted": ("archive", "none"),
+            "superseded": ("archive", "none-historical-example"),
+        }
+        if terminal_actions.get(status) != (stage, action):
+            errors.append("TERMINAL_STATE_TRANSITION_MISMATCH")
+        return errors
+
+    if blocked is not None:
+        errors.append("BLOCK_REASON_PRESENT_OUTSIDE_BLOCKED_STATE")
+
+    valid_static = {
+        ("proposal-input", "ready", "assemble-proposal-input"),
+        ("spec", "ready", "generate-spec"),
+        ("spec", "awaiting-approval", "request-spec-approval"),
+        ("design", "ready", "generate-design"),
+        ("design", "awaiting-approval", "request-design-approval"),
+        ("tasks", "ready", "generate-tasks"),
+        ("tasks", "awaiting-approval", "request-tasks-approval"),
+        ("implementation", "ready", "capture-implementation-scope"),
+        ("code-review", "ready", "run-code-review"),
+        ("code-review", "recorded", "record-code-review-gate"),
+        ("auto-fix", "ready", "apply-review-findings"),
+        (
+            "auto-fix",
+            "ready",
+            "record-auto-fix-not-required-or-current-fixes",
+        ),
+        ("auto-fix", "recorded", "record-auto-fix-gate"),
+        (
+            "unit-test-summary",
+            "ready",
+            "generate-or-update-test-source",
+        ),
+        (
+            "unit-test-summary",
+            "ready",
+            "generate-unit-test-summary-from-evidence",
+        ),
+        ("unit-test-summary", "recorded", "record-unit-test-gate"),
+        (
+            "unit-test-summary",
+            "awaiting-approval",
+            "request-unit-test-summary-approval",
+        ),
+        ("archive", "ready", "run-archive-check"),
+        ("archive", "ready", "generate-archive-from-evidence"),
+        ("archive", "awaiting-final-approval", "request-archive-approval"),
+    }
+    if (stage, status, action) in valid_static:
+        if (
+            action == "generate-unit-test-summary-from-evidence"
+            and not isinstance(state.get("unit_test_execution"), dict)
+        ):
+            errors.append("UNIT_TEST_EXECUTION_STATE_MISSING")
+        return errors
+
+    if stage == "implementation" and status == "executing":
+        required = state.get("required_phases", [])
+        remaining = [
+            phase
+            for phase in required
+            if state.get("phase_reviews", {}).get(phase, {}).get("status") != "approved"
+        ]
+        if action == "implement-next-approved-phase" and len(remaining) == len(required):
+            return errors
+        if remaining and action == f"implement-phase:{remaining[0]}":
+            return errors
+        if not remaining and action == "freeze-implementation-scope":
+            return errors
+    errors.append("INVALID_STATE_TRANSITION")
+    return errors
+
+
+def workflow_prerequisite_errors(
+    feature_dir: Path,
+    state: dict[str, Any],
+    *,
+    ignore_artifact_stage: str | None = None,
+) -> list[str]:
+    if state.get("execution_mode") == "historical-example":
+        return []
+    if (
+        state.get("stage_status") in TERMINAL_STATUSES
+        and state.get("stage_status") != "completed"
+    ):
+        return []
+    stage = state.get("current_stage")
+    if stage not in STAGE_ORDER:
+        return []
+    errors: list[str] = []
+    artifacts = state.get("artifacts", {})
+
+    required_artifacts: list[str] = ["brief-design"]
+    if stage_index(stage) >= stage_index("spec"):
+        required_artifacts.append("proposal-input")
+    if stage_index(stage) >= stage_index("design"):
+        required_artifacts.append("spec")
+    if stage_index(stage) >= stage_index("tasks"):
+        required_artifacts.append("design")
+    if stage_index(stage) >= stage_index("implementation"):
+        required_artifacts.append("tasks")
+    if stage_index(stage) >= stage_index("auto-fix"):
+        required_artifacts.append("code-review-findings")
+    if stage_index(stage) >= stage_index("unit-test-summary"):
+        required_artifacts.append("auto-fix-summary")
+    if stage_index(stage) >= stage_index("archive"):
+        required_artifacts.append("unit-test-summary")
+
+    if stage == "spec" and state.get("stage_status") == "awaiting-approval":
+        required_artifacts.append("spec")
+    if stage == "design" and state.get("stage_status") == "awaiting-approval":
+        required_artifacts.append("design")
+    if stage == "tasks" and state.get("stage_status") == "awaiting-approval":
+        required_artifacts.append("tasks")
+    if (
+        stage == "code-review"
+        and (
+            state.get("stage_status") == "recorded"
+            or "code-review-findings" in artifacts
+            or state.get("quality_gates", {}).get("code-review")
+        )
+    ):
+        required_artifacts.append("code-review-findings")
+    if (
+        stage == "auto-fix"
+        and (
+            state.get("stage_status") == "recorded"
+            or "auto-fix-summary" in artifacts
+            or state.get("quality_gates", {}).get("auto-fix")
+        )
+    ):
+        required_artifacts.append("auto-fix-summary")
+    if (
+        stage == "unit-test-summary"
+        and (
+            state.get("stage_status") in {"recorded", "awaiting-approval"}
+            or state.get("quality_gates", {}).get("unit-test")
+        )
+    ):
+        required_artifacts.append("unit-test-summary")
+    if (
+        stage == "archive"
+        and state.get("stage_status") in {"awaiting-final-approval", "completed"}
+    ):
+        required_artifacts.append("archive")
+
+    for artifact_stage in unique_in_order(required_artifacts):
+        if artifact_stage not in artifacts:
+            errors.append(f"WORKFLOW_ARTIFACT_MISSING:{artifact_stage}")
+
+    required_approvals: list[str] = []
+    if stage_index(stage) >= stage_index("design"):
+        required_approvals.append("spec")
+    if stage_index(stage) >= stage_index("tasks"):
+        required_approvals.append("design")
+    if stage_index(stage) >= stage_index("implementation"):
+        required_approvals.append("tasks")
+    for approval_stage in required_approvals:
+        if approval_stage == ignore_artifact_stage:
+            continue
+        errors.extend(approval_errors(feature_dir, state, approval_stage))
+    if stage_index(stage) >= stage_index("code-review"):
+        for phase in state.get("required_phases", []):
+            errors.extend(phase_review_errors(feature_dir, state, phase))
+    if stage_index(stage) >= stage_index("auto-fix"):
+        review = state.get("quality_gates", {}).get("code-review", {})
+        if review.get("status") not in {"passed", "failed"}:
+            errors.append("WORKFLOW_CODE_REVIEW_RESULT_MISSING")
+    if stage_index(stage) >= stage_index("unit-test-summary"):
+        review = state.get("quality_gates", {}).get("code-review", {})
+        auto_fix = state.get("quality_gates", {}).get("auto-fix", {})
+        if review.get("status") != "passed":
+            errors.append("WORKFLOW_CODE_REVIEW_NOT_PASSED")
+        if auto_fix.get("status") not in {"passed", "not-required"}:
+            errors.append("WORKFLOW_AUTO_FIX_NOT_CLOSED")
+    if stage_index(stage) >= stage_index("archive"):
+        unit_test = state.get("quality_gates", {}).get("unit-test", {})
+        if unit_test.get("status") != "passed":
+            errors.append("WORKFLOW_UNIT_TEST_NOT_PASSED")
+        errors.extend(approval_errors(feature_dir, state, "unit-test-summary"))
+        if state.get("stage_status") == "completed":
+            errors.extend(approval_errors(feature_dir, state, "archive"))
+    return errors
+
+
+def quality_gate_event_errors(
+    feature_dir: Path,
+    state: dict[str, Any],
+) -> list[str]:
+    events = read_jsonl(feature_paths(feature_dir)["events"])
+    errors: list[str] = []
+    for gate, projection in state.get("quality_gates", {}).items():
+        if not isinstance(projection, dict):
+            errors.append(f"QUALITY_GATE_STATE_INVALID:{gate}")
+            continue
+        if projection.get("status") in {"invalidated", "not-recorded"}:
+            continue
+        matches = [
+            event
+            for event in events
+            if event.get("event_type") == "quality-gate-recorded"
+            and event.get("attempt") == state.get("attempt")
+            and event.get("payload", {}).get("gate") == gate
+        ]
+        if not matches:
+            errors.append(f"QUALITY_GATE_EVENT_MISSING:{gate}")
+            continue
+        event_record = dict(matches[-1].get("payload", {}))
+        event_record.pop("gate", None)
+        if event_record != projection:
+            errors.append(f"QUALITY_GATE_EVENT_BINDING_MISMATCH:{gate}")
     return errors
 
 
@@ -1275,6 +1929,8 @@ def revoke_implementation_permit(
     state["implementation_permit"] = None
     state["required_phases"] = []
     feature_paths(feature_dir)["scope"].unlink(missing_ok=True)
+    state["unit_test_execution"] = None
+    feature_paths(feature_dir)["unit_test_evidence"].unlink(missing_ok=True)
     feature_paths(feature_dir)["archive_evidence"].unlink(missing_ok=True)
     return True
 
@@ -1312,6 +1968,16 @@ def quality_gate_errors(feature_dir: Path, state: dict[str, Any]) -> list[str]:
             errors.append(f"QUALITY_GATE_ARTIFACT_MISMATCH:{gate}")
         elif artifact.get("scope_sha256") != current_sha:
             errors.append(f"QUALITY_GATE_ARTIFACT_SCOPE_MISMATCH:{gate}")
+        if gate == "unit-test" and record.get("status") == "passed":
+            execution_errors = unit_test_execution_errors(
+                feature_dir,
+                state,
+                required_outcome="passed",
+            )
+            errors.extend(execution_errors)
+            execution = state.get("unit_test_execution") or {}
+            if record.get("test_execution_sha256") != execution.get("evidence_sha256"):
+                errors.append("QUALITY_GATE_TEST_EXECUTION_MISMATCH:unit-test")
     return errors
 
 
@@ -1340,6 +2006,11 @@ def archive_evidence_errors(feature_dir: Path, state: dict[str, Any]) -> list[st
         "head_commit": frozen.get("head_commit"),
         "head_tree": frozen.get("head_tree"),
         "scope_sha256": frozen.get("snapshot_sha256"),
+        "unit_test_evidence_sha256": (
+            state.get("quality_gates", {})
+            .get("unit-test", {})
+            .get("test_execution_sha256")
+        ),
     }
     for key, value in expected.items():
         if evidence.get(key) != value:
@@ -1358,6 +2029,11 @@ def archive_errors(feature_dir: Path, state: dict[str, Any], require_archive: bo
     errors.extend(verify_lock(feature_dir, state))
     errors.extend(validate_hash_chain(feature_paths(feature_dir)["events"], "event_hash"))
     errors.extend(validate_hash_chain(feature_paths(feature_dir)["approvals"], "record_hash"))
+    errors.extend(state_event_projection_errors(feature_dir, state))
+    errors.extend(state_transition_errors(state))
+    errors.extend(approval_projection_errors(feature_dir, state))
+    errors.extend(workflow_prerequisite_errors(feature_dir, state))
+    errors.extend(quality_gate_event_errors(feature_dir, state))
     generation_errors = feature_generation_errors(feature_dir, state)
     errors.extend(generation_errors)
     if generation_errors:
@@ -1366,9 +2042,7 @@ def archive_errors(feature_dir: Path, state: dict[str, Any], require_archive: bo
     for stage in ("spec", "design", "tasks", "unit-test-summary"):
         errors.extend(approval_errors(feature_dir, state, stage))
     for phase in state.get("required_phases", []):
-        record = state.get("phase_reviews", {}).get(phase)
-        if not record or record.get("status") != "approved":
-            errors.append(f"PHASE_REVIEW_NOT_APPROVED:{phase}")
+        errors.extend(phase_review_errors(feature_dir, state, phase))
     if not feature_paths(feature_dir)["scope"].exists():
         errors.append("SCOPE_MANIFEST_MISSING")
     else:
@@ -1415,14 +2089,24 @@ def validate_state(feature_dir: Path, state: dict[str, Any]) -> dict[str, list[s
         errors.append("USER_ENTRY_REQUIRES_NEW_ACTION")
     if state.get("current_stage") not in STAGE_ORDER:
         errors.append("INVALID_CURRENT_STAGE")
+    errors.extend(state_transition_errors(state))
     errors.extend(verify_lock(feature_dir, state))
     errors.extend(artifact_drift(feature_dir, state))
     errors.extend(validate_hash_chain(feature_paths(feature_dir)["events"], "event_hash"))
     errors.extend(validate_hash_chain(feature_paths(feature_dir)["approvals"], "record_hash"))
+    errors.extend(state_event_projection_errors(feature_dir, state))
+    errors.extend(approval_projection_errors(feature_dir, state))
+    errors.extend(workflow_prerequisite_errors(feature_dir, state))
+    errors.extend(quality_gate_event_errors(feature_dir, state))
+    events = read_jsonl(feature_paths(feature_dir)["events"])
+    if events and events[-1].get("state_sha256") is None:
+        warnings.append("LEGACY_STATE_EVENT_WITHOUT_PROJECTION_HASH")
     if state.get("execution_mode") != "historical-example":
         generation_errors = feature_generation_errors(feature_dir, state)
         errors.extend(generation_errors)
         if not generation_errors:
+            if state.get("unit_test_execution") is not None:
+                errors.extend(unit_test_execution_errors(feature_dir, state))
             errors.extend(planning_guard_errors(feature_dir, state))
             errors.extend(scope_drift(feature_dir, state))
             if (
@@ -1446,6 +2130,17 @@ def assert_control_integrity(
     errors.extend(verify_lock(feature_dir, state))
     errors.extend(validate_hash_chain(feature_paths(feature_dir)["events"], "event_hash"))
     errors.extend(validate_hash_chain(feature_paths(feature_dir)["approvals"], "record_hash"))
+    errors.extend(state_event_projection_errors(feature_dir, state))
+    errors.extend(state_transition_errors(state))
+    errors.extend(approval_projection_errors(feature_dir, state))
+    errors.extend(
+        workflow_prerequisite_errors(
+            feature_dir,
+            state,
+            ignore_artifact_stage=ignore_artifact_stage,
+        )
+    )
+    errors.extend(quality_gate_event_errors(feature_dir, state))
     for error in artifact_drift(feature_dir, state):
         if ignore_artifact_stage and error.startswith((f"ARTIFACT_DRIFT:{ignore_artifact_stage}:", f"ARTIFACT_MISSING:{ignore_artifact_stage}:")):
             continue
@@ -1481,6 +2176,8 @@ def assert_control_integrity(
         and ignore_artifact_stage not in {"brief-design", "proposal-input", "spec", "design", "tasks"}
     ):
         errors.extend(implementation_permit_errors(feature_dir, state))
+    if not generation_errors and state.get("unit_test_execution") is not None:
+        errors.extend(unit_test_execution_errors(feature_dir, state))
     if (
         not generation_errors
         and not allow_scope_drift
@@ -1495,6 +2192,11 @@ def assert_history_and_lock(feature_dir: Path, state: dict[str, Any]) -> None:
     errors = verify_lock(feature_dir, state)
     errors.extend(validate_hash_chain(feature_paths(feature_dir)["events"], "event_hash"))
     errors.extend(validate_hash_chain(feature_paths(feature_dir)["approvals"], "record_hash"))
+    errors.extend(state_event_projection_errors(feature_dir, state))
+    errors.extend(state_transition_errors(state))
+    errors.extend(approval_projection_errors(feature_dir, state))
+    errors.extend(workflow_prerequisite_errors(feature_dir, state))
+    errors.extend(quality_gate_event_errors(feature_dir, state))
     if errors:
         raise ControlError("Control history check failed: " + ", ".join(sorted(set(errors))))
 
@@ -1537,9 +2239,7 @@ def assert_artifact_entry(
     if stage == "code-review-findings":
         errors = approval_errors(feature_dir, state, "tasks")
         for phase in state.get("required_phases", []):
-            review = state.get("phase_reviews", {}).get(phase)
-            if not review or review.get("status") != "approved":
-                errors.append(f"PHASE_REVIEW_NOT_APPROVED:{phase}")
+            errors.extend(phase_review_errors(feature_dir, state, phase))
         require_current_scope(feature_dir, state)
         if errors:
             raise ControlError("Code Review findings entry blocked: " + ", ".join(errors))
@@ -1552,6 +2252,20 @@ def assert_artifact_entry(
         errors = [error for error in errors if error != "QUALITY_GATE_NOT_PASSED:unit-test"]
         if errors:
             raise ControlError("Unit Test Summary entry blocked: " + ", ".join(errors))
+        execution = state.get("unit_test_execution")
+        if isinstance(execution, dict):
+            errors = unit_test_execution_errors(feature_dir, state)
+            if errors:
+                raise ControlError(
+                    "Unit Test Summary execution evidence is invalid: "
+                    + ", ".join(errors)
+                )
+            content = (feature_dir / ARTIFACT_FILES[stage]).read_text(encoding="utf-8")
+            for field in ("evidence_sha256", "scope_sha256"):
+                if str(execution.get(field, "")) not in content:
+                    raise ControlError(
+                        f"Unit Test Summary must include current {field}"
+                    )
     if stage == "archive":
         errors = archive_evidence_errors(feature_dir, state)
         if errors:
@@ -1636,6 +2350,7 @@ def cmd_init(args: argparse.Namespace) -> dict[str, Any]:
         "implementation_started": False,
         "implementation_permit": None,
         "implementation_permit_history": [],
+        "unit_test_execution": None,
         "created_at": utc_now(),
         "updated_at": utc_now(),
     }
@@ -1714,6 +2429,7 @@ def cmd_migrate_legacy(args: argparse.Namespace) -> dict[str, Any]:
         "implementation_started": False,
         "implementation_permit": None,
         "implementation_permit_history": [],
+        "unit_test_execution": None,
         "created_at": utc_now(),
         "updated_at": utc_now(),
     }
@@ -2054,15 +2770,38 @@ def cmd_phase_review(args: argparse.Namespace) -> dict[str, Any]:
             raise ControlError("Demo simulation must identify approver_role=ai-as-human-reviewer")
     else:
         raise ControlError(f"Unsupported Phase Review source: {args.source}")
+    tasks_artifact = state["artifacts"]["tasks"]
+    approval = append_chained_record(
+        feature_paths(feature_dir)["approvals"],
+        {
+            "approval_id": str(uuid.uuid4()),
+            "timestamp": utc_now(),
+            "feature_id": state["feature_id"],
+            "attempt": state["attempt"],
+            "stage": f"phase-review:{args.phase}",
+            "result": "approved",
+            "source": args.source,
+            "approver_role": args.approver_role,
+            "message_id": args.message_id,
+            "approval_text": args.approval_text,
+            "artifact_path": tasks_artifact["path"],
+            "artifact_revision": tasks_artifact["revision"],
+            "artifact_sha256": tasks_artifact["sha256"],
+        },
+        "record_hash",
+    )
     state["phase_reviews"][args.phase] = {
+        "approval_id": approval["approval_id"],
+        "record_hash": approval["record_hash"],
+        "attempt": state["attempt"],
         "status": "approved",
         "source": args.source,
         "approver_role": args.approver_role,
         "message_id": args.message_id,
         "approval_text": args.approval_text,
         "approved_at": utc_now(),
-        "tasks_revision": state["artifacts"]["tasks"]["revision"],
-        "tasks_sha256": state["artifacts"]["tasks"]["sha256"],
+        "tasks_revision": tasks_artifact["revision"],
+        "tasks_sha256": tasks_artifact["sha256"],
     }
     state["revision"] += 1
     remaining = [
@@ -2091,9 +2830,12 @@ def cmd_freeze_scope(args: argparse.Namespace) -> dict[str, Any]:
     if state.get("current_stage") not in {"implementation", "code-review", "auto-fix", "unit-test-summary"}:
         raise ControlError(f"Scope freeze is not valid from current stage {state.get('current_stage')}")
     for phase in state.get("required_phases", []):
-        review = state.get("phase_reviews", {}).get(phase)
-        if not review or review.get("status") != "approved":
-            raise ControlError(f"Scope freeze requires current Phase Review approval: {phase}")
+        errors = phase_review_errors(feature_dir, state, phase)
+        if errors:
+            raise ControlError(
+                "Scope freeze requires current Phase Review approval: "
+                + ", ".join(errors)
+            )
     scope = load_scope(feature_dir)
     snapshot = snapshot_for_scope(scope_repo_root(feature_dir, scope), scope)
     if snapshot["violations"]:
@@ -2104,12 +2846,23 @@ def cmd_freeze_scope(args: argparse.Namespace) -> dict[str, Any]:
         }
         state["stage_status"] = "blocked"
         state["next_required_action"] = "resolve-scope-violation"
+        state["unit_test_execution"] = None
+        feature_paths(feature_dir)["unit_test_evidence"].unlink(missing_ok=True)
+        state["revision"] += 1
+        append_event(
+            feature_dir,
+            state,
+            "implementation-scope-violation-blocked",
+            {"violations": snapshot["violations"]},
+        )
         save_state(feature_dir, state)
         raise ControlError("Implementation scope violation: " + ", ".join(snapshot["violations"]))
     previous = scope.get("frozen_snapshot")
     if not previous or previous.get("snapshot_sha256") != snapshot["snapshot_sha256"]:
         scope["code_revision"] += 1
         invalidated = invalidate_from(state, "code-review", "Implementation snapshot changed")
+        state["unit_test_execution"] = None
+        feature_paths(feature_dir)["unit_test_evidence"].unlink(missing_ok=True)
         feature_paths(feature_dir)["archive_evidence"].unlink(missing_ok=True)
     else:
         invalidated = []
@@ -2143,6 +2896,202 @@ def require_current_scope(feature_dir: Path, state: dict[str, Any]) -> tuple[dic
     return scope, snapshot
 
 
+def process_output_text(value: str | bytes | None) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, bytes):
+        return value.decode("utf-8", errors="replace")
+    return value
+
+
+def cmd_run_unit_test(args: argparse.Namespace) -> dict[str, Any]:
+    feature_dir = normalize_feature_dir(args.feature_dir)
+    state = load_state(feature_dir)
+    assert_control_integrity(feature_dir, state)
+    if (
+        state.get("current_stage") != "unit-test-summary"
+        or state.get("stage_status") != "ready"
+        or state.get("next_required_action")
+        not in {
+            "generate-or-update-test-source",
+            "generate-unit-test-summary-from-evidence",
+        }
+    ):
+        raise ControlError(
+            "Observed Unit Test execution is only valid after current Code Review and Auto-fix are closed"
+        )
+    if not 1 <= args.timeout_seconds <= 3600:
+        raise ControlError("Unit Test timeout must be between 1 and 3600 seconds")
+
+    scope, before_snapshot = require_current_scope(feature_dir, state)
+    current_sha = before_snapshot["snapshot_sha256"]
+    review = state.get("quality_gates", {}).get("code-review")
+    auto_fix = state.get("quality_gates", {}).get("auto-fix")
+    if not review or review.get("status") != "passed" or review.get("scope_sha256") != current_sha:
+        raise ControlError("Unit Test execution requires Code Review passed on the current scope")
+    if (
+        not auto_fix
+        or auto_fix.get("status") not in {"passed", "not-required"}
+        or auto_fix.get("scope_sha256") != current_sha
+    ):
+        raise ControlError("Unit Test execution requires Auto-fix closed on the current scope")
+    test_sources = changed_test_paths(scope, before_snapshot)
+    if scope.get("production_change", True) and not test_sources:
+        raise ControlError(
+            "Unit Test execution requires at least one changed test source matching the captured test path patterns"
+        )
+    test_source_records = [
+        item
+        for item in before_snapshot["files"]
+        if item["path"] in test_sources
+    ]
+
+    command = list(args.test_command)
+    if command and command[0] == "--":
+        command = command[1:]
+    runner_kind = test_command_kind(command)
+    cwd_value = Path(args.cwd)
+    if cwd_value.is_absolute():
+        raise ControlError("Unit Test cwd must be repository-relative")
+    repo_root = scope_repo_root(feature_dir, scope)
+    execution_cwd = (repo_root / cwd_value).resolve()
+    try:
+        execution_cwd.relative_to(repo_root)
+    except ValueError as exc:
+        raise ControlError("Unit Test cwd escapes the repository") from exc
+    if not execution_cwd.is_dir():
+        raise ControlError(f"Unit Test cwd does not exist: {args.cwd}")
+
+    started_at = utc_now()
+    stdout = ""
+    stderr = ""
+    exit_code: int | None = None
+    timed_out = False
+    launch_error: str | None = None
+    environment = os.environ.copy()
+    if runner_kind.startswith("python") or runner_kind == "pytest":
+        environment.setdefault("PYTHONDONTWRITEBYTECODE", "1")
+    try:
+        process = subprocess.run(
+            command,
+            cwd=execution_cwd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=args.timeout_seconds,
+            check=False,
+            env=environment,
+        )
+        stdout = process.stdout
+        stderr = process.stderr
+        exit_code = process.returncode
+    except subprocess.TimeoutExpired as exc:
+        timed_out = True
+        stdout = process_output_text(exc.stdout)
+        stderr = process_output_text(exc.stderr)
+    except OSError as exc:
+        launch_error = f"{type(exc).__name__}: {exc}"
+    completed_at = utc_now()
+
+    after_snapshot = snapshot_for_scope(repo_root, scope)
+    scope_changed = (
+        bool(after_snapshot["violations"])
+        or after_snapshot["snapshot_sha256"] != current_sha
+    )
+    counts = parsed_test_counts(stdout, stderr)
+    failure_reason: str | None = None
+    if timed_out:
+        outcome = "blocked"
+        failure_reason = "TEST_EXECUTION_TIMEOUT"
+    elif launch_error:
+        outcome = "blocked"
+        failure_reason = "TEST_EXECUTION_LAUNCH_ERROR"
+    elif scope_changed:
+        outcome = "blocked"
+        failure_reason = "TEST_CHANGED_FROZEN_SCOPE"
+    elif exit_code != 0 or counts["failed"] > 0 or counts["errors"] > 0:
+        outcome = "failed"
+        failure_reason = "TEST_EXECUTION_FAILED"
+    elif counts["total"] <= 0 or counts["passed"] <= 0:
+        outcome = "blocked"
+        failure_reason = "NO_EXECUTED_TEST_OBSERVED"
+    else:
+        outcome = "passed"
+
+    evidence: dict[str, Any] = {
+        "schema_version": SCHEMA_VERSION,
+        "feature_id": state["feature_id"],
+        "attempt": state["attempt"],
+        "scope_sha256": current_sha,
+        "scope_after_sha256": after_snapshot["snapshot_sha256"],
+        "scope_changed_during_test": scope_changed,
+        "scope_violations": after_snapshot["violations"],
+        "code_revision": scope["code_revision"],
+        "runner_kind": runner_kind,
+        "command": command,
+        "cwd": execution_cwd.relative_to(repo_root).as_posix() or ".",
+        "timeout_seconds": args.timeout_seconds,
+        "started_at": started_at,
+        "completed_at": completed_at,
+        "exit_code": exit_code,
+        "timed_out": timed_out,
+        "launch_error": launch_error,
+        "stdout_sha256": sha256_bytes(stdout.encode("utf-8")),
+        "stderr_sha256": sha256_bytes(stderr.encode("utf-8")),
+        "stdout_excerpt": bounded_output(stdout),
+        "stderr_excerpt": bounded_output(stderr),
+        "test_counts": counts,
+        "changed_test_paths": test_sources,
+        "changed_test_sources": test_source_records,
+        "outcome": outcome,
+        "failure_reason": failure_reason,
+    }
+    evidence["evidence_sha256"] = sha256_bytes(
+        canonical_json(evidence).encode("utf-8")
+    )
+    atomic_write_json(feature_paths(feature_dir)["unit_test_evidence"], evidence)
+    state["unit_test_execution"] = {
+        "feature_id": state["feature_id"],
+        "attempt": state["attempt"],
+        "scope_sha256": current_sha,
+        "code_revision": scope["code_revision"],
+        "outcome": outcome,
+        "evidence_sha256": evidence["evidence_sha256"],
+        "recorded_at": completed_at,
+    }
+    if scope_changed:
+        state["blocked"] = {
+            "code": "UNIT_TEST_SCOPE_CHANGED",
+            "reason": ", ".join(after_snapshot["violations"])
+            or "Unit Test command changed the frozen implementation snapshot.",
+            "recovery": "Remove generated scope changes or approve and refreeze them, then rerun full review and tests.",
+        }
+        state["stage_status"] = "blocked"
+        state["next_required_action"] = "resolve-unit-test"
+    else:
+        state["blocked"] = None
+        state["current_stage"] = "unit-test-summary"
+        state["stage_status"] = "ready"
+        state["next_required_action"] = "generate-unit-test-summary-from-evidence"
+    state["revision"] += 1
+    append_event(
+        feature_dir,
+        state,
+        "unit-test-executed",
+        {
+            "evidence_sha256": evidence["evidence_sha256"],
+            "scope_sha256": current_sha,
+            "outcome": outcome,
+            "exit_code": exit_code,
+            "test_counts": counts,
+        },
+    )
+    save_state(feature_dir, state)
+    return evidence
+
+
 def cmd_quality_gate(args: argparse.Namespace) -> dict[str, Any]:
     feature_dir = normalize_feature_dir(args.feature_dir)
     state = load_state(feature_dir)
@@ -2163,9 +3112,9 @@ def cmd_quality_gate(args: argparse.Namespace) -> dict[str, Any]:
             if errors:
                 raise ControlError("Code Review blocked: " + ", ".join(errors))
         for phase in state.get("required_phases", []):
-            review = state.get("phase_reviews", {}).get(phase)
-            if not review or review.get("status") != "approved":
-                raise ControlError(f"Code Review blocked by missing Phase Review: {phase}")
+            errors = phase_review_errors(feature_dir, state, phase)
+            if errors:
+                raise ControlError("Code Review blocked: " + ", ".join(errors))
         if "code-review-findings" not in state["artifacts"]:
             raise ControlError("code-review-findings.md must be recorded before the Code Review gate")
         allowed = {"passed", "failed", "blocked"}
@@ -2194,6 +3143,24 @@ def cmd_quality_gate(args: argparse.Namespace) -> dict[str, Any]:
         raise ControlError(f"Invalid {gate} result: {args.result}; expected one of {sorted(allowed)}")
     if not args.evidence.strip():
         raise ControlError(f"{gate} requires non-empty reproducible evidence")
+    if gate == "unit-test" and args.result in {"passed", "failed"}:
+        errors = unit_test_execution_errors(
+            feature_dir,
+            state,
+            required_outcome=args.result,
+        )
+        if errors:
+            raise ControlError(
+                "Unit Test gate requires controller-observed execution: "
+                + ", ".join(errors)
+            )
+        if (
+            state.get("unit_test_execution", {}).get("scope_sha256")
+            != current_sha
+        ):
+            raise ControlError(
+                "Unit Test execution evidence belongs to a different implementation scope"
+            )
     record = {
         "status": args.result,
         "recorded_at": utc_now(),
@@ -2209,6 +3176,9 @@ def cmd_quality_gate(args: argparse.Namespace) -> dict[str, Any]:
     record["artifact_sha256"] = state["artifacts"][artifact_stage]["sha256"]
     if gate == "unit-test":
         record["changed_test_paths"] = changed_test_paths(scope, snapshot)
+        execution = state.get("unit_test_execution") or {}
+        if execution.get("evidence_sha256"):
+            record["test_execution_sha256"] = execution["evidence_sha256"]
     state["quality_gates"][gate] = record
     if gate == "code-review":
         if args.result == "blocked":
@@ -2312,6 +3282,9 @@ def cmd_prepare_archive(args: argparse.Namespace) -> dict[str, Any]:
         "head_commit": frozen["head_commit"],
         "head_tree": frozen["head_tree"],
         "scope_sha256": frozen["snapshot_sha256"],
+        "unit_test_evidence_sha256": state["quality_gates"]["unit-test"][
+            "test_execution_sha256"
+        ],
         "files": frozen["files"],
     }
     existing_path = feature_paths(feature_dir)["archive_evidence"]
@@ -2362,6 +3335,11 @@ def cmd_resume(args: argparse.Namespace) -> dict[str, Any]:
                 "record_hash",
             )
         )
+        history_errors.extend(state_event_projection_errors(feature_dir, state))
+        history_errors.extend(state_transition_errors(state))
+        history_errors.extend(approval_projection_errors(feature_dir, state))
+        history_errors.extend(workflow_prerequisite_errors(feature_dir, state))
+        history_errors.extend(quality_gate_event_errors(feature_dir, state))
         if not history_errors:
             generation_errors = feature_generation_errors(feature_dir, state)
             if generation_errors:
@@ -2384,6 +3362,7 @@ def cmd_resume(args: argparse.Namespace) -> dict[str, Any]:
                     restore_premature_change_block(feature_dir, state)
     validation = validate_state(feature_dir, state)
     return {
+        "valid": not validation["errors"],
         "feature_id": state["feature_id"],
         "execution_mode": state["execution_mode"],
         "current_stage": state["current_stage"],
@@ -2485,6 +3464,7 @@ def cmd_restart_attempt(args: argparse.Namespace) -> dict[str, Any]:
     )
     state["implementation_started"] = False
     state["implementation_permit"] = None
+    state["unit_test_execution"] = None
     state["blocked"] = None
     state["last_completed_stage"] = "brief-design"
     if "spec" in state["artifacts"]:
@@ -2499,7 +3479,7 @@ def cmd_restart_attempt(args: argparse.Namespace) -> dict[str, Any]:
         state["current_stage"] = "proposal-input"
         state["stage_status"] = "ready"
         state["next_required_action"] = "assemble-proposal-input"
-    for key in ("scope", "archive_evidence"):
+    for key in ("scope", "unit_test_evidence", "archive_evidence"):
         feature_paths(feature_dir)[key].unlink(missing_ok=True)
     append_event(
         feature_dir,
@@ -2573,6 +3553,13 @@ def build_parser() -> argparse.ArgumentParser:
     freeze = sub.add_parser("freeze-scope", help="Freeze the current implementation snapshot before quality review")
     freeze.add_argument("--feature-dir", required=True)
     freeze.set_defaults(handler=cmd_freeze_scope)
+
+    run_test = sub.add_parser("run-unit-test", help="Execute a recognized test runner and persist observed evidence")
+    run_test.add_argument("--feature-dir", required=True)
+    run_test.add_argument("--cwd", default=".")
+    run_test.add_argument("--timeout-seconds", type=int, default=600)
+    run_test.add_argument("test_command", nargs=argparse.REMAINDER)
+    run_test.set_defaults(handler=cmd_run_unit_test)
 
     gate = sub.add_parser("quality-gate", help="Record Code Review, Auto-fix, or Unit Test against a frozen scope")
     gate.add_argument("--feature-dir", required=True)

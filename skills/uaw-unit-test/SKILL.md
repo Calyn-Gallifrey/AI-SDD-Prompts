@@ -34,9 +34,9 @@ description: 生成、更新、执行并总结以 Java 为主的 UAW 单元测�
 
 只有 Code Review 在当前冻结范围为 `passed`，且 Auto-fix 在同一范围为 `passed` 或 `not-required` 后才能运行。验证至少一个已变更测试源码匹配已捕获测试路径。
 
-使用项目真实支持的入口执行最小相关单元测试。生成 `unit-test-summary.md`，记录命令/环境、退出码、数量、失败/跳过、测试源码哈希和当前范围 SHA-256。把控制权返回主 Skill，执行确定性 Unit Test Gate 并等待人工 Unit Test Summary 批准。
+选择项目真实支持的最小相关单元测试入口，但在 SDD 模式中不得绕过控制器直接把命令输出当作 Gate 证据。由主 Skill 内部使用 `run-unit-test` 执行该入口，生成受控的 `.sdd2/unit-test-evidence.json`。随后只根据该证据生成 `unit-test-summary.md`，记录命令/环境、退出码、数量、失败/跳过、测试源码哈希、执行证据 SHA-256 和当前范围 SHA-256。把控制权返回主 Skill，执行确定性 Unit Test Gate 并等待人工 Unit Test Summary 批准。
 
-`passed` 要求测试入口确实执行，并由退出码或结果证明成功。IDE、CI、Wrapper、本地 CLI 和项目脚本都可作为入口，但证据必须可复现。手工验证只能补充，不能通过 SDD Unit Test Gate。
+`passed` 要求控制器观察到受支持测试入口实际执行、至少一项测试通过、失败与 Error 为零、退出码为零，且执行期间冻结范围未变化。模型自述、零测试、手工验证、控制器外命令输出、超时、被改写证据或未受支持的 Shell 包装都不能通过 SDD Unit Test Gate。
 
 ## Standalone 模式
 
@@ -59,7 +59,7 @@ description: 生成、更新、执行并总结以 Java 为主的 UAW 单元测�
 
 - 一个或多个新增/更新的单元测试源码路径；
 - 已选测试 Profile 和目标规则；
-- 可执行测试证据，或 `blocked`/`not-run` 结果；
+- 控制器生成的 `.sdd2/unit-test-evidence.json`，或明确的 `blocked`/`not-run` 结果；
 - 只有源码生成后才创建 `unit-test-summary.md`。
 
 成功 SDD 流程中，测试源码变更不得为 `none`。SDD 测试为 `failed`、`blocked` 或 `not-run` 时，禁止成功 Archive。

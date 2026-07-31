@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import shutil
 import subprocess
@@ -112,13 +113,64 @@ class Sdd2ControlTest(unittest.TestCase):
             "app/src/test/**",
         )
 
+    def _run_observed_unit_tests(self, pattern: str = "*_test.py") -> dict:
+        return self._run(
+            "run-unit-test",
+            "--feature-dir",
+            str(self.feature),
+            "--cwd",
+            ".",
+            "--",
+            sys.executable,
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "app/src/test",
+            "-p",
+            pattern,
+        )["result"]
+
+    def _reach_unit_test_ready(self, test_content: str) -> None:
+        self._reach_tasks_approval()
+        self._capture_scope()
+        (self.repo / "app/src/main/java/App.java").write_text(
+            "class App { int value; }\n",
+            encoding="utf-8",
+        )
+        test = self.repo / "app/src/test/app_test.py"
+        test.parent.mkdir(parents=True)
+        test.write_text(test_content, encoding="utf-8")
+        self._run(
+            "phase-review", "--feature-dir", str(self.feature), "--phase", "Phase1",
+            "--source", "user-message", "--approver-role", "human",
+            "--approval-text", "批准 Phase1",
+        )
+        self._run("freeze-scope", "--feature-dir", str(self.feature))
+        self._record("code-review-findings", "code-review-findings.md", "# Findings\n")
+        self._run(
+            "quality-gate", "--feature-dir", str(self.feature), "--gate", "code-review",
+            "--result", "passed", "--evidence", "reviewed",
+        )
+        self._record("auto-fix-summary", "auto-fix-summary.md", "# Auto-fix\n")
+        self._run(
+            "quality-gate", "--feature-dir", str(self.feature), "--gate", "auto-fix",
+            "--result", "not-required", "--evidence", "none",
+        )
+
     def _complete_implementation_and_archive(self) -> None:
         (self.repo / "app/src/main/java/App.java").write_text(
             "class App { int value = 1; }\n", encoding="utf-8"
         )
-        test = self.repo / "app/src/test/java/AppTest.java"
+        test = self.repo / "app/src/test/app_test.py"
         test.parent.mkdir(parents=True)
-        test.write_text("class AppTest {}\n", encoding="utf-8")
+        test.write_text(
+            "import unittest\n\n"
+            "class AppTest(unittest.TestCase):\n"
+            "    def test_value(self):\n"
+            "        self.assertEqual(1, 1)\n",
+            encoding="utf-8",
+        )
         self._run(
             "phase-review", "--feature-dir", str(self.feature), "--phase", "Phase1",
             "--source", "user-message", "--approver-role", "human",
@@ -135,7 +187,18 @@ class Sdd2ControlTest(unittest.TestCase):
             "quality-gate", "--feature-dir", str(self.feature), "--gate", "auto-fix",
             "--result", "not-required", "--evidence", "no actionable finding"
         )
-        self._record("unit-test-summary", "unit-test-summary.md", "# Unit Test\nPassed\n")
+        execution = self._run_observed_unit_tests()
+        self.assertEqual(execution["outcome"], "passed")
+        self._record(
+            "unit-test-summary",
+            "unit-test-summary.md",
+            (
+                "# 单元测试总结\n\n"
+                f"执行证据 SHA-256：`{execution['evidence_sha256']}`\n\n"
+                f"范围 SHA-256：`{execution['scope_sha256']}`\n\n"
+                "实际执行一项单元测试，退出码为零，结果通过。\n"
+            ),
+        )
         self._run(
             "quality-gate", "--feature-dir", str(self.feature), "--gate", "unit-test",
             "--result", "passed", "--evidence", "test command exit code 0; 1 test passed"
@@ -260,7 +323,9 @@ class Sdd2ControlTest(unittest.TestCase):
         random_dir.mkdir()
         (random_dir / "result.txt").write_text("unexpected\n", encoding="utf-8")
 
-        blocked = self._run("resume", "--feature-dir", str(self.feature))
+        blocked = self._run(
+            "resume", "--feature-dir", str(self.feature), expected=1
+        )
         self.assertEqual(blocked["result"]["stage_status"], "blocked")
         self.assertEqual(blocked["result"]["blocked"]["code"], "UNEXPECTED_FEATURE_LAYOUT")
         self.assertIn(
@@ -283,7 +348,9 @@ class Sdd2ControlTest(unittest.TestCase):
     def test_future_public_asset_blocks_until_removed(self) -> None:
         self._write("design.md", "# 提前生成的 Design\n")
 
-        blocked = self._run("resume", "--feature-dir", str(self.feature))
+        blocked = self._run(
+            "resume", "--feature-dir", str(self.feature), expected=1
+        )
         self.assertEqual(blocked["result"]["stage_status"], "blocked")
         self.assertIn(
             "UNEXPECTED_STAGE_ASSET:design.md",
@@ -297,6 +364,8 @@ class Sdd2ControlTest(unittest.TestCase):
     def test_fake_internal_control_and_revision_files_block(self) -> None:
         fake_scope = self.feature / ".sdd2/implementation-scope.json"
         fake_scope.write_text("{}\n", encoding="utf-8")
+        fake_test_evidence = self.feature / ".sdd2/unit-test-evidence.json"
+        fake_test_evidence.write_text("{}\n", encoding="utf-8")
         fake_revision = (
             self.feature
             / ".sdd2/revisions/design"
@@ -305,10 +374,16 @@ class Sdd2ControlTest(unittest.TestCase):
         fake_revision.parent.mkdir(parents=True)
         fake_revision.write_text("伪造的内部修订快照。\n", encoding="utf-8")
 
-        blocked = self._run("resume", "--feature-dir", str(self.feature))
+        blocked = self._run(
+            "resume", "--feature-dir", str(self.feature), expected=1
+        )
         self.assertEqual(blocked["result"]["stage_status"], "blocked")
         self.assertIn(
             "UNEXPECTED_CONTROL_FILE:.sdd2/implementation-scope.json",
+            blocked["result"]["validation"]["errors"],
+        )
+        self.assertIn(
+            "UNEXPECTED_CONTROL_FILE:.sdd2/unit-test-evidence.json",
             blocked["result"]["validation"]["errors"],
         )
         self.assertIn(
@@ -344,7 +419,9 @@ class Sdd2ControlTest(unittest.TestCase):
             encoding="utf-8",
         )
 
-        blocked = self._run("resume", "--feature-dir", str(self.feature))
+        blocked = self._run(
+            "resume", "--feature-dir", str(self.feature), expected=1
+        )
         self.assertEqual(blocked["result"]["stage_status"], "blocked")
         self.assertIn(
             "UNCONTROLLED_SIBLING_FEATURE:sdd2-features/Sprint1/generated-again",
@@ -724,6 +801,244 @@ class Sdd2ControlTest(unittest.TestCase):
         )
         self.assertIn("hash mismatch", blocked["error"])
 
+    def test_resume_rejects_tampered_state_projection(self) -> None:
+        state_path = self.feature / ".sdd2/feature-state.json"
+        state = json.loads(state_path.read_text(encoding="utf-8"))
+        state["current_stage"] = "design"
+        state["stage_status"] = "ready"
+        state["next_required_action"] = "generate-design"
+        state_path.write_text(
+            json.dumps(state, ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8",
+        )
+
+        result = self._run(
+            "resume",
+            "--feature-dir",
+            str(self.feature),
+            expected=1,
+        )
+        self.assertIn(
+            "STATE_EVENT_PROJECTION_MISMATCH",
+            result["result"]["validation"]["errors"],
+        )
+
+    def test_legacy_unbound_state_still_cannot_skip_spec_approval(self) -> None:
+        event_path = self.feature / ".sdd2/events.jsonl"
+        event = json.loads(event_path.read_text(encoding="utf-8").strip())
+        event.pop("state_sha256")
+        event.pop("event_hash")
+        event["event_hash"] = hashlib.sha256(
+            json.dumps(
+                event,
+                ensure_ascii=False,
+                sort_keys=True,
+                separators=(",", ":"),
+            ).encode("utf-8")
+        ).hexdigest()
+        event_path.write_text(
+            json.dumps(
+                event,
+                ensure_ascii=False,
+                sort_keys=True,
+                separators=(",", ":"),
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        state_path = self.feature / ".sdd2/feature-state.json"
+        state = json.loads(state_path.read_text(encoding="utf-8"))
+        state["current_stage"] = "design"
+        state["stage_status"] = "ready"
+        state["next_required_action"] = "generate-design"
+        state_path.write_text(
+            json.dumps(state, ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8",
+        )
+
+        result = self._run(
+            "validate",
+            "--feature-dir",
+            str(self.feature),
+            expected=1,
+        )
+        self.assertIn(
+            "APPROVAL_MISSING_OR_INVALID:spec",
+            result["result"]["errors"],
+        )
+        self.assertIn(
+            "LEGACY_STATE_EVENT_WITHOUT_PROJECTION_HASH",
+            result["result"]["warnings"],
+        )
+
+    def test_legacy_unbound_state_cannot_skip_proposal_artifact(self) -> None:
+        event_path = self.feature / ".sdd2/events.jsonl"
+        event = json.loads(event_path.read_text(encoding="utf-8").strip())
+        event.pop("state_sha256")
+        event.pop("event_hash")
+        event["event_hash"] = hashlib.sha256(
+            json.dumps(
+                event,
+                ensure_ascii=False,
+                sort_keys=True,
+                separators=(",", ":"),
+            ).encode("utf-8")
+        ).hexdigest()
+        event_path.write_text(
+            json.dumps(
+                event,
+                ensure_ascii=False,
+                sort_keys=True,
+                separators=(",", ":"),
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        state_path = self.feature / ".sdd2/feature-state.json"
+        state = json.loads(state_path.read_text(encoding="utf-8"))
+        state["current_stage"] = "spec"
+        state["stage_status"] = "ready"
+        state["next_required_action"] = "generate-spec"
+        state_path.write_text(
+            json.dumps(state, ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8",
+        )
+
+        result = self._run(
+            "validate",
+            "--feature-dir",
+            str(self.feature),
+            expected=1,
+        )
+        self.assertIn(
+            "WORKFLOW_ARTIFACT_MISSING:proposal-input",
+            result["result"]["errors"],
+        )
+        self.assertIn(
+            "LEGACY_STATE_EVENT_WITHOUT_PROJECTION_HASH",
+            result["result"]["warnings"],
+        )
+
+    def test_legacy_unbound_state_cannot_claim_completed_workflow(self) -> None:
+        event_path = self.feature / ".sdd2/events.jsonl"
+        event = json.loads(event_path.read_text(encoding="utf-8").strip())
+        event.pop("state_sha256")
+        event.pop("event_hash")
+        event["event_hash"] = hashlib.sha256(
+            json.dumps(
+                event,
+                ensure_ascii=False,
+                sort_keys=True,
+                separators=(",", ":"),
+            ).encode("utf-8")
+        ).hexdigest()
+        event_path.write_text(
+            json.dumps(
+                event,
+                ensure_ascii=False,
+                sort_keys=True,
+                separators=(",", ":"),
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        state_path = self.feature / ".sdd2/feature-state.json"
+        state = json.loads(state_path.read_text(encoding="utf-8"))
+        state["current_stage"] = "archive"
+        state["stage_status"] = "completed"
+        state["next_required_action"] = "none"
+        state_path.write_text(
+            json.dumps(state, ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8",
+        )
+
+        result = self._run(
+            "validate",
+            "--feature-dir",
+            str(self.feature),
+            expected=1,
+        )
+        self.assertIn(
+            "WORKFLOW_ARTIFACT_MISSING:proposal-input",
+            result["result"]["errors"],
+        )
+        self.assertIn(
+            "APPROVAL_MISSING_OR_INVALID:archive",
+            result["result"]["errors"],
+        )
+
+    def test_state_approval_requires_matching_append_only_record(self) -> None:
+        self._record("proposal-input", "proposal-input.md", "# Proposal\n")
+        self._record("spec", "spec.md", "# Spec\n")
+        self._approve("spec")
+        (self.feature / ".sdd2/gate-approvals.jsonl").write_text("", encoding="utf-8")
+
+        result = self._run(
+            "validate",
+            "--feature-dir",
+            str(self.feature),
+            expected=1,
+        )
+        self.assertIn(
+            "APPROVAL_CHAIN_RECORD_MISSING:spec",
+            result["result"]["errors"],
+        )
+
+    def test_phase_review_is_bound_to_append_only_approval_chain(self) -> None:
+        self._reach_tasks_approval()
+        self._capture_scope()
+        self._run(
+            "phase-review",
+            "--feature-dir",
+            str(self.feature),
+            "--phase",
+            "Phase1",
+            "--source",
+            "user-message",
+            "--approver-role",
+            "human",
+            "--approval-text",
+            "批准 Phase1",
+            "--message-id",
+            "phase-chain-proof",
+        )
+
+        records = [
+            json.loads(line)
+            for line in (self.feature / ".sdd2/gate-approvals.jsonl")
+            .read_text(encoding="utf-8")
+            .splitlines()
+            if line.strip()
+        ]
+        phase_record = records[-1]
+        state = json.loads(
+            (self.feature / ".sdd2/feature-state.json").read_text(encoding="utf-8")
+        )
+        phase_state = state["phase_reviews"]["Phase1"]
+        self.assertEqual(phase_record["stage"], "phase-review:Phase1")
+        self.assertEqual(phase_record["approval_id"], phase_state["approval_id"])
+        self.assertEqual(phase_record["record_hash"], phase_state["record_hash"])
+
+        approval_path = self.feature / ".sdd2/gate-approvals.jsonl"
+        approval_path.write_text(
+            "\n".join(
+                json.dumps(record, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+                for record in records[:-1]
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        missing = self._run(
+            "validate",
+            "--feature-dir",
+            str(self.feature),
+            expected=1,
+        )
+        self.assertIn(
+            "APPROVAL_CHAIN_RECORD_MISSING:phase-review:Phase1",
+            missing["result"]["errors"],
+        )
+
     def test_terminal_attempt_requires_explicit_restart(self) -> None:
         closed = self._run(
             "close", "--feature-dir", str(self.feature), "--result", "aborted",
@@ -850,13 +1165,226 @@ class Sdd2ControlTest(unittest.TestCase):
         )
         self.assertIn("changed test source", result["error"])
 
+    def test_unit_test_pass_rejects_self_reported_text_without_execution(self) -> None:
+        self._reach_tasks_approval()
+        self._capture_scope()
+        (self.repo / "app/src/main/java/App.java").write_text(
+            "class App { int value; }\n",
+            encoding="utf-8",
+        )
+        test = self.repo / "app/src/test/app_test.py"
+        test.parent.mkdir(parents=True)
+        test.write_text(
+            "import unittest\n\n"
+            "class AppTest(unittest.TestCase):\n"
+            "    def test_value(self):\n"
+            "        self.assertEqual(1, 1)\n",
+            encoding="utf-8",
+        )
+        self._run(
+            "phase-review", "--feature-dir", str(self.feature), "--phase", "Phase1",
+            "--source", "user-message", "--approver-role", "human",
+            "--approval-text", "批准 Phase1",
+        )
+        self._run("freeze-scope", "--feature-dir", str(self.feature))
+        self._record("code-review-findings", "code-review-findings.md", "# Findings\n")
+        self._run(
+            "quality-gate", "--feature-dir", str(self.feature), "--gate", "code-review",
+            "--result", "passed", "--evidence", "reviewed",
+        )
+        self._record("auto-fix-summary", "auto-fix-summary.md", "# Auto-fix\n")
+        self._run(
+            "quality-gate", "--feature-dir", str(self.feature), "--gate", "auto-fix",
+            "--result", "not-required", "--evidence", "none",
+        )
+        self._record(
+            "unit-test-summary",
+            "unit-test-summary.md",
+            "# 单元测试总结\n\n模型声称测试命令退出码为零，但没有控制器执行证据。\n",
+        )
+
+        result = self._run(
+            "quality-gate", "--feature-dir", str(self.feature), "--gate", "unit-test",
+            "--result", "passed", "--evidence", "test command exit code 0; 1 test passed",
+            expected=2,
+        )
+        self.assertIn("UNIT_TEST_EXECUTION_MISSING", result["error"])
+
+    def test_run_unit_test_records_observed_execution_evidence(self) -> None:
+        self._reach_tasks_approval()
+        self._capture_scope()
+        (self.repo / "app/src/main/java/App.java").write_text(
+            "class App { int value; }\n",
+            encoding="utf-8",
+        )
+        test = self.repo / "app/src/test/app_test.py"
+        test.parent.mkdir(parents=True)
+        test.write_text(
+            "import unittest\n\n"
+            "class AppTest(unittest.TestCase):\n"
+            "    def test_value(self):\n"
+            "        self.assertEqual(2 + 2, 4)\n",
+            encoding="utf-8",
+        )
+        self._run(
+            "phase-review", "--feature-dir", str(self.feature), "--phase", "Phase1",
+            "--source", "user-message", "--approver-role", "human",
+            "--approval-text", "批准 Phase1",
+        )
+        self._run("freeze-scope", "--feature-dir", str(self.feature))
+        self._record("code-review-findings", "code-review-findings.md", "# Findings\n")
+        self._run(
+            "quality-gate", "--feature-dir", str(self.feature), "--gate", "code-review",
+            "--result", "passed", "--evidence", "reviewed",
+        )
+        self._record("auto-fix-summary", "auto-fix-summary.md", "# Auto-fix\n")
+        self._run(
+            "quality-gate", "--feature-dir", str(self.feature), "--gate", "auto-fix",
+            "--result", "not-required", "--evidence", "none",
+        )
+
+        execution = self._run_observed_unit_tests()
+        evidence_path = self.feature / ".sdd2/unit-test-evidence.json"
+        evidence = json.loads(evidence_path.read_text(encoding="utf-8"))
+        self.assertEqual(execution["outcome"], "passed")
+        self.assertEqual(execution["exit_code"], 0)
+        self.assertEqual(execution["test_counts"]["total"], 1)
+        self.assertEqual(execution["evidence_sha256"], evidence["evidence_sha256"])
+
+        self._record(
+            "unit-test-summary",
+            "unit-test-summary.md",
+            (
+                "# 单元测试总结\n\n"
+                f"执行证据 SHA-256：`{execution['evidence_sha256']}`\n\n"
+                f"范围 SHA-256：`{execution['scope_sha256']}`\n\n"
+                "控制器实际执行一项单元测试，结果通过。\n"
+            ),
+        )
+        gate = self._run(
+            "quality-gate", "--feature-dir", str(self.feature), "--gate", "unit-test",
+            "--result", "passed", "--evidence", "controller-observed execution",
+        )
+        self.assertEqual(
+            gate["result"]["quality_gates"]["unit-test"]["test_execution_sha256"],
+            execution["evidence_sha256"],
+        )
+
+    def test_zero_test_command_cannot_pass_unit_test_gate(self) -> None:
+        self._reach_unit_test_ready(
+            "import unittest\n\n"
+            "class AppTest(unittest.TestCase):\n"
+            "    def test_value(self):\n"
+            "        self.assertEqual(1, 1)\n"
+        )
+        execution = self._run_observed_unit_tests(pattern="missing_*.py")
+        self.assertEqual(execution["outcome"], "blocked")
+        self.assertEqual(execution["failure_reason"], "NO_EXECUTED_TEST_OBSERVED")
+
+        self._record(
+            "unit-test-summary",
+            "unit-test-summary.md",
+            (
+                "# 单元测试总结\n\n"
+                f"执行证据 SHA-256：`{execution['evidence_sha256']}`\n\n"
+                f"范围 SHA-256：`{execution['scope_sha256']}`\n\n"
+                "控制器没有观察到任何实际执行的测试，因此不得通过。\n"
+            ),
+        )
+        result = self._run(
+            "quality-gate", "--feature-dir", str(self.feature), "--gate", "unit-test",
+            "--result", "passed", "--evidence", "claimed pass despite zero tests",
+            expected=2,
+        )
+        self.assertIn("UNIT_TEST_OBSERVED_OUTCOME_MISMATCH", result["error"])
+
+    def test_tampered_unit_test_evidence_blocks_summary(self) -> None:
+        self._reach_unit_test_ready(
+            "import unittest\n\n"
+            "class AppTest(unittest.TestCase):\n"
+            "    def test_value(self):\n"
+            "        self.assertEqual(1, 1)\n"
+        )
+        execution = self._run_observed_unit_tests()
+        evidence_path = self.feature / ".sdd2/unit-test-evidence.json"
+        evidence = json.loads(evidence_path.read_text(encoding="utf-8"))
+        evidence["exit_code"] = 99
+        evidence_path.write_text(
+            json.dumps(evidence, ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8",
+        )
+        self._write(
+            "unit-test-summary.md",
+            (
+                "# 单元测试总结\n\n"
+                f"执行证据 SHA-256：`{execution['evidence_sha256']}`\n\n"
+                f"范围 SHA-256：`{execution['scope_sha256']}`\n\n"
+                "控制器执行证据已被外部改写，本总结不得记录。\n"
+            ),
+        )
+
+        result = self._run(
+            "record-artifact", "--feature-dir", str(self.feature),
+            "--stage", "unit-test-summary", expected=2,
+        )
+        self.assertIn("UNIT_TEST_EVIDENCE_HASH_MISMATCH", result["error"])
+
+    def test_invalid_unit_test_evidence_shape_is_controlled_error(self) -> None:
+        self._reach_unit_test_ready(
+            "import unittest\n\n"
+            "class AppTest(unittest.TestCase):\n"
+            "    def test_value(self):\n"
+            "        self.assertEqual(1, 1)\n"
+        )
+        self._run_observed_unit_tests()
+        evidence_path = self.feature / ".sdd2/unit-test-evidence.json"
+        evidence_path.write_text("[]\n", encoding="utf-8")
+
+        result = self._run(
+            "validate",
+            "--feature-dir",
+            str(self.feature),
+            expected=1,
+        )
+        self.assertIn(
+            "UNIT_TEST_EVIDENCE_INVALID",
+            result["result"]["errors"],
+        )
+
+    def test_test_command_scope_change_blocks_workflow(self) -> None:
+        self._reach_unit_test_ready(
+            "import unittest\n"
+            "from pathlib import Path\n\n"
+            "class AppTest(unittest.TestCase):\n"
+            "    def test_changes_production_file(self):\n"
+            "        Path('app/src/main/java/App.java').write_text(\n"
+            "            'class App { int changedByTest; }\\n', encoding='utf-8'\n"
+            "        )\n"
+            "        self.assertTrue(True)\n"
+        )
+        execution = self._run_observed_unit_tests()
+        self.assertEqual(execution["outcome"], "blocked")
+        self.assertEqual(execution["failure_reason"], "TEST_CHANGED_FROZEN_SCOPE")
+        state = json.loads(
+            (self.feature / ".sdd2/feature-state.json").read_text(encoding="utf-8")
+        )
+        self.assertEqual(state["stage_status"], "blocked")
+        self.assertEqual(state["blocked"]["code"], "UNIT_TEST_SCOPE_CHANGED")
+        self.assertEqual(state["next_required_action"], "resolve-unit-test")
+
     def test_failed_test_cannot_archive_and_can_close_with_risk(self) -> None:
         self._reach_tasks_approval()
         self._capture_scope()
         (self.repo / "app/src/main/java/App.java").write_text("class App { int value; }\n", encoding="utf-8")
-        test = self.repo / "app/src/test/java/AppTest.java"
+        test = self.repo / "app/src/test/app_test.py"
         test.parent.mkdir(parents=True)
-        test.write_text("class AppTest {}\n", encoding="utf-8")
+        test.write_text(
+            "import unittest\n\n"
+            "class AppTest(unittest.TestCase):\n"
+            "    def test_failure(self):\n"
+            "        self.assertEqual(1, 2)\n",
+            encoding="utf-8",
+        )
         self._run(
             "phase-review", "--feature-dir", str(self.feature), "--phase", "Phase1",
             "--source", "user-message", "--approver-role", "human",
@@ -873,7 +1401,18 @@ class Sdd2ControlTest(unittest.TestCase):
             "quality-gate", "--feature-dir", str(self.feature), "--gate", "auto-fix",
             "--result", "not-required", "--evidence", "none"
         )
-        self._record("unit-test-summary", "unit-test-summary.md", "# Unit Test\nFailed\n")
+        execution = self._run_observed_unit_tests()
+        self.assertEqual(execution["outcome"], "failed", execution)
+        self._record(
+            "unit-test-summary",
+            "unit-test-summary.md",
+            (
+                "# 单元测试总结\n\n"
+                f"执行证据 SHA-256：`{execution['evidence_sha256']}`\n\n"
+                f"范围 SHA-256：`{execution['scope_sha256']}`\n\n"
+                "控制器实际执行测试并观察到断言失败。\n"
+            ),
+        )
         self._run(
             "quality-gate", "--feature-dir", str(self.feature), "--gate", "unit-test",
             "--result", "failed", "--evidence", "test command exit code 1"
