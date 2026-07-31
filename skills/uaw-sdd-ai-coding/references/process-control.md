@@ -72,6 +72,10 @@ CONTROL=skills/uaw-sdd-ai-coding/scripts/sdd2_control.py
 
 `IMPLEMENTATION_PERMIT_*` 表示批准、资产、Attempt、范围或许可哈希不一致。立即停止并从最早失效资产重新审批；不得继续实现或复用旧快照。
 
+`FEATURE_GENERATION_BOUNDARY_REJECTED` 表示 `init` 前目标 Feature 不只包含 `brief-design.md`，或同一 worktree 已出现另一个未受控 Feature。`UNEXPECTED_FEATURE_LAYOUT` 表示活动 Feature 中出现白名单外文件/目录/软链接、提前阶段资产或未受控兄弟 Feature。报告所有相对路径并停止；不得自动删除。用户或维护者确认并移走违规路径后调用 `resume`，控制器只恢复原状态和原动作。
+
+`SCOPE_MANIFEST_INVALID` 表示既有范围控制文件缺字段、格式损坏或无法复核。必须作为可报告的控制错误停止，不得抛出未处理异常，也不得重新解释为当前实现许可。
+
 ## Git 写操作
 
 本 Skill 不执行 `git add`、`git commit` 或 `git push`。活动锁存在时，内部 `prepare-commit-msg` Guard 会阻止所有提交，包括带 `--no-verify` 的提交；`pre-push` Guard 会阻止普通推送。Guard 遵循仓库当前的 `core.hooksPath`，保留既有同名 Hook，流程释放活动锁后自动放行并继续执行原 Hook。
@@ -87,6 +91,7 @@ Archive 批准不是 Git 授权。完成 Archive 后立即结束当前回合；�
 - 测试失败/阻塞：在当前范围修复并重跑，或由用户明确接受风险/终止；绝不能完成 Archive。
 - 会话中断：调用 `resume`，不得从聊天记录推断状态。
 - 重复执行：只有用户发送新的明确重试/重启消息后才能使用 `restart-attempt`。
+- 乱生成文件：保留错误清单并进入 `UNEXPECTED_FEATURE_LAYOUT`；只移走白名单外路径，九项公开资产及 `.sdd2` 规定证据不得误删。
 
 ## 历史样例
 

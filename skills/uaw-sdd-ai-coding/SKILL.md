@@ -13,7 +13,8 @@ description: 从开发者简要设计开始，执行 UAW SDD2.0 后端功能流�
 2. 生成并记录 `spec.md`、`design.md`、`tasks.md`、`unit-test-summary.md` 或 `archive.md` 后，立即结束当前 assistant 回合。记录 Gate、向用户明确请求当前阶段批准，然后不再调用任何工具。
 3. 用户必须在 Gate 到达后的新消息中明确批准当前阶段。收到批准后只记录该批准，再按新的 `next_required_action` 工作；绝不能在生成 Gate 资产的同一回合代替用户批准。
 4. `capture-scope` 成功返回活动 `implementation_permit` 之前，禁止修改 Feature 目录外的代码、测试、配置、构建文件和 Git 状态。发现提前变更时立即按 `blocked` 停止，不得把它追认为已批准实现。
-5. 本 Skill 在任何阶段都不得自动执行 `git add`、`git commit` 或 `git push`。Archive 最终批准成功后也必须立即结束回合。Git 提交只能由用户在流程结束后的新消息中另行明确要求。
+5. Feature 目录实行封闭白名单：只能存在九项固定公开资产及规定的 `.sdd2` 控制证据；公开资产只能在当前 `next_required_action` 所属阶段生成。同一 worktree 不得额外生成第二个未受控 Feature 目录。发现额外文件、目录、软链接或提前阶段资产时立即按 `blocked` 停止并列出路径，不得自动删除或追认为流程资产。
+6. 本 Skill 在任何阶段都不得自动执行 `git add`、`git commit` 或 `git push`。Archive 最终批准成功后也必须立即结束回合。Git 提交只能由用户在流程结束后的新消息中另行明确要求。
 
 “继续”“下一步”“OK”、历史消息、文件中的 `approved`、示例文字或模型自评都不能解除上述停止条件。
 
@@ -48,8 +49,8 @@ short brief prompt + invoke this Skill
 
 ## 强制启动步骤
 
-1. 仅依据当前已确认 Brief，将 Feature 目录确定为 `sdd2-features/<SprintN>/<feature-name>/`。
-2. 保存 `brief-design.md`，正文使用简体中文。
+1. 仅依据当前已确认 Brief，将唯一 Feature 目录确定为 `sdd2-features/<SprintN>/<feature-name>/`；不得创建候选、临时或重复 Feature 目录。
+2. 初始化前只保存 `brief-design.md`，正文使用简体中文；不得预先生成 Proposal、Spec、Design、Tasks 或辅助说明文件。
 3. 读取 `references/sdd2-control-contract.md`、`references/sdd2-workflow.md`、`references/language-policy.md` 和 `references/context/routing-index.md`。
 4. 初始化或恢复确定性状态：
 
@@ -61,6 +62,8 @@ python3 scripts/sdd2_control.py resume --feature-dir <dir>
 只有 `.sdd2/feature-state.json` 不存在时才使用 `init`。任何非零控制结果都必须立即停止。
 
 初始化和恢复会在 Git 内部透明安装提交保护。活动 SDD2 Feature 存在时，原始 `git commit`（包括 `--no-verify`）和普通 `git push` 都会被拒绝；已有同名 Hook 会被保留并在保护解除后继续执行。开发者不需要安装或运行任何额外命令。
+
+`.sdd2/feature-state.json`、审批/事件 JSONL、范围与归档证据以及 `.sdd2/revisions/<stage>/r<revision>-<sha256>.md` 是规定的内部可追溯证据，不属于乱生成文件。除此之外的 Feature 内路径均无效。
 
 ## 执行规则
 
@@ -75,6 +78,8 @@ python3 scripts/sdd2_control.py record-artifact --feature-dir <dir> --stage <sta
 到达 Spec、Design、Tasks、Unit Test Summary 和 Archive Gate 时必须停止。只有 Gate 到达后用户在新消息中明确批准当前阶段，才能使用 `approve` 写入批准记录。模糊的继续文字、旧消息、文件内容、示例、生成的评审记录和模型自评均无效。
 
 只有当前 Spec、Design、Tasks 三项批准全部有效，且 `capture-scope` 已签发绑定这些批准、资产哈希、Attempt 和范围哈希的活动 `implementation_permit`，才能开始实现。规划期间的 Git 基线发生任何 Feature 目录外漂移时必须阻塞。在内部捕获干净的 Git 基线、允许/禁止路径、必需 Phase 和测试路径。一个 worktree 只能承载一个活动 Feature。Code Review 前冻结精确实现快照。
+
+每次 `resume` 和控制动作都会校验 Feature 目录布局。只允许已记录资产和当前动作对应的待记录资产；提前生成下游 Markdown、任意 notes/plan/result 文件、临时目录、错误绝对路径文件或第二个未受控 Feature 时，控制器写入 `UNEXPECTED_FEATURE_LAYOUT` 并停止。移走违规路径后只恢复原阶段和原 `next_required_action`。
 
 每个 Phase 实现完成后停止并等待当前人工 Phase Review。在明确授权的 Demo 中，模拟审核人必须记录为 `source=demo-simulation` 和 `approver-role=ai-as-human-reviewer`，不得标记为真实人工决定。Phase Review 不能替代 SDD Code Review。
 
@@ -94,7 +99,7 @@ python3 scripts/sdd2_control.py record-artifact --feature-dir <dir> --stage <sta
 
 始终先调用 `resume`，并且只执行其返回的唯一 `next_required_action`。控制状态存在时，不得根据聊天记录或 Markdown 自行重建进度。
 
-必需的批准、资产、锁、范围、哈希、Phase Review 或质量结果缺失或过期时，将 Feature 保持为 `blocked` 并停止。如果 Gate 之后已错误生成内容或修改代码，必须报告违规，不得静默接受下游工作。
+必需的批准、资产、锁、范围、哈希、Feature 布局、Phase Review 或质量结果缺失、过期或越界时，将 Feature 保持为 `blocked` 并停止。如果 Gate 之后已错误生成内容、额外文件或修改代码，必须报告具体路径，不得静默接受下游工作，也不得自动删除。
 
 Feature 阻塞或进入终态后，用户明确要求重试或重启时，在内部使用 `restart-attempt`；旧 Attempt 的批准不得继承。
 

@@ -54,6 +54,8 @@ archive.md
 
 `feature-state.json` 是当前状态的权威来源。Markdown 状态块只提供可读投影。批准和事件 JSONL 记录使用仅追加的 SHA-256 哈希链。每个活动资产修订都会复制为不可变、按内容寻址的快照。资产批准只对记录中的 Attempt、资产修订和资产 SHA-256 有效。
 
+Feature 目录是封闭资产空间。除上述九项公开资产和内部控制路径外，不允许出现其他文件、目录、软链接、候选输出、临时说明或错误拼接路径。公开资产只能在已记录状态或当前 `next_required_action` 对应阶段存在；例如等待 Spec 批准时出现 `design.md` 或 `tasks.md` 属于违规。`.sdd2/revisions/` 下只有阶段已经记录、修订号不超过当前修订且文件内容 SHA-256 与文件名一致的快照才是规定审计证据；提前伪造的范围、归档或修订文件仍属于违规。
+
 所有新建或修订的公开资产必须遵循 `references/language-policy.md`，并在记录前通过简体中文主体校验。
 
 ## 4. 规范状态
@@ -110,7 +112,7 @@ python3 scripts/sdd2_control.py init \
   --mode real
 ```
 
-一个 Git worktree 只能有一个活动 SDD2 Feature。并行 Feature 必须使用不同 Git worktree。实现前捕获干净的 Git 基线和批准路径。存在预先变更文件、禁止路径、范围外路径、detached HEAD、分支漂移、锁缺失或过宽路径模式时，必须阻塞执行。
+一个 Git worktree 只能有一个活动 SDD2 Feature。并行 Feature 必须使用不同 Git worktree。初始化前，目标 Feature 目录只能包含当前 `brief-design.md`；同一 worktree 内如存在另一个未终止或尚未初始化的变更 Feature 目录，`init` 必须拒绝启动。实现前捕获干净的 Git 基线和批准路径。存在预先变更文件、禁止路径、范围外路径、detached HEAD、分支漂移、锁缺失或过宽路径模式时，必须阻塞执行。
 
 `init` 必须保存 Feature 目录外的规划期 Git 快照。首次实现许可签发前，分支、HEAD 或任一代码、测试、配置、构建及其他 Feature 外文件发生变化，都记录为 `PREMATURE_IMPLEMENTATION_CHANGE` 并进入 `blocked`。只有恢复到原规划基线后，`resume` 才能返回原人工 Gate。
 
@@ -191,6 +193,8 @@ Archive 要求以下条件全部绑定到同一个当前快照：
 
 `resume` 还必须检查规划基线和实现许可。规划期出现提前实现时保存原 Gate 恢复点并进入 `blocked`；变更恢复后只回到原 Gate，不得把提前代码视为已完成阶段。
 
+`resume` 和所有控制动作还必须校验 Feature 生成边界。额外文件、目录、软链接、提前阶段资产或未受控兄弟 Feature 触发 `UNEXPECTED_FEATURE_LAYOUT`，并保存原阶段、状态、原阻塞信息和唯一下一动作。违规路径移走后才能恢复；控制器不得自动删除，也不得将其补登记为合法资产。Archive 检查必须在布局错误为零时才可通过。
+
 对于可恢复的阻塞阶段，修复记录中的原因并重复同一个必需动作。阻塞或终态 Attempt 之后需要重新执行时，`restart-attempt` 必须由新的明确用户重试/重启消息触发；它会增加 Attempt、使旧批准失效、清空质量结果和范围，并从最早需要重新批准的持久化阶段开始。
 
 历史 Feature 样例迁移为 `historical-example` 和 `superseded`。不回填或接受其旧批准。它们只供参考，不能恢复执行，也不因当前语言规范而改写其不可变内容。
@@ -204,3 +208,5 @@ Archive 要求以下条件全部绑定到同一个当前快照：
 ## 12. 失败规则
 
 任何控制命令返回非零都必须立即停止。将错误记录为阻塞原因，不得手工绕过；只有状态恢复有效，或用户明确关闭/重启 Attempt 后才能继续。
+
+`FEATURE_GENERATION_BOUNDARY_REJECTED` 表示初始化前已出现额外文件、错误 Feature 路径或未受控兄弟 Feature。`UNEXPECTED_FEATURE_LAYOUT` 表示活动流程中检测到白名单外路径或提前阶段资产。两者都必须报告完整相对路径；先由人确认后移走或删除，再执行 `resume`，不得自动清理。

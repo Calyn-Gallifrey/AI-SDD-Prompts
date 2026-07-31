@@ -243,6 +243,8 @@ def main() -> int:
     for marker in (
         "P0 回合硬停止协议",
         "implementation_permit",
+        "封闭白名单",
+        "UNEXPECTED_FEATURE_LAYOUT",
         "不得自动执行 `git add`、`git commit` 或 `git push`",
     ):
         if marker not in skill_text:
@@ -253,6 +255,8 @@ def main() -> int:
     ).read_text(encoding="utf-8")
     for marker in (
         "PREMATURE_IMPLEMENTATION_CHANGE",
+        "UNEXPECTED_FEATURE_LAYOUT",
+        "UNCONTROLLED_SIBLING_FEATURE",
         "prepare-commit-msg",
         "implementation_permit_sha256",
     ):

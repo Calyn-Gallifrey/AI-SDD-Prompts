@@ -16,6 +16,8 @@ sdd2-features/<SprintN>/<feature-name>/
 
 所有人类可读资产遵循 `language-policy.md`，以简体中文为主体。
 
+初始化前，唯一 Feature 目录只能包含 `brief-design.md`。初始化后只能逐阶段生成本文件列出的九项公开资产；`.sdd2` 下的状态、审批、事件、范围、归档证据和修订快照由控制器生成。其他说明文件、候选输出、临时目录、软链接、错误绝对路径文件和重复 Feature 目录均不属于流程资产。
+
 ## 资产映射
 
 | 资产 | 职责 | 输入 | 输出/使用方 | 完成条件 |
@@ -90,6 +92,8 @@ Unit Test Skill 必须先生成或更新测试代码，再生成 Summary。无�
 ## 变更处理
 
 用户需求变化不是非正式编辑。更新最早受影响的资产并记录，让控制器确定性失效下游结果，再重复所有已过期的批准和 Gate。请求实际属于另一个 Feature 时，新建独立 Feature/worktree，不得重定向活动状态。
+
+公开资产必须按当前 `next_required_action` 逐个生成。提前生成 Design、Tasks 或其他下游资产，或在同一 worktree 创建第二个未受控 Feature，都会进入 `UNEXPECTED_FEATURE_LAYOUT`。控制器列出具体路径并保留原恢复点，不自动删除；违规路径移走后 `resume` 返回原动作。
 
 首次实现许可签发前，Feature 目录外出现代码、测试、配置、构建或 Git HEAD 变化时，流程立即阻塞并保存原人工 Gate。恢复到规划基线后才能回到原 Gate；提前实现不能通过补文档获得追认。
 

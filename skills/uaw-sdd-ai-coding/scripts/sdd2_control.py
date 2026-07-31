@@ -32,6 +32,7 @@ SCOPE_FILE = "implementation-scope.json"
 ARCHIVE_EVIDENCE_FILE = "archive-evidence.json"
 REVISION_DIR = "revisions"
 PREMATURE_CHANGE_BLOCK = "PREMATURE_IMPLEMENTATION_CHANGE"
+FEATURE_LAYOUT_BLOCK = "UNEXPECTED_FEATURE_LAYOUT"
 COMMIT_GUARD_MARKER = "# UAW-SDD2 GIT GUARD v1"
 COMMIT_GUARD_HOOKS = ("prepare-commit-msg", "pre-push")
 
@@ -46,6 +47,27 @@ ARTIFACT_FILES = {
     "unit-test-summary": "unit-test-summary.md",
     "archive": "archive.md",
 }
+ARTIFACT_STAGE_BY_FILENAME = {
+    filename: stage for stage, filename in ARTIFACT_FILES.items()
+}
+ALWAYS_CONTROL_FILENAMES = {
+    STATE_FILE,
+    APPROVAL_FILE,
+    EVENT_FILE,
+}
+NEXT_ACTION_ARTIFACT_STAGE = {
+    "assemble-proposal-input": "proposal-input",
+    "generate-spec": "spec",
+    "generate-design": "design",
+    "generate-tasks": "tasks",
+    "run-code-review": "code-review-findings",
+    "record-auto-fix-not-required-or-current-fixes": "auto-fix-summary",
+    "apply-review-findings": "auto-fix-summary",
+    "generate-archive-from-evidence": "archive",
+}
+REVISION_SNAPSHOT_PATTERN = re.compile(
+    r"^\.sdd2/revisions/([a-z0-9-]+)/r([0-9]{4,})-([0-9a-f]{64})\.md$"
+)
 
 STAGE_ORDER = [
     "brief-design",
@@ -379,6 +401,121 @@ def feature_paths(feature_dir: Path) -> dict[str, Path]:
     }
 
 
+def feature_location_errors(repo_root: Path, feature_dir: Path) -> list[str]:
+    try:
+        relative = feature_dir.relative_to(repo_root)
+    except ValueError:
+        return ["FEATURE_DIRECTORY_OUTSIDE_REPOSITORY"]
+    parts = relative.parts
+    if len(parts) != 3 or parts[0] != "sdd2-features":
+        return [f"FEATURE_DIRECTORY_CONTRACT:{relative.as_posix()}"]
+    return []
+
+
+def feature_layout_errors(
+    feature_dir: Path,
+    state: dict[str, Any] | None,
+    *,
+    allow_unrecorded_stage: str | None = None,
+) -> list[str]:
+    recorded_stages = set() if state is None else set(state.get("artifacts", {}))
+    allowed_stages = {"brief-design"} if state is None else set(recorded_stages)
+    if state is not None:
+        effective_action = state.get("next_required_action", "")
+        block = state.get("blocked") or {}
+        if block.get("code") == FEATURE_LAYOUT_BLOCK:
+            effective_action = (
+                block.get("resume_state") or {}
+            ).get("next_required_action", effective_action)
+        expected = NEXT_ACTION_ARTIFACT_STAGE.get(effective_action)
+        if expected:
+            allowed_stages.add(expected)
+    if allow_unrecorded_stage:
+        allowed_stages.add(allow_unrecorded_stage)
+
+    allowed_directories = {
+        CONTROL_DIR,
+        f"{CONTROL_DIR}/{REVISION_DIR}",
+        *(
+            f"{CONTROL_DIR}/{REVISION_DIR}/{stage}"
+            for stage in recorded_stages
+        ),
+    }
+    allowed_control_files = {
+        f"{CONTROL_DIR}/{filename}" for filename in ALWAYS_CONTROL_FILENAMES
+    }
+    if state is not None and state.get("implementation_permit") is not None:
+        allowed_control_files.add(f"{CONTROL_DIR}/{SCOPE_FILE}")
+    if state is not None and (
+        "archive" in recorded_stages
+        or state.get("next_required_action") == "generate-archive-from-evidence"
+    ):
+        allowed_control_files.add(f"{CONTROL_DIR}/{ARCHIVE_EVIDENCE_FILE}")
+    errors: list[str] = []
+    revision_paths: dict[tuple[str, int], list[str]] = {}
+    for path in sorted(feature_dir.rglob("*"), key=lambda item: item.as_posix()):
+        relative = path.relative_to(feature_dir).as_posix()
+        if path.is_symlink():
+            errors.append(f"UNEXPECTED_FEATURE_SYMLINK:{relative}")
+            continue
+        if path.is_dir():
+            if state is None or relative not in allowed_directories:
+                errors.append(f"UNEXPECTED_FEATURE_DIRECTORY:{relative}")
+            continue
+        if not path.is_file():
+            errors.append(f"UNEXPECTED_FEATURE_PATH_TYPE:{relative}")
+            continue
+        stage = ARTIFACT_STAGE_BY_FILENAME.get(relative)
+        if stage:
+            if stage not in allowed_stages:
+                errors.append(f"UNEXPECTED_STAGE_ASSET:{relative}")
+            continue
+        if state is not None and relative in allowed_control_files:
+            continue
+        if (
+            state is not None
+            and relative.startswith(f"{CONTROL_DIR}/")
+            and relative.rsplit("/", 1)[-1] in {
+                SCOPE_FILE,
+                ARCHIVE_EVIDENCE_FILE,
+            }
+        ):
+            errors.append(f"UNEXPECTED_CONTROL_FILE:{relative}")
+            continue
+        snapshot = REVISION_SNAPSHOT_PATTERN.fullmatch(relative)
+        if state is not None and snapshot:
+            stage = snapshot.group(1)
+            revision = int(snapshot.group(2))
+            digest = snapshot.group(3)
+            artifact = state.get("artifacts", {}).get(stage)
+            try:
+                current_revision = (
+                    int(artifact.get("revision", 0))
+                    if isinstance(artifact, dict)
+                    else 0
+                )
+            except (TypeError, ValueError):
+                current_revision = 0
+            if (
+                artifact
+                and revision >= 1
+                and revision <= current_revision
+                and sha256_file(path) == digest
+            ):
+                revision_paths.setdefault((stage, revision), []).append(relative)
+                continue
+            errors.append(f"UNEXPECTED_REVISION_SNAPSHOT:{relative}")
+            continue
+        errors.append(f"UNEXPECTED_FEATURE_FILE:{relative}")
+    for (stage, revision), paths in revision_paths.items():
+        if len(paths) > 1:
+            errors.extend(
+                f"DUPLICATE_REVISION_SNAPSHOT:{stage}:r{revision:04d}:{path}"
+                for path in paths
+            )
+    return sorted(set(errors))
+
+
 def normalize_feature_dir(value: str | Path) -> Path:
     path = Path(value).expanduser().resolve()
     if not path.is_dir():
@@ -649,6 +786,72 @@ def changed_paths(repo_root: Path, base_commit: str) -> list[str]:
     return sorted(paths)
 
 
+def uncontrolled_sibling_feature_errors(
+    repo_root: Path,
+    feature_repo_path: str,
+) -> list[str]:
+    head_commit = run_git(repo_root, "rev-parse", "HEAD")
+    current_prefix = feature_repo_path.rstrip("/") + "/"
+    active_feature_dir: str | None = None
+    current_lock = lock_path(repo_root)
+    if current_lock.is_file():
+        try:
+            active_feature_dir = read_json(current_lock).get("feature_dir")
+        except ControlError:
+            active_feature_dir = None
+    sibling_roots: set[str] = set()
+    for relative in changed_paths(repo_root, head_commit):
+        if relative == feature_repo_path or relative.startswith(current_prefix):
+            continue
+        parts = relative.split("/")
+        if len(parts) < 3 or parts[0] != "sdd2-features":
+            continue
+        sibling_roots.add("/".join(parts[:3]))
+
+    errors: list[str] = []
+    for sibling_root in sorted(sibling_roots):
+        if sibling_root == active_feature_dir:
+            continue
+        sibling_state_path = repo_root / sibling_root / CONTROL_DIR / STATE_FILE
+        try:
+            sibling_state = read_json(sibling_state_path)
+        except ControlError:
+            sibling_state = None
+        if (
+            isinstance(sibling_state, dict)
+            and sibling_state.get("stage_status") in TERMINAL_STATUSES
+        ):
+            continue
+        errors.append(f"UNCONTROLLED_SIBLING_FEATURE:{sibling_root}")
+    return errors
+
+
+def feature_generation_errors(
+    feature_dir: Path,
+    state: dict[str, Any],
+    *,
+    allow_unrecorded_stage: str | None = None,
+) -> list[str]:
+    if state.get("execution_mode") == "historical-example":
+        return []
+    repo_root = state_repo_root(feature_dir, state)
+    errors = feature_location_errors(repo_root, feature_dir)
+    errors.extend(
+        feature_layout_errors(
+            feature_dir,
+            state,
+            allow_unrecorded_stage=allow_unrecorded_stage,
+        )
+    )
+    errors.extend(
+        uncontrolled_sibling_feature_errors(
+            repo_root,
+            state["feature_repo_path"],
+        )
+    )
+    return sorted(set(errors))
+
+
 def planning_snapshot(repo_root: Path, feature_repo_path: str) -> dict[str, Any]:
     head_commit = run_git(repo_root, "rev-parse", "HEAD")
     feature_prefix = feature_repo_path.rstrip("/") + "/"
@@ -770,6 +973,68 @@ def restore_premature_change_block(feature_dir: Path, state: dict[str, Any]) -> 
     save_state(feature_dir, state)
 
 
+def block_unexpected_feature_layout(
+    feature_dir: Path,
+    state: dict[str, Any],
+    errors: list[str],
+) -> None:
+    current_block = state.get("blocked") or {}
+    if current_block.get("code") == FEATURE_LAYOUT_BLOCK:
+        return
+    resume_state = {
+        "current_stage": state["current_stage"],
+        "stage_status": state["stage_status"],
+        "next_required_action": state["next_required_action"],
+        "blocked": state.get("blocked"),
+    }
+    state["blocked"] = {
+        "code": FEATURE_LAYOUT_BLOCK,
+        "reason": ", ".join(errors),
+        "recovery": "移走或删除白名单外文件及重复 Feature 目录，然后再次恢复；不得把额外文件追认为流程资产。",
+        "resume_state": resume_state,
+    }
+    state["stage_status"] = "blocked"
+    state["next_required_action"] = "remove-unexpected-feature-paths-before-current-action"
+    state["revision"] += 1
+    append_event(
+        feature_dir,
+        state,
+        "unexpected-feature-layout-blocked",
+        {"errors": errors, "resume_state": resume_state},
+    )
+    save_state(feature_dir, state)
+
+
+def restore_unexpected_feature_layout_block(
+    feature_dir: Path,
+    state: dict[str, Any],
+) -> None:
+    block = state.get("blocked") or {}
+    if block.get("code") != FEATURE_LAYOUT_BLOCK:
+        return
+    resume_state = block.get("resume_state") or {}
+    required = {
+        "current_stage",
+        "stage_status",
+        "next_required_action",
+        "blocked",
+    }
+    if not required.issubset(resume_state):
+        raise ControlError("UNEXPECTED_FEATURE_LAYOUT_RESUME_STATE_MISSING")
+    state["current_stage"] = resume_state["current_stage"]
+    state["stage_status"] = resume_state["stage_status"]
+    state["next_required_action"] = resume_state["next_required_action"]
+    state["blocked"] = resume_state["blocked"]
+    state["revision"] += 1
+    append_event(
+        feature_dir,
+        state,
+        "unexpected-feature-layout-restored",
+        {"restored": resume_state},
+    )
+    save_state(feature_dir, state)
+
+
 def path_matches(path: str, patterns: Iterable[str]) -> bool:
     return any(path == pattern or fnmatch.fnmatchcase(path, pattern) for pattern in patterns)
 
@@ -838,8 +1103,11 @@ def scope_drift(feature_dir: Path, state: dict[str, Any]) -> list[str]:
         ):
             return ["SCOPE_MANIFEST_MISSING"]
         return []
-    scope = load_scope(feature_dir)
-    snapshot = snapshot_for_scope(scope_repo_root(feature_dir, scope), scope)
+    try:
+        scope = load_scope(feature_dir)
+        snapshot = snapshot_for_scope(scope_repo_root(feature_dir, scope), scope)
+    except (ControlError, KeyError, TypeError, ValueError):
+        return ["SCOPE_MANIFEST_INVALID"]
     if snapshot["violations"]:
         return snapshot["violations"]
     frozen = scope.get("frozen_snapshot")
@@ -869,19 +1137,22 @@ def approval_errors(feature_dir: Path, state: dict[str, Any], stage: str) -> lis
 
 
 def scope_contract_payload(scope: dict[str, Any]) -> dict[str, Any]:
-    return {
-        "feature_id": scope["feature_id"],
-        "attempt": scope["attempt"],
-        "repository_id": scope["repository_id"],
-        "feature_repo_path": scope["feature_repo_path"],
-        "branch": scope["branch"],
-        "base_commit": scope["base_commit"],
-        "allowed_paths": scope["allowed_paths"],
-        "forbidden_paths": scope["forbidden_paths"],
-        "required_phases": scope["required_phases"],
-        "production_change": scope["production_change"],
-        "test_path_patterns": scope["test_path_patterns"],
-    }
+    fields = (
+        "feature_id",
+        "attempt",
+        "repository_id",
+        "feature_repo_path",
+        "branch",
+        "base_commit",
+        "allowed_paths",
+        "forbidden_paths",
+        "required_phases",
+        "production_change",
+        "test_path_patterns",
+    )
+    if not isinstance(scope, dict) or any(field not in scope for field in fields):
+        raise ControlError("SCOPE_MANIFEST_INVALID")
+    return {field: scope[field] for field in fields}
 
 
 def issue_implementation_permit(
@@ -958,10 +1229,17 @@ def implementation_permit_errors(
         if not scope_path.is_file():
             errors.append("IMPLEMENTATION_PERMIT_SCOPE_MISSING")
             return sorted(set(errors))
-        scope = load_scope(feature_dir)
-    expected_scope_sha256 = sha256_bytes(
-        canonical_json(scope_contract_payload(scope)).encode("utf-8")
-    )
+        try:
+            scope = load_scope(feature_dir)
+        except ControlError:
+            errors.append("SCOPE_MANIFEST_INVALID")
+            return sorted(set(errors))
+    try:
+        scope_payload = scope_contract_payload(scope)
+    except ControlError:
+        errors.append("SCOPE_MANIFEST_INVALID")
+        return sorted(set(errors))
+    expected_scope_sha256 = sha256_bytes(canonical_json(scope_payload).encode("utf-8"))
     if scope.get("scope_contract_sha256") != expected_scope_sha256:
         errors.append("IMPLEMENTATION_PERMIT_SCOPE_CONTRACT_HASH_MISMATCH")
     if permit.get("scope_contract_sha256") != expected_scope_sha256:
@@ -1003,8 +1281,11 @@ def revoke_implementation_permit(
 
 def quality_gate_errors(feature_dir: Path, state: dict[str, Any]) -> list[str]:
     errors: list[str] = []
-    scope = load_scope(feature_dir)
-    current = snapshot_for_scope(scope_repo_root(feature_dir, scope), scope)
+    try:
+        scope = load_scope(feature_dir)
+        current = snapshot_for_scope(scope_repo_root(feature_dir, scope), scope)
+    except (ControlError, KeyError, TypeError, ValueError):
+        return ["SCOPE_MANIFEST_INVALID"]
     if current["violations"]:
         errors.extend(current["violations"])
         return errors
@@ -1038,8 +1319,18 @@ def archive_evidence_errors(feature_dir: Path, state: dict[str, Any]) -> list[st
     path = feature_paths(feature_dir)["archive_evidence"]
     if not path.is_file():
         return ["ARCHIVE_EVIDENCE_MISSING"]
-    evidence = read_json(path)
-    scope = load_scope(feature_dir)
+    try:
+        evidence = read_json(path)
+    except ControlError:
+        return ["ARCHIVE_EVIDENCE_INVALID"]
+    try:
+        scope = load_scope(feature_dir)
+    except ControlError:
+        return ["SCOPE_MANIFEST_INVALID"]
+    if not isinstance(evidence, dict):
+        return ["ARCHIVE_EVIDENCE_INVALID"]
+    if not isinstance(scope, dict):
+        return ["SCOPE_MANIFEST_INVALID"]
     frozen = scope.get("frozen_snapshot") or {}
     errors: list[str] = []
     expected = {
@@ -1067,6 +1358,10 @@ def archive_errors(feature_dir: Path, state: dict[str, Any], require_archive: bo
     errors.extend(verify_lock(feature_dir, state))
     errors.extend(validate_hash_chain(feature_paths(feature_dir)["events"], "event_hash"))
     errors.extend(validate_hash_chain(feature_paths(feature_dir)["approvals"], "record_hash"))
+    generation_errors = feature_generation_errors(feature_dir, state)
+    errors.extend(generation_errors)
+    if generation_errors:
+        return sorted(set(errors))
     errors.extend(artifact_drift(feature_dir, state))
     for stage in ("spec", "design", "tasks", "unit-test-summary"):
         errors.extend(approval_errors(feature_dir, state, stage))
@@ -1125,10 +1420,16 @@ def validate_state(feature_dir: Path, state: dict[str, Any]) -> dict[str, list[s
     errors.extend(validate_hash_chain(feature_paths(feature_dir)["events"], "event_hash"))
     errors.extend(validate_hash_chain(feature_paths(feature_dir)["approvals"], "record_hash"))
     if state.get("execution_mode") != "historical-example":
-        errors.extend(planning_guard_errors(feature_dir, state))
-        errors.extend(scope_drift(feature_dir, state))
-        if state.get("implementation_permit") is not None or feature_paths(feature_dir)["scope"].exists():
-            errors.extend(implementation_permit_errors(feature_dir, state))
+        generation_errors = feature_generation_errors(feature_dir, state)
+        errors.extend(generation_errors)
+        if not generation_errors:
+            errors.extend(planning_guard_errors(feature_dir, state))
+            errors.extend(scope_drift(feature_dir, state))
+            if (
+                state.get("implementation_permit") is not None
+                or feature_paths(feature_dir)["scope"].exists()
+            ):
+                errors.extend(implementation_permit_errors(feature_dir, state))
     else:
         warnings.append("HISTORICAL_EXAMPLE_NOT_VALID_GATE_EVIDENCE")
     return {"errors": sorted(set(errors)), "warnings": sorted(set(warnings))}
@@ -1149,20 +1450,42 @@ def assert_control_integrity(
         if ignore_artifact_stage and error.startswith((f"ARTIFACT_DRIFT:{ignore_artifact_stage}:", f"ARTIFACT_MISSING:{ignore_artifact_stage}:")):
             continue
         errors.append(error)
-    premature_errors = planning_guard_errors(feature_dir, state)
-    if premature_errors:
-        block_premature_implementation_change(
-            feature_dir,
-            state,
-            premature_errors,
-        )
-        errors.extend(premature_errors)
+    generation_errors = feature_generation_errors(
+        feature_dir,
+        state,
+        allow_unrecorded_stage=ignore_artifact_stage,
+    )
+    if generation_errors:
+        if not errors and state.get("stage_status") not in TERMINAL_STATUSES:
+            block_unexpected_feature_layout(
+                feature_dir,
+                state,
+                generation_errors,
+            )
+        errors.extend(generation_errors)
+    else:
+        premature_errors = planning_guard_errors(feature_dir, state)
+        if premature_errors:
+            block_premature_implementation_change(
+                feature_dir,
+                state,
+                premature_errors,
+            )
+            errors.extend(premature_errors)
     if (
-        (state.get("implementation_permit") is not None or feature_paths(feature_dir)["scope"].exists())
+        not generation_errors
+        and (
+            state.get("implementation_permit") is not None
+            or feature_paths(feature_dir)["scope"].exists()
+        )
         and ignore_artifact_stage not in {"brief-design", "proposal-input", "spec", "design", "tasks"}
     ):
         errors.extend(implementation_permit_errors(feature_dir, state))
-    if not allow_scope_drift and state.get("execution_mode") != "historical-example":
+    if (
+        not generation_errors
+        and not allow_scope_drift
+        and state.get("execution_mode") != "historical-example"
+    ):
         errors.extend(scope_drift(feature_dir, state))
     if errors:
         raise ControlError("Control integrity check failed: " + ", ".join(sorted(set(errors))))
@@ -1240,12 +1563,27 @@ def cmd_init(args: argparse.Namespace) -> dict[str, Any]:
     paths = feature_paths(feature_dir)
     if paths["state"].exists():
         raise ControlError(f"Feature is already initialized: {paths['state']}")
+    repo_root = git_root(feature_dir)
+    boundary_errors = feature_location_errors(repo_root, feature_dir)
+    if boundary_errors:
+        raise ControlError(
+            "FEATURE_GENERATION_BOUNDARY_REJECTED:"
+            + ",".join(boundary_errors)
+        )
+    feature_repo_path = feature_dir.relative_to(repo_root).as_posix()
+    boundary_errors.extend(feature_layout_errors(feature_dir, None))
+    boundary_errors.extend(
+        uncontrolled_sibling_feature_errors(repo_root, feature_repo_path)
+    )
+    if boundary_errors:
+        raise ControlError(
+            "FEATURE_GENERATION_BOUNDARY_REJECTED:"
+            + ",".join(sorted(set(boundary_errors)))
+        )
     brief = feature_dir / ARTIFACT_FILES["brief-design"]
     if not brief.is_file():
         raise ControlError("brief-design.md must be persisted before SDD2 initialization")
     validate_artifact_language(brief, "brief-design")
-    repo_root = git_root(feature_dir)
-    feature_repo_path = feature_dir.relative_to(repo_root).as_posix()
     branch = run_git(repo_root, "branch", "--show-current")
     if not branch:
         raise ControlError("Detached HEAD is not allowed for an active SDD2 feature")
@@ -2014,15 +2352,36 @@ def cmd_resume(args: argparse.Namespace) -> dict[str, Any]:
             state["feature_id"],
         )
         installed_guards = install_git_guards(repo_root)
-        premature_errors = planning_guard_errors(feature_dir, state)
-        if premature_errors:
-            block_premature_implementation_change(
-                feature_dir,
-                state,
-                premature_errors,
+        history_errors = verify_lock(feature_dir, state)
+        history_errors.extend(
+            validate_hash_chain(feature_paths(feature_dir)["events"], "event_hash")
+        )
+        history_errors.extend(
+            validate_hash_chain(
+                feature_paths(feature_dir)["approvals"],
+                "record_hash",
             )
-        elif (state.get("blocked") or {}).get("code") == PREMATURE_CHANGE_BLOCK:
-            restore_premature_change_block(feature_dir, state)
+        )
+        if not history_errors:
+            generation_errors = feature_generation_errors(feature_dir, state)
+            if generation_errors:
+                block_unexpected_feature_layout(
+                    feature_dir,
+                    state,
+                    generation_errors,
+                )
+            else:
+                if (state.get("blocked") or {}).get("code") == FEATURE_LAYOUT_BLOCK:
+                    restore_unexpected_feature_layout_block(feature_dir, state)
+                premature_errors = planning_guard_errors(feature_dir, state)
+                if premature_errors:
+                    block_premature_implementation_change(
+                        feature_dir,
+                        state,
+                        premature_errors,
+                    )
+                elif (state.get("blocked") or {}).get("code") == PREMATURE_CHANGE_BLOCK:
+                    restore_premature_change_block(feature_dir, state)
     validation = validate_state(feature_dir, state)
     return {
         "feature_id": state["feature_id"],
@@ -2080,6 +2439,12 @@ def cmd_restart_attempt(args: argparse.Namespace) -> dict[str, Any]:
     feature_dir = normalize_feature_dir(args.feature_dir)
     state = load_state(feature_dir)
     assert_history_and_lock(feature_dir, state)
+    generation_errors = feature_generation_errors(feature_dir, state)
+    if generation_errors:
+        raise ControlError(
+            "Unexpected Feature paths must be removed before restart: "
+            + ", ".join(generation_errors)
+        )
     if (state.get("blocked") or {}).get("code") == PREMATURE_CHANGE_BLOCK:
         errors = planning_guard_errors(feature_dir, state)
         if errors:

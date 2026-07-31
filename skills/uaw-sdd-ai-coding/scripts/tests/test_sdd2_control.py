@@ -253,6 +253,111 @@ class Sdd2ControlTest(unittest.TestCase):
         )
         self.assertIn("expected design", result["error"])
 
+    def test_unexpected_feature_files_block_and_restore_same_action(self) -> None:
+        unexpected = self.feature / "implementation-notes.md"
+        unexpected.write_text("模型自行生成的额外说明文件。\n", encoding="utf-8")
+        random_dir = self.feature / "draft-output"
+        random_dir.mkdir()
+        (random_dir / "result.txt").write_text("unexpected\n", encoding="utf-8")
+
+        blocked = self._run("resume", "--feature-dir", str(self.feature))
+        self.assertEqual(blocked["result"]["stage_status"], "blocked")
+        self.assertEqual(blocked["result"]["blocked"]["code"], "UNEXPECTED_FEATURE_LAYOUT")
+        self.assertIn(
+            "UNEXPECTED_FEATURE_FILE:implementation-notes.md",
+            blocked["result"]["validation"]["errors"],
+        )
+        self.assertIn(
+            "UNEXPECTED_FEATURE_DIRECTORY:draft-output",
+            blocked["result"]["validation"]["errors"],
+        )
+
+        (random_dir / "result.txt").unlink()
+        random_dir.rmdir()
+        unexpected.unlink()
+        resumed = self._run("resume", "--feature-dir", str(self.feature))
+        self.assertEqual(resumed["result"]["current_stage"], "proposal-input")
+        self.assertEqual(resumed["result"]["stage_status"], "ready")
+        self.assertEqual(resumed["result"]["next_required_action"], "assemble-proposal-input")
+
+    def test_future_public_asset_blocks_until_removed(self) -> None:
+        self._write("design.md", "# 提前生成的 Design\n")
+
+        blocked = self._run("resume", "--feature-dir", str(self.feature))
+        self.assertEqual(blocked["result"]["stage_status"], "blocked")
+        self.assertIn(
+            "UNEXPECTED_STAGE_ASSET:design.md",
+            blocked["result"]["validation"]["errors"],
+        )
+
+        (self.feature / "design.md").unlink()
+        resumed = self._run("resume", "--feature-dir", str(self.feature))
+        self.assertEqual(resumed["result"]["next_required_action"], "assemble-proposal-input")
+
+    def test_fake_internal_control_and_revision_files_block(self) -> None:
+        fake_scope = self.feature / ".sdd2/implementation-scope.json"
+        fake_scope.write_text("{}\n", encoding="utf-8")
+        fake_revision = (
+            self.feature
+            / ".sdd2/revisions/design"
+            / f"r0001-{'0' * 64}.md"
+        )
+        fake_revision.parent.mkdir(parents=True)
+        fake_revision.write_text("伪造的内部修订快照。\n", encoding="utf-8")
+
+        blocked = self._run("resume", "--feature-dir", str(self.feature))
+        self.assertEqual(blocked["result"]["stage_status"], "blocked")
+        self.assertIn(
+            "UNEXPECTED_CONTROL_FILE:.sdd2/implementation-scope.json",
+            blocked["result"]["validation"]["errors"],
+        )
+        self.assertIn(
+            f"UNEXPECTED_REVISION_SNAPSHOT:{fake_revision.relative_to(self.feature).as_posix()}",
+            blocked["result"]["validation"]["errors"],
+        )
+
+    def test_current_expected_asset_is_not_treated_as_random(self) -> None:
+        self._write("proposal-input.md", "# 当前 Proposal\n")
+
+        resumed = self._run("resume", "--feature-dir", str(self.feature))
+        self.assertEqual(resumed["result"]["stage_status"], "ready")
+        self.assertNotIn(
+            "UNEXPECTED_STAGE_ASSET:proposal-input.md",
+            resumed["result"]["validation"]["errors"],
+        )
+        recorded = self._run(
+            "record-artifact",
+            "--feature-dir",
+            str(self.feature),
+            "--stage",
+            "proposal-input",
+        )
+        self.assertEqual(recorded["result"]["next_required_action"], "generate-spec")
+
+    def test_uncontrolled_sibling_blocks_after_implementation_permit(self) -> None:
+        self._reach_tasks_approval()
+        self._capture_scope()
+        sibling = self.repo / "sdd2-features/Sprint1/generated-again"
+        sibling.mkdir(parents=True)
+        (sibling / "brief-design.md").write_text(
+            "# 非预期重复功能\n" + VALID_CHINESE_BODY,
+            encoding="utf-8",
+        )
+
+        blocked = self._run("resume", "--feature-dir", str(self.feature))
+        self.assertEqual(blocked["result"]["stage_status"], "blocked")
+        self.assertIn(
+            "UNCONTROLLED_SIBLING_FEATURE:sdd2-features/Sprint1/generated-again",
+            blocked["result"]["validation"]["errors"],
+        )
+
+        (sibling / "brief-design.md").unlink()
+        sibling.rmdir()
+        resumed = self._run("resume", "--feature-dir", str(self.feature))
+        self.assertEqual(resumed["result"]["current_stage"], "implementation")
+        self.assertEqual(resumed["result"]["stage_status"], "executing")
+        self.assertEqual(resumed["result"]["next_required_action"], "implement-next-approved-phase")
+
     def test_approval_message_cannot_be_replayed(self) -> None:
         self._record("proposal-input", "proposal-input.md", "# Proposal\n")
         self._record("spec", "spec.md", "# Spec\n")
@@ -305,6 +410,46 @@ class Sdd2ControlTest(unittest.TestCase):
     def test_weak_model_bypass_demo_recovers_and_archives(self) -> None:
         self._record("proposal-input", "proposal-input.md", "# Proposal\n")
         self._record("spec", "spec.md", "# Spec\n")
+
+        unexpected = self.feature / "analysis-result.md"
+        unexpected.write_text("弱模型自行生成的额外结果文件。\n", encoding="utf-8")
+        sibling = self.repo / "sdd2-features/Sprint1/generated-again"
+        sibling.mkdir(parents=True)
+        (sibling / "brief-design.md").write_text(
+            "# 非预期重复功能\n" + VALID_CHINESE_BODY,
+            encoding="utf-8",
+        )
+        blocked_layout = self._run(
+            "approve", "--feature-dir", str(self.feature), "--stage", "spec",
+            "--source", "user-message", "--approver-role", "human",
+            "--approval-text", "批准 spec", "--message-id", "layout-bypass-approval",
+            expected=2,
+        )
+        self.assertIn(
+            "UNEXPECTED_FEATURE_FILE:analysis-result.md",
+            blocked_layout["error"],
+        )
+        self.assertIn(
+            "UNCONTROLLED_SIBLING_FEATURE:sdd2-features/Sprint1/generated-again",
+            blocked_layout["error"],
+        )
+        blocked_state = json.loads(
+            (self.feature / ".sdd2/feature-state.json").read_text(encoding="utf-8")
+        )
+        self.assertEqual(blocked_state["stage_status"], "blocked")
+        self.assertEqual(blocked_state["blocked"]["code"], "UNEXPECTED_FEATURE_LAYOUT")
+
+        unexpected.unlink()
+        (sibling / "brief-design.md").unlink()
+        sibling.rmdir()
+        resumed_layout = self._run("resume", "--feature-dir", str(self.feature))
+        self.assertEqual(resumed_layout["result"]["current_stage"], "spec")
+        self.assertEqual(resumed_layout["result"]["stage_status"], "awaiting-approval")
+        self.assertEqual(
+            resumed_layout["result"]["next_required_action"],
+            "request-spec-approval",
+        )
+
         app = self.repo / "app/src/main/java/App.java"
         original = app.read_text(encoding="utf-8")
         app.write_text("class App { int premature; }\n", encoding="utf-8")
@@ -382,6 +527,22 @@ class Sdd2ControlTest(unittest.TestCase):
             expected=2,
         )
         self.assertIn("IMPLEMENTATION_PERMIT", blocked["error"])
+
+    def test_malformed_scope_manifest_is_reported_not_crash(self) -> None:
+        self._reach_tasks_approval()
+        self._capture_scope()
+        (self.feature / ".sdd2/implementation-scope.json").write_text(
+            "{}\n",
+            encoding="utf-8",
+        )
+
+        blocked = self._run(
+            "phase-review", "--feature-dir", str(self.feature), "--phase", "Phase1",
+            "--source", "user-message", "--approver-role", "human",
+            "--approval-text", "批准 Phase1", "--message-id", "invalid-scope-phase",
+            expected=2,
+        )
+        self.assertIn("SCOPE_MANIFEST_INVALID", blocked["error"])
 
     def test_active_feature_blocks_commit_even_with_no_verify(self) -> None:
         (self.repo / "README.md").write_text("premature commit\n", encoding="utf-8")
@@ -742,6 +903,62 @@ class Sdd2ControlTest(unittest.TestCase):
         )
         self.assertIn("ARTIFACT_LANGUAGE_NOT_SIMPLIFIED_CHINESE", result["error"])
         self.assertFalse((english_feature / ".sdd2/feature-state.json").exists())
+        self.assertFalse((self.repo / ".git/sdd2-active-feature.json").exists())
+
+    def test_init_rejects_unexpected_current_feature_file(self) -> None:
+        self._run(
+            "close", "--feature-dir", str(self.feature), "--result", "aborted",
+            "--approval-text", "同意终止当前功能", "--message-id", "close-before-layout-test",
+        )
+        target = self.repo / "sdd2-features/Sprint1/layout-target"
+        target.mkdir(parents=True)
+        (target / "brief-design.md").write_text(
+            "# 布局测试\n" + VALID_CHINESE_BODY,
+            encoding="utf-8",
+        )
+        (target / "model-generated-plan.md").write_text(
+            "模型提前生成的额外计划文件。\n",
+            encoding="utf-8",
+        )
+
+        result = self._run(
+            "init", "--feature-dir", str(target), "--feature-id", "layout-target",
+            expected=2,
+        )
+        self.assertIn(
+            "UNEXPECTED_FEATURE_FILE:model-generated-plan.md",
+            result["error"],
+        )
+        self.assertFalse((target / ".sdd2/feature-state.json").exists())
+        self.assertFalse((self.repo / ".git/sdd2-active-feature.json").exists())
+
+    def test_init_rejects_uncontrolled_sibling_feature(self) -> None:
+        self._run(
+            "close", "--feature-dir", str(self.feature), "--result", "aborted",
+            "--approval-text", "同意终止当前功能", "--message-id", "close-before-sibling-test",
+        )
+        sibling = self.repo / "sdd2-features/Sprint1/accidental-duplicate"
+        sibling.mkdir(parents=True)
+        (sibling / "brief-design.md").write_text(
+            "# 重复目录\n" + VALID_CHINESE_BODY,
+            encoding="utf-8",
+        )
+        target = self.repo / "sdd2-features/Sprint1/single-target"
+        target.mkdir(parents=True)
+        (target / "brief-design.md").write_text(
+            "# 唯一目标\n" + VALID_CHINESE_BODY,
+            encoding="utf-8",
+        )
+
+        result = self._run(
+            "init", "--feature-dir", str(target), "--feature-id", "single-target",
+            expected=2,
+        )
+        self.assertIn(
+            "UNCONTROLLED_SIBLING_FEATURE:sdd2-features/Sprint1/accidental-duplicate",
+            result["error"],
+        )
+        self.assertFalse((target / ".sdd2/feature-state.json").exists())
         self.assertFalse((self.repo / ".git/sdd2-active-feature.json").exists())
 
     def test_record_artifact_rejects_english_only_body(self) -> None:
