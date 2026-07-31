@@ -141,3 +141,4 @@ Feature 阻塞或进入终态后，用户明确要求重试或重启时，在内
 - `scripts/Sdd2Control.java`：控制器维护源码，开发运行时不得现场编译。
 - `scripts/demo_sdd2_small_feature.py`：维护者使用的隔离端到端 Demo，不改变开发者入口。
 - `scripts/demo_sdd2_large_feature.py`：维护者使用的 Java 8 大型深度 Demo，覆盖需求修订、返工恢复、并行 worktree 和攻击矩阵，不属于开发运行依赖。
+- `scripts/demo_sdd2_mutation_mapping_feature.py`：维护者使用的 Java 8 新增/修改型深度 Demo，覆盖字段映射、幂等创建、乐观版本修改、敏感字段脱敏和四层测试返工，不属于开发运行依赖。

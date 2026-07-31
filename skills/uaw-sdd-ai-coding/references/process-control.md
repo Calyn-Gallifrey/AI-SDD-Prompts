@@ -122,7 +122,8 @@ Archive 批准不是 Git 授权。完成 Archive 后立即结束当前回合；�
 
 ## 维护验证
 
-维护者可在具备 Python 和 Maven 的隔离维护环境中运行两级 Demo；这些工具只负责测试编排和 Demo 项目构建，不属于开发者 Skill 运行依赖。两级 Demo 的流程控制都必须调用正式 Java 8 JAR，临时仓库结束后自动清理，不在正式 Feature 目录留下演练资产。
+维护者可在具备 Python 和 Maven 的隔离维护环境中运行三级 Demo；这些工具只负责测试编排和 Demo 项目构建，不属于开发者 Skill 运行依赖。三级 Demo 的流程控制都必须调用正式 Java 8 JAR，临时仓库结束后自动清理，不在正式 Feature 目录留下演练资产。
 
 - `scripts/demo_sdd2_small_feature.py`：快速端到端回归，覆盖单一小功能、全部 Gate、乱文件、重复 Feature、状态篡改、自动提交和测试证据篡改。
 - `scripts/demo_sdd2_large_feature.py`：大型深度回归，覆盖多文件与多 Phase 实现、需求修订失效、双 worktree 隔离、批准防重放、范围违规恢复、Code Review 失败返工、Unit Test 两轮交接、真实测试失败返工、提交/推送保护及 Archive 证据一致性。
+- `scripts/demo_sdd2_mutation_mapping_feature.py`：新增/修改型深度回归，改造既有异常处理并新增完整业务链路，覆盖 API/Command/Entity/Response 字段映射、幂等创建、乐观版本修改、敏感字段脱敏、四层测试、跨模块越界阻断及两次质量返工。

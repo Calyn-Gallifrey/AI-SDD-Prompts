@@ -2,13 +2,13 @@
 
 ## 当前任务
 
-在真实 Java 8 环境中使用大型多文件功能深度验证 UAW-SDD 2.0 全流程，同时保持开发者公开入口不变：
+已在真实 Java 8 环境中从新增/修改业务角度完成 UAW-SDD 2.0 第二轮深度验证，同时保持开发者公开入口不变：
 
 ```text
 简要提示词 + 调用 uaw-sdd-ai-coding Skill
 ```
 
-本轮大型 Demo 覆盖需求修订、生产实现、Code Review 返工、Unit Test 两轮交接、真实测试失败恢复和 Archive，并继续验证以下 P0 要求：
+第二轮 Demo 实现“保单联系方式变更草稿创建、查询与修改”，覆盖 API/Command/Entity/Response 字段映射、幂等创建、乐观版本修改、状态约束、敏感字段脱敏、Code Review 返工、Unit Test 两轮交接、真实测试失败恢复和 Archive，并继续验证以下 P0 要求：
 
 1. 流程不得跳步或串 Feature。
 2. Spec、Design、Tasks、Phase Review、Unit Test Summary 和 Archive 的人工审核不得丢失。
@@ -78,6 +78,16 @@
 - 新增回归，确认模糊 Demo 批准返回非零、状态保持当前 Gate 且批准链不新增记录。
 - 正式控制器版本更新为 `2.0-java8.2`。
 
+### 7. 第二轮新增/修改与字段映射 Demo
+
+- 新增 `scripts/demo_sdd2_mutation_mapping_feature.py`，只在临时 Git 仓库中运行，不改变开发者入口或正式运行依赖。
+- Demo 功能包含十四个生产变更文件、四个测试文件和四个生产实现 Phase；既新增完整 contactdraft 业务链路，也修改既有统一异常处理器，验证新增与修改文件可以同时受范围许可约束。
+- Design 使用明确映射表绑定 `clientRequestId -> idempotencyKey -> requestReference`、`policyNumber -> policyNo`、`customerId -> partyId`、联系方式、操作人和 `expectedVersion`。
+- 主动注入 `policyNumber` 与 `customerId` 交叉映射，首轮 Code Review 以 P0 失败阻断；修复、重新冻结和完整复审后才进入测试生成。
+- 四层测试覆盖 Mapper、Repository、Service 和 Controller。首轮真实测试主动暴露国际区号手机号原样返回，二十三项中一项失败，Archive 被阻断；修复脱敏、重新冻结、全量复审后 23/23 通过。
+- 覆盖模糊人工批准、提前 Design、散落字段映射文件、许可前修改既有代码、Phase 乱序、跨业务模块修改、活动 commit/push、测试失败提前 Archive 和最终锁释放。
+- 最终形成四次冻结代码修订、九项公开资产、十六份不可变资产快照、九条批准链记录和四十八条事件链记录；临时仓库 Git 提交数始终为基线 1。
+
 ## 当前验证结果
 
 - Java 8 正式控制器扩展回归：53/53 通过。
@@ -87,15 +97,20 @@
 - Demo 功能：联系人显示名称规范化；真实 Maven 测试 3/3 通过。
 - Demo 攻击检查：乱文件、提前资产、重复 Feature、状态篡改、提前生产代码、审批链篡改、测试证据篡改和活动自动提交均被阻断。
 - Demo 最终状态：`archive / completed`；九项公开资产完整；Git 提交数始终为基线 1。
-- 最新小 Demo 测试执行证据 SHA-256：`34c6b2834647a72e6ef23f871768e7f2debbb01b42a010d07244210630bcd5ad`。
+- 最新小 Demo 测试执行证据 SHA-256：`7ea759b52480a6b8266c0805730f36d9df55f1f1a1ec272076f2f91a87c2198d`。
 - 大型深度 Demo：19/19 检查点通过，最终 `archive / completed`。
 - 大型 Demo 首次真实测试：14 项中 13 项通过、1 项失败，Archive 被阻断。
 - 大型 Demo 修复后真实测试：14/14 通过，0 failure、0 error、0 skipped。
 - 大型 Demo 最终证据：四次冻结代码修订、九项公开资产、十九份不可变资产快照、十一条批准链记录、五十五条事件链记录，Git 提交数保持基线 1。
-- 最新大型 Demo 测试执行证据 SHA-256：`706495bb3ab6bb06d36db59ddf5eaaaaead5cd24967a5c5e61a49d2c9a66552d`。
-- 最新大型 Demo Archive 证据 SHA-256：`0e6af1624f15ad4bde316a873c087f4fdaec101d802549d9554aa7ee6cc8bb35`。
+- 最新大型 Demo 测试执行证据 SHA-256：`54adc73c8e2dab1726f0b4faaf00bb8345e9d047d9bb759658970a042f938010`。
+- 最新大型 Demo Archive 证据 SHA-256：`0f4d39479c736c9dfb47eb25f1e4ef2f8846b416f0f933be26711fbfda7a97f4`。
+- 第二轮新增/修改型 Demo：12/12 检查点通过，最终 `archive / completed`。
+- 第二轮 Demo 首次真实测试：23 项中 22 项通过、1 项失败，Archive 被阻断。
+- 第二轮 Demo 修复后真实测试：23/23 通过，0 failure、0 error、0 skipped。
+- 第二轮 Demo 最终测试证据 SHA-256：`edfb5a76d2751106a05a6f806727260f2e66a6d9bef1ab4657a84aa9f5c28425`。
+- 第二轮 Demo Archive 证据 SHA-256：`71a260bd356a3c20cb53e2e8e029894b73199e174591ad0242201a5429607167`。
 - Java Demo 项目完整回归：36/36 通过，0 failure、0 error、0 skipped。
-- 静态资产验证：0 error、0 warning。
+- 静态资产验证：检查 58 个运行文件和 51 个中文主体文件，0 error、0 warning。
 - 三个 Skill 的 `quick_validate.py`：全部通过。
 - `git diff --check`：通过。
 
@@ -104,14 +119,15 @@
 2026-07-31 已在本机安装的 Amazon Corretto `1.8.0_502` 上完成环境验收，结论为通过：
 
 1. 显式设置 Java 8 `JAVA_HOME` 和 `PATH` 后，控制器 `doctor` 返回 `java_specification_version=1.8`、JAR 完整性通过、`wrote_feature_files=false`。
-2. Java 8 下完整控制器回归 `52/52` 通过，覆盖阶段 Gate、人工批准链、实现许可、范围冻结、乱文件、串 Feature、状态/证据篡改、质量门和自动提交阻断。
+2. Java 8 下完整控制器回归 `53/53` 通过，覆盖阶段 Gate、人工批准链、实现许可、范围冻结、乱文件、串 Feature、状态/证据篡改、质量门和自动提交阻断。
 3. Java 8 下真实小功能完整 Demo 通过，最终状态为 `archive / completed`，九项公开资产完整，真实 Maven 测试 `3/3` 通过，Git 提交数保持基线 1。
-4. 本次 Demo 测试执行证据 SHA-256 为 `ba9668579844f569dfac9f460a26192bffc100adc3d1ce8176f3ceea23e95028`。
+4. 最新小 Demo 测试执行证据 SHA-256 为 `7ea759b52480a6b8266c0805730f36d9df55f1f1a1ec272076f2f91a87c2198d`。
 5. `uaw-sdd-demo` 使用 Maven 3.9.16 和 Corretto 8 完整执行 `36/36` 项测试，0 failure、0 error、0 skipped；代表性生产类为 class major 52。
 6. 在子进程 `PATH` 中只提供 Java 8 和 Git、不提供 Python、Node 或 Maven 时，控制器 `doctor` 仍通过。
 7. 最终控制器 JAR 版本为 `2.0-java8.2`，SHA-256 为 `dedc3bac2981886296a84bb163576d861b167cc77f590ae524f17b58d928c407`，主类为 class major 52，`jdeps` 仅依赖 `java.base`。
+8. 本轮再次把子进程 `PATH` 限制为只有 Java 8 与 Git，直接执行 JAR `doctor` 仍通过；环境内未提供 Python、Node 或 Maven 命令。
 
-Python 仅用于仓库维护者的测试和 Demo 编排，不属于开发者正式运行路径。Maven 仅用于本次 Demo 项目自身的编译和测试，也不属于控制器依赖。
+Python 仅用于仓库维护者的合同对照测试和隔离 Demo 编排，不属于开发者正式运行路径，也不提供任何开发功能。Maven 仅用于 Demo 项目自身的编译和测试，也不属于控制器依赖。
 
 ## 主要修改文件
 
@@ -128,6 +144,7 @@ Python 仅用于仓库维护者的测试和 Demo 编排，不属于开发者正�
 - `skills/uaw-sdd-ai-coding/scripts/validate_sdd2_assets.py`
 - `skills/uaw-sdd-ai-coding/scripts/demo_sdd2_small_feature.py`
 - `skills/uaw-sdd-ai-coding/scripts/demo_sdd2_large_feature.py`
+- `skills/uaw-sdd-ai-coding/scripts/demo_sdd2_mutation_mapping_feature.py`
 - `uaw-sdd-demo/`
 - `CODEX_HANDOFF.md`
 
@@ -138,5 +155,5 @@ Python 仅用于仓库维护者的测试和 Demo 编排，不属于开发者正�
 - Java 8 环境验收前的控制器提交为 `b32791b`。
 - 不得暂存 `docs/.DS_Store`。
 - 不执行 push。
-- 本轮大型 Demo、P0 修复和交接结果只创建本地提交，不执行 push。
+- 本轮第二轮 Demo、维护说明和交接结果只保留本地提交，不执行 push。
 - 内网开发继续使用原入口：简要提示词加 `uaw-sdd-ai-coding` Skill，不要求开发者手工运行控制命令。
