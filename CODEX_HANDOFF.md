@@ -81,25 +81,18 @@
 - 三个 Skill 的 `quick_validate.py`：全部通过。
 - `git diff --check`：通过。
 
-## Java 8 验证边界
+## Java 8 实机环境验收
 
-当前机器只安装了 JDK 17，未安装真实 JRE/JDK 8，且没有本地 Docker。因此本轮没有把“已在 Java 8 JVM 实机启动”表述为已确认。
+2026-07-31 已在本机安装的 Amazon Corretto `1.8.0_502` 上完成环境验收，结论为通过：
 
-已完成的 Java 8 兼容证据：
+1. 显式设置 Java 8 `JAVA_HOME` 和 `PATH` 后，控制器 `doctor` 返回 `java_specification_version=1.8`、JAR 完整性通过、`wrote_feature_files=false`。
+2. Java 8 下完整控制器回归 `52/52` 通过，覆盖阶段 Gate、人工批准链、实现许可、范围冻结、乱文件、串 Feature、状态/证据篡改、质量门和自动提交阻断。
+3. Java 8 下真实小功能完整 Demo 通过，最终状态为 `archive / completed`，九项公开资产完整，真实 Maven 测试 `3/3` 通过，Git 提交数保持基线 1。
+4. 本次 Demo 测试执行证据 SHA-256 为 `ba9668579844f569dfac9f460a26192bffc100adc3d1ce8176f3ceea23e95028`。
+5. `uaw-sdd-demo` 使用 Maven 3.9.16 和 Corretto 8 完整执行 `36/36` 项测试，0 failure、0 error、0 skipped；代表性生产类为 class major 52。
+6. 在子进程 `PATH` 中只提供 Java 8 和 Git、不提供 Python、Node 或 Maven 时，控制器 `doctor` 仍通过。
 
-1. 控制器使用 `javac --release 8 -Xlint:all` 无警告编译。
-2. 控制器 JAR 主类为 class major 52。
-3. `jdeps` 只显示 JDK 标准库依赖。
-4. Demo `java.version=8`，代表性生产类为 class major 52。
-5. Demo 已移除已发现的 Java 9+ API，并由静态扫描防止常见高版本 API 回归。
-
-后续内网 smoke test 应直接使用 Java 8 执行：
-
-```bash
-java -jar skills/uaw-sdd-ai-coding/scripts/runtime/sdd2-control.jar doctor --repo-root <repo>
-```
-
-该 smoke test 不改变开发者入口，也不要求开发者手工维护控制文件。
+Python 仅用于仓库维护者的测试和 Demo 编排，不属于开发者正式运行路径。Maven 仅用于本次 Demo 项目自身的编译和测试，也不属于控制器依赖。
 
 ## 主要修改文件
 
@@ -121,8 +114,8 @@ java -jar skills/uaw-sdd-ai-coding/scripts/runtime/sdd2-control.jar doctor --rep
 ## Git 与下一步
 
 - Git 根目录：`AI-SDD-Prompts/`。
-- 分支：`main`，当前相对 `origin/main` 已有 3 个历史未推送提交。
-- 完成全部复审后，将本轮相关改动与本 handoff 一起创建一个本地 commit。
+- 分支：`main`，相对 `origin/main` 存在未推送提交。
+- Java 8 环境验收前的控制器提交为 `b32791b`。
 - 不得暂存 `docs/.DS_Store`。
 - 不执行 push。
-- 内网 Java 8 机器的下一步 P0 是用原入口做一次 smoke test，确认 `doctor` 通过后正常停在第一个人工 Gate。
+- 后续内网部署验收继续使用原入口：简要提示词加 `uaw-sdd-ai-coding` Skill，不要求开发者手工运行控制命令。
