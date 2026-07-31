@@ -4,7 +4,10 @@ import com.example.uawsdddemo.model.enums.INeedDocumentRequestType;
 import com.example.uawsdddemo.model.enums.WorkOrderStatus;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 public class INeedDocumentWorkOrder {
@@ -35,7 +38,7 @@ public class INeedDocumentWorkOrder {
         this.policyNo = policyNo;
         this.customerName = customerName;
         this.requestType = requestType;
-        this.documentTypes = List.copyOf(documentTypes);
+        this.documentTypes = immutableCopy(documentTypes);
         this.deliveryEmail = deliveryEmail;
         this.downstreamSubmissionId = downstreamSubmissionId;
         this.requester = requester;
@@ -102,5 +105,14 @@ public class INeedDocumentWorkOrder {
 
     public Instant getCreatedAt() {
         return createdAt;
+    }
+
+    private static List<String> immutableCopy(List<String> values) {
+        Objects.requireNonNull(values, "documentTypes");
+        List<String> copy = new ArrayList<String>(values.size());
+        for (String value : values) {
+            copy.add(Objects.requireNonNull(value, "documentTypes contains null"));
+        }
+        return Collections.unmodifiableList(copy);
     }
 }

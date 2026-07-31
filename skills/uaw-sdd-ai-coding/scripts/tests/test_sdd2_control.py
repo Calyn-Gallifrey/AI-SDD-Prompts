@@ -2,15 +2,26 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import shutil
 import subprocess
 import sys
 import tempfile
 import unittest
+import zipfile
 from pathlib import Path
 
 
 SCRIPT = Path(__file__).resolve().parents[1] / "sdd2_control.py"
+JAR = Path(__file__).resolve().parents[1] / "runtime/sdd2-control.jar"
+JAVA_CONTROL_COMMAND = ["java", "-jar", str(JAR)]
+PYTHON_REFERENCE_COMMAND = [sys.executable, str(SCRIPT)]
+CONTROL_COMMAND = (
+    PYTHON_REFERENCE_COMMAND
+    if os.environ.get("SDD2_TEST_CONTROLLER") == "python-reference"
+    else JAVA_CONTROL_COMMAND
+)
+USING_JAVA_CONTROLLER = CONTROL_COMMAND[0] == "java"
 PUBLIC_ASSET_NAMES = {
     "brief-design.md",
     "proposal-input.md",
@@ -51,6 +62,78 @@ class Sdd2ControlTest(unittest.TestCase):
         )
         return process.stdout.strip()
 
+    def test_java_controller_jar_targets_java8(self) -> None:
+        with zipfile.ZipFile(JAR) as archive:
+            class_bytes = archive.read("Sdd2Control.class")
+            manifest = archive.read("META-INF/MANIFEST.MF").decode("utf-8")
+        expected_sha256 = JAR.with_name("sdd2-control.sha256").read_text(
+            encoding="utf-8"
+        ).strip()
+        self.assertEqual(class_bytes[:4], b"\xca\xfe\xba\xbe")
+        self.assertEqual(int.from_bytes(class_bytes[6:8], "big"), 52)
+        self.assertIn("Main-Class: Sdd2Control", manifest)
+        self.assertEqual(
+            expected_sha256, hashlib.sha256(JAR.read_bytes()).hexdigest()
+        )
+
+    @unittest.skipUnless(
+        USING_JAVA_CONTROLLER,
+        "doctor 只属于正式 Java 控制器",
+    )
+    def test_doctor_is_read_only(self) -> None:
+        before = {
+            path.relative_to(self.repo).as_posix(): hashlib.sha256(
+                path.read_bytes()
+            ).hexdigest()
+            for path in self.repo.rglob("*")
+            if path.is_file()
+        }
+        result = self._run(
+            "doctor", "--repo-root", str(self.repo)
+        )["result"]
+        after = {
+            path.relative_to(self.repo).as_posix(): hashlib.sha256(
+                path.read_bytes()
+            ).hexdigest()
+            for path in self.repo.rglob("*")
+            if path.is_file()
+        }
+        self.assertTrue(result["java_8_compatible"])
+        self.assertTrue(result["jar_integrity_verified"])
+        self.assertFalse(result["wrote_feature_files"])
+        self.assertEqual(before, after)
+
+    @unittest.skipUnless(
+        USING_JAVA_CONTROLLER,
+        "运行时完整性检查只属于正式 Java 控制器",
+    )
+    def test_controller_checksum_mismatch_has_chinese_recovery(self) -> None:
+        runtime = self.repo / "runtime-copy"
+        runtime.mkdir()
+        copied_jar = runtime / "sdd2-control.jar"
+        shutil.copy2(JAR, copied_jar)
+        (runtime / "sdd2-control.sha256").write_text(
+            "0" * 64 + "\n", encoding="utf-8"
+        )
+        process = subprocess.run(
+            [
+                "java",
+                "-jar",
+                str(copied_jar),
+                "doctor",
+                "--repo-root",
+                str(self.repo),
+            ],
+            cwd=self.repo,
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        self.assertEqual(process.returncode, 2)
+        result = json.loads(process.stdout)
+        self.assertIn("CONTROLLER_INTEGRITY_MISMATCH", result["error"])
+        self.assertIn("重新获取", result["error"])
+
     def _write(self, name: str, content: str) -> None:
         path = self.feature / name
         if name in PUBLIC_ASSET_NAMES:
@@ -58,8 +141,18 @@ class Sdd2ControlTest(unittest.TestCase):
         path.write_text(content, encoding="utf-8")
 
     def _run(self, *args: str, expected: int = 0) -> dict:
+        return self._run_with(
+            CONTROL_COMMAND, *args, expected=expected
+        )
+
+    def _run_with(
+        self,
+        command: list[str],
+        *args: str,
+        expected: int = 0,
+    ) -> dict:
         process = subprocess.run(
-            [sys.executable, str(SCRIPT), *args],
+            [*command, *args],
             cwd=self.repo,
             text=True,
             capture_output=True,
@@ -67,6 +160,83 @@ class Sdd2ControlTest(unittest.TestCase):
         )
         self.assertEqual(process.returncode, expected, process.stdout + process.stderr)
         return json.loads(process.stdout)
+
+    @unittest.skipUnless(
+        USING_JAVA_CONTROLLER,
+        "双向迁移兼容性由正式 Java 控制器套件验证",
+    )
+    def test_python_and_java_control_histories_are_compatible(self) -> None:
+        java_state = self._run_with(
+            PYTHON_REFERENCE_COMMAND,
+            "resume",
+            "--feature-dir",
+            str(self.feature),
+        )
+        self.assertTrue(java_state["result"]["valid"])
+
+        self._run(
+            "close",
+            "--feature-dir",
+            str(self.feature),
+            "--result",
+            "aborted",
+            "--approval-text",
+            "同意终止并关闭",
+        )
+        shutil.rmtree(self.feature)
+        self.feature = self.repo / "sdd2-features/Sprint1/python-origin"
+        self.feature.mkdir(parents=True)
+        self._write("brief-design.md", "# 旧运行时人工简要设计\n")
+        self._run_with(
+            PYTHON_REFERENCE_COMMAND,
+            "init",
+            "--feature-dir",
+            str(self.feature),
+            "--feature-id",
+            "python-origin",
+        )
+        self._write("proposal-input.md", "# 内部规划输入\n")
+        self._run_with(
+            PYTHON_REFERENCE_COMMAND,
+            "record-artifact",
+            "--feature-dir",
+            str(self.feature),
+            "--stage",
+            "proposal-input",
+        )
+        self._write("spec.md", "# 需求规格\n")
+        self._run_with(
+            PYTHON_REFERENCE_COMMAND,
+            "record-artifact",
+            "--feature-dir",
+            str(self.feature),
+            "--stage",
+            "spec",
+        )
+        self._run_with(
+            PYTHON_REFERENCE_COMMAND,
+            "approve",
+            "--feature-dir",
+            str(self.feature),
+            "--stage",
+            "spec",
+            "--source",
+            "user-message",
+            "--approver-role",
+            "human",
+            "--approval-text",
+            "批准 spec",
+            "--message-id",
+            "python-spec-approval",
+        )
+        resumed = self._run(
+            "resume", "--feature-dir", str(self.feature)
+        )
+        self.assertTrue(resumed["result"]["valid"])
+        self.assertEqual(
+            resumed["result"]["next_required_action"], "generate-design"
+        )
+        self._record("design", "design.md", "# 设计\n")
 
     def _record(self, stage: str, filename: str, content: str) -> None:
         self._write(filename, content)

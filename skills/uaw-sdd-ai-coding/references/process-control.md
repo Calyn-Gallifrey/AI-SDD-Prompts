@@ -5,27 +5,40 @@
 Skill 执行期间设置一次：
 
 ```bash
-CONTROL=skills/uaw-sdd-ai-coding/scripts/sdd2_control.py
+CONTROL=skills/uaw-sdd-ai-coding/scripts/runtime/sdd2-control.jar
 ```
+
+## 运行环境预检
+
+任何 Feature 目录或资产写入前，先执行：
+
+```bash
+java -version
+java -jar "$CONTROL" doctor --repo-root <git-repo-root>
+```
+
+第一条命令失败时，停止并提示开发者安装或启用 Java 8 及以上版本、正确配置 `PATH/JAVA_HOME`，并明确说明本次没有生成 Feature 资产或业务代码。第二条命令失败时，停止并提示检查 Java 环境，或重新获取完整的 JAR 与同目录 `sdd2-control.sha256`。禁止回退到 Python、Node、现场 `javac`、Maven 或联网下载。
+
+`doctor` 是只读动作，不创建目录、不写 Feature 文件、不安装 Git Hook。每个控制命令启动前都会使用 Java 标准库校验 JAR 与 `sdd2-control.sha256`；缺失或不匹配时拒绝执行。正式控制器只依赖 Java 8 及以上版本和 Git；业务项目测试所需 Maven、Gradle 或 Wrapper 由项目现状决定，不是控制器依赖。
 
 ## 命令映射
 
 | 流程动作 | 内部命令 |
 |---|---|
-| Brief 保存后初始化 | `python3 "$CONTROL" init --feature-dir <dir> --feature-id <id> --mode real` |
-| 恢复/当前状态检查 | `python3 "$CONTROL" resume --feature-dir <dir>` |
-| 记录已变更公开资产 | `python3 "$CONTROL" record-artifact --feature-dir <dir> --stage <stage>` |
-| 保存当前明确批准 | `python3 "$CONTROL" approve --feature-dir <dir> --stage <stage> --source user-message --approver-role human --approval-text <exact-message> --message-id <id-if-available>` |
-| 捕获干净实现范围 | `python3 "$CONTROL" capture-scope --feature-dir <dir> --allowed-path <pattern> --forbidden-path <pattern> --required-phase <phase> --test-path <pattern>` |
-| 记录 Phase Review | `python3 "$CONTROL" phase-review --feature-dir <dir> --phase <phase> --source <user-message|demo-simulation> --approver-role <human|ai-as-human-reviewer> --approval-text <exact-message> --message-id <id-if-available>` |
-| 冻结当前代码/测试范围 | `python3 "$CONTROL" freeze-scope --feature-dir <dir>` |
-| 执行并固化真实单元测试 | `python3 "$CONTROL" run-unit-test --feature-dir <dir> --cwd <repo-relative-dir> -- <recognized-test-command-and-args>` |
-| 记录质量 Gate | `python3 "$CONTROL" quality-gate --feature-dir <dir> --gate <code-review|auto-fix|unit-test> --result <result> --evidence <reproducible-evidence>` |
-| 准备不可变 Archive 证据 | `python3 "$CONTROL" prepare-archive --feature-dir <dir>` |
-| 检查 Archive 资格 | `python3 "$CONTROL" archive-check --feature-dir <dir> --require-archive` |
-| 校验全部控制 | `python3 "$CONTROL" validate --feature-dir <dir>` |
-| 显式关闭失败流程 | `python3 "$CONTROL" close --feature-dir <dir> --result <closed-with-risk|aborted> --approval-text <exact-message>` |
-| 显式开始新 Attempt | `python3 "$CONTROL" restart-attempt --feature-dir <dir> --approval-text <exact-message>` |
+| Brief 保存后初始化 | `java -jar "$CONTROL" init --feature-dir <dir> --feature-id <id> --mode real` |
+| 恢复/当前状态检查 | `java -jar "$CONTROL" resume --feature-dir <dir>` |
+| 记录已变更公开资产 | `java -jar "$CONTROL" record-artifact --feature-dir <dir> --stage <stage>` |
+| 保存当前明确批准 | `java -jar "$CONTROL" approve --feature-dir <dir> --stage <stage> --source user-message --approver-role human --approval-text <exact-message> --message-id <id-if-available>` |
+| 捕获干净实现范围 | `java -jar "$CONTROL" capture-scope --feature-dir <dir> --allowed-path <pattern> --forbidden-path <pattern> --required-phase <phase> --test-path <pattern>` |
+| 记录 Phase Review | `java -jar "$CONTROL" phase-review --feature-dir <dir> --phase <phase> --source <user-message|demo-simulation> --approver-role <human|ai-as-human-reviewer> --approval-text <exact-message> --message-id <id-if-available>` |
+| 冻结当前代码/测试范围 | `java -jar "$CONTROL" freeze-scope --feature-dir <dir>` |
+| 执行并固化真实单元测试 | `java -jar "$CONTROL" run-unit-test --feature-dir <dir> --cwd <repo-relative-dir> -- <recognized-test-command-and-args>` |
+| 记录质量 Gate | `java -jar "$CONTROL" quality-gate --feature-dir <dir> --gate <code-review|auto-fix|unit-test> --result <result> --evidence <reproducible-evidence>` |
+| 准备不可变 Archive 证据 | `java -jar "$CONTROL" prepare-archive --feature-dir <dir>` |
+| 检查 Archive 资格 | `java -jar "$CONTROL" archive-check --feature-dir <dir> --require-archive` |
+| 校验全部控制 | `java -jar "$CONTROL" validate --feature-dir <dir>` |
+| 显式关闭失败流程 | `java -jar "$CONTROL" close --feature-dir <dir> --result <closed-with-risk|aborted> --approval-text <exact-message>` |
+| 显式开始新 Attempt | `java -jar "$CONTROL" restart-attempt --feature-dir <dir> --approval-text <exact-message>` |
 
 按需重复 `--allowed-path`、`--forbidden-path`、`--required-phase` 和 `--test-path`。路径模式必须足够窄；`*`、`**`、仓库根目录和绝对路径均会被拒绝。
 
@@ -68,8 +81,9 @@ CONTROL=skills/uaw-sdd-ai-coding/scripts/sdd2_control.py
 - `0`：动作成功，并返回当前结构化结果。
 - `1`：校验/检查已完成，但发现阻塞错误。
 - `2`：命令或状态转换被拒绝。
+- `3`：控制器发生非预期运行失败。
 
-退出码为 `1` 或 `2`、`valid=false` 或返回任何校验错误时立即停止。保留返回错误；人类可读资产中的状态只能作为 `.sdd2/feature-state.json` 的投影；当前状态本身还必须匹配最新事件的状态投影哈希。按照后续有效 `resume.next_required_action` 恢复。禁止手工编辑控制 JSON/JSONL。
+退出码为 `1`、`2` 或 `3`，`valid=false`，或返回任何校验错误时立即停止。退出码 `3` 或 JAR 无法启动时，向开发者提示检查 Java 8 及以上版本、`PATH/JAVA_HOME` 和 JAR 完整性；此时不得创建或继续生成流程资产。保留返回错误；人类可读资产中的状态只能作为 `.sdd2/feature-state.json` 的投影；当前状态本身还必须匹配最新事件的状态投影哈希。按照后续有效 `resume.next_required_action` 恢复。禁止手工编辑控制 JSON/JSONL。
 
 `PRE_IMPLEMENTATION_CHANGE` 表示实现许可签发前发生了 Feature 目录外变更。控制器会保存原 Gate 恢复点并进入 `blocked`。必须撤销或移走提前代码、测试、配置、构建变更及提前 Git 提交，再调用 `resume`；不得通过补写 Tasks、手工编辑状态或重新捕获范围来追认。
 
@@ -108,4 +122,4 @@ Archive 批准不是 Git 授权。完成 Archive 后立即结束当前回合；�
 
 ## 维护验证
 
-维护者可运行 `python3 skills/uaw-sdd-ai-coding/scripts/demo_sdd2_small_feature.py`。脚本在临时 Git 仓库中实现一个小型 Java 功能，执行真实 Maven 测试，走完全部 Gate，并验证乱文件、重复 Feature、状态篡改、批准链、自动提交和测试证据篡改均被控制器阻断。临时仓库结束后自动清理，不在正式 Feature 目录留下演练资产。
+维护者可在具备仓库维护工具的隔离环境运行完整 Demo。该维护动作不在开发者 Skill 运行路径中，流程控制必须调用正式 Java 8 JAR。Demo 在临时 Git 仓库中实现一个 Java 8 小功能，执行真实 Maven 测试，走完全部 Gate，并验证乱文件、重复 Feature、状态篡改、批准链、自动提交和测试证据篡改均被控制器阻断。临时仓库结束后自动清理，不在正式 Feature 目录留下演练资产。

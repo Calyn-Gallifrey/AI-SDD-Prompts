@@ -3,7 +3,7 @@ package com.example.uawsdddemo.controller;
 import com.example.uawsdddemo.model.dto.CreatePolicyInfoChangeWorkOrderRequest;
 import com.example.uawsdddemo.model.dto.PolicyInfoChangeWorkOrderResponse;
 import com.example.uawsdddemo.service.PolicyInfoChangeWorkOrderService;
-import jakarta.validation.Valid;
+import javax.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;

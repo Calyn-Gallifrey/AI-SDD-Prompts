@@ -2,7 +2,10 @@ package com.example.uawsdddemo.client;
 
 import com.example.uawsdddemo.model.enums.INeedDocumentRequestType;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 public class INeedDocumentWorkOrderSubmission {
 
@@ -23,7 +26,7 @@ public class INeedDocumentWorkOrderSubmission {
         this.policyNo = policyNo;
         this.customerName = customerName;
         this.requestType = requestType;
-        this.documentTypes = List.copyOf(documentTypes);
+        this.documentTypes = immutableCopy(documentTypes);
         this.deliveryEmail = deliveryEmail;
         this.requester = requester;
     }
@@ -50,5 +53,14 @@ public class INeedDocumentWorkOrderSubmission {
 
     public String getRequester() {
         return requester;
+    }
+
+    private static List<String> immutableCopy(List<String> values) {
+        Objects.requireNonNull(values, "documentTypes");
+        List<String> copy = new ArrayList<String>(values.size());
+        for (String value : values) {
+            copy.add(Objects.requireNonNull(value, "documentTypes contains null"));
+        }
+        return Collections.unmodifiableList(copy);
     }
 }

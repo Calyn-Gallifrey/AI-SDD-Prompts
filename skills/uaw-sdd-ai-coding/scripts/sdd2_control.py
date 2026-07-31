@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
-"""Deterministic process control for UAW-SDD 2.0.
+"""UAW-SDD 2.0 的旧控制器维护对照实现。
 
-The user-facing entry remains a brief prompt plus a Skill invocation. The Skill
-calls this CLI internally to persist state, approvals, scope, and gate evidence.
-Only the Python standard library is required.
+正式 Skill 运行时只调用 Java 8 JAR；本文件仅用于维护回归和迁移比对。
 """
 
 from __future__ import annotations

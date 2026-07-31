@@ -1,8 +1,8 @@
 package com.example.uawsdddemo.model.dto;
 
 import com.example.uawsdddemo.model.enums.ChangeFieldType;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
 
 public class CreatePolicyInfoChangeWorkOrderRequest {
 

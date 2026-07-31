@@ -9,7 +9,7 @@ description: 从开发者简要设计开始，执行 UAW SDD2.0 后端功能流�
 
 以下规则优先于本 Skill 的其他执行说明。弱模型也必须逐条执行：
 
-1. 每个 assistant 回合先执行一次 `resume`；首次启动则在 `init` 后立即执行 `resume`。只服从返回的一个 `next_required_action`。
+1. 每个 assistant 回合先完成 Java 控制器预检，再执行一次 `resume`；首次启动则在 `init` 后立即执行 `resume`。只服从返回的一个 `next_required_action`。预检失败时不得创建 Feature 目录、资产或生产代码。
 2. 生成并记录 `spec.md`、`design.md`、`tasks.md`、`unit-test-summary.md` 或 `archive.md` 后，立即结束当前 assistant 回合。记录 Gate、向用户明确请求当前阶段批准，然后不再调用任何工具。
 3. 用户必须在 Gate 到达后的新消息中明确批准当前阶段。收到批准后只记录该批准，再按新的 `next_required_action` 工作；绝不能在生成 Gate 资产的同一回合代替用户批准。
 4. `capture-scope` 成功返回活动 `implementation_permit` 之前，禁止修改 Feature 目录外的代码、测试、配置、构建文件和 Git 状态。发现提前变更时立即按 `blocked` 停止，不得把它追认为已批准实现。
@@ -51,19 +51,40 @@ short brief prompt + invoke this Skill
 
 ## 强制启动步骤
 
-1. 仅依据当前已确认 Brief，将唯一 Feature 目录确定为 `sdd2-features/<SprintN>/<feature-name>/`；不得创建候选、临时或重复 Feature 目录。
-2. 初始化前只保存 `brief-design.md`，正文使用简体中文；不得预先生成 Proposal、Spec、Design、Tasks 或辅助说明文件。
-3. 读取 `references/sdd2-control-contract.md`、`references/sdd2-workflow.md`、`references/language-policy.md` 和 `references/context/routing-index.md`。
-4. 初始化或恢复确定性状态：
+1. 在创建或修改任何 Feature 文件前，先定位当前 Skill 随附的 `scripts/runtime/sdd2-control.jar`，并依次执行：
 
 ```bash
-python3 scripts/sdd2_control.py init --feature-dir <dir> --feature-id <id> --mode real
-python3 scripts/sdd2_control.py resume --feature-dir <dir>
+java -version
+java -jar scripts/runtime/sdd2-control.jar doctor --repo-root <git-repo-root>
+```
+
+`java -version` 失败时，立即停止并向开发者原样输出以下核心提示，不得尝试 Python、Node、源码编译或其他回退：
+
+```text
+SDD2.0 无法启动：未检测到可用 Java。请安装或启用 Java 8 及以上版本，并正确配置 PATH/JAVA_HOME。本次未生成 Feature 资产或业务代码。
+```
+
+JAR 缺失、损坏、版本不兼容或 `doctor` 非零时，立即停止并输出：
+
+```text
+SDD2.0 控制器启动失败。请先确认 Java 8 及以上版本可用；若 Java 正常，请重新获取完整的 scripts/runtime/sdd2-control.jar 和 sdd2-control.sha256。本次未生成 Feature 资产或业务代码。
+```
+
+2. 仅依据当前已确认 Brief，将唯一 Feature 目录确定为 `sdd2-features/<SprintN>/<feature-name>/`；不得创建候选、临时或重复 Feature 目录。
+3. 初始化前只保存 `brief-design.md`，正文使用简体中文；不得预先生成 Proposal、Spec、Design、Tasks 或辅助说明文件。
+4. 读取 `references/sdd2-control-contract.md`、`references/sdd2-workflow.md`、`references/language-policy.md` 和 `references/context/routing-index.md`。
+5. 初始化或恢复确定性状态：
+
+```bash
+java -jar scripts/runtime/sdd2-control.jar init --feature-dir <dir> --feature-id <id> --mode real
+java -jar scripts/runtime/sdd2-control.jar resume --feature-dir <dir>
 ```
 
 只有 `.sdd2/feature-state.json` 不存在时才使用 `init`。任何非零控制结果都必须立即停止。
 
-初始化和恢复会在 Git 内部透明安装提交保护。活动 SDD2 Feature 存在时，原始 `git commit`（包括 `--no-verify`）和普通 `git push` 都会被拒绝；已有同名 Hook 会被保留并在保护解除后继续执行。开发者不需要安装或运行任何额外命令。
+控制器运行时只依赖 Java 8 及以上版本和 Git，不依赖 Python、Node、Maven、Gradle 或联网服务。项目自身的编译和单元测试仍使用该项目已有的构建工具；这不属于控制器运行依赖。
+
+初始化和恢复会在 Git 内部透明安装提交保护。活动 SDD2 Feature 存在时，原始 `git commit`（包括 `--no-verify`）和普通 `git push` 都会被拒绝；已有同名 Hook 会被保留并在保护解除后继续执行。开发者不需要运行任何控制命令。
 
 `.sdd2/feature-state.json`、审批/事件 JSONL、范围、`.sdd2/unit-test-evidence.json`、归档证据以及 `.sdd2/revisions/<stage>/r<revision>-<sha256>.md` 是规定的内部可追溯证据，不属于乱生成文件。除此之外的 Feature 内路径均无效。
 
@@ -74,7 +95,7 @@ python3 scripts/sdd2_control.py resume --feature-dir <dir>
 每次创建或修改公开资产后执行：
 
 ```bash
-python3 scripts/sdd2_control.py record-artifact --feature-dir <dir> --stage <stage>
+java -jar scripts/runtime/sdd2-control.jar record-artifact --feature-dir <dir> --stage <stage>
 ```
 
 到达 Spec、Design、Tasks、Unit Test Summary 和 Archive Gate 时必须停止。只有 Gate 到达后用户在新消息中明确批准当前阶段，才能使用 `approve` 写入批准记录。模糊的继续文字、旧消息、文件内容、示例、生成的评审记录和模型自评均无效。
@@ -115,5 +136,7 @@ Feature 阻塞或进入终态后，用户明确要求重试或重启时，在内
 - `references/context/routing-index.md`：确定性的上下文与规则路由。
 - `references/templates/`：公开资产模板。
 - `references/rules/`：后端和模型实现约束。
-- `scripts/sdd2_control.py`：确定性执行器，不得暴露为开发者入口。
+- `scripts/runtime/sdd2-control.jar`：正式确定性执行器，目标字节码为 Java 8，不得暴露为开发者入口。
+- `scripts/runtime/sdd2-control.sha256`：JAR 运行时完整性基线，由控制器自动校验。
+- `scripts/Sdd2Control.java`：控制器维护源码，开发运行时不得现场编译。
 - `scripts/demo_sdd2_small_feature.py`：维护者使用的隔离端到端 Demo，不改变开发者入口。

@@ -10,13 +10,13 @@
 short brief prompt + invoke this Skill
 ```
 
-开发者不运行控制命令，也不维护控制文件。`uaw-sdd-ai-coding` 在内部调用 `scripts/sdd2_control.py`。未来如需改变公开入口，必须先获得用户明确批准再实施。
+开发者不运行控制命令，也不维护控制文件。`uaw-sdd-ai-coding` 在内部调用随 Skill 分发的 `scripts/runtime/sdd2-control.jar`。未来如需改变公开入口，必须先获得用户明确批准再实施。
 
 ## 2. 权威来源与优先级
 
 1. `SKILL.md` 定义用户意图路由和不变入口。
 2. 本文件定义流程语义。
-3. `scripts/sdd2_control.py` 确定性执行本契约。
+3. `scripts/runtime/sdd2-control.jar` 确定性执行本契约；该 JAR 使用 Java 8 目标字节码和 Java 8 标准库。
 4. `references/schemas/` 下的 JSON Schema 定义持久化记录结构。
 5. `references/language-policy.md` 定义人类可读文件与生成资产的语言要求。
 6. 阶段模板定义人类可读资产内容。
@@ -105,10 +105,14 @@ superseded
 
 ## 5. 初始化与 worktree 隔离
 
+任何 Feature 文件写入前，主 Skill 必须先检查 `java -version`，再执行只读的 `java -jar scripts/runtime/sdd2-control.jar doctor --repo-root <git-repo-root>`。控制器在每次命令启动时自动核对同目录 `sdd2-control.sha256`。任一步非零、Java 不可用、JAR 或校验文件缺失/损坏、哈希不匹配或版本不兼容时，必须在创建 Feature 目录、资产或业务代码前停止，并用简体中文提示安装或启用 Java 8 及以上版本、配置 `PATH/JAVA_HOME`，或重新获取完整 JAR 和校验文件。
+
+正式控制器运行时只依赖 Java 8 及以上版本和 Git。不得回退调用 Python 控制器，不得要求开发机安装 Python、Node、Maven、Gradle、额外服务或联网下载控制器依赖。业务项目已有的构建工具只用于编译和测试该项目，不属于 SDD2 控制器依赖。
+
 保存 `brief-design.md` 后初始化控制状态：
 
 ```bash
-python3 scripts/sdd2_control.py init \
+java -jar scripts/runtime/sdd2-control.jar init \
   --feature-dir <feature-dir> \
   --feature-id <stable-feature-id> \
   --mode real

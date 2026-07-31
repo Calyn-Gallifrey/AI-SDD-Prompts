@@ -15,7 +15,7 @@
 读取 `skills/uaw-sdd-ai-coding/references/sdd2-control-contract.md`，然后执行：
 
 ```bash
-python3 skills/uaw-sdd-ai-coding/scripts/sdd2_control.py validate --feature-dir <feature-dir>
+java -jar skills/uaw-sdd-ai-coding/scripts/runtime/sdd2-control.jar validate --feature-dir <feature-dir>
 ```
 
 以下任一条件不满足时阻塞评审：

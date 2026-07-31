@@ -4,10 +4,10 @@
 
 ## 环境要求
 
-- 使用 Java 17 或更高版本编译
+- 使用 Java 8 或更高版本编译，产物目标字节码为 Java 8
 - Maven 3.9 或更高版本
 
-`maven-surefire-plugin` 已启用动态 Agent 加载和 Byte Buddy 实验模式，使基于 Mockito 的测试可以在较新的本地 JDK 上运行，同时保持 Java 17 目标兼容性。较新 JDK 仍可能输出 Byte Buddy 关于 `sun.misc.Unsafe` 的兼容性 Warning，但不会导致当前测试失败。
+项目采用 Spring Boot 2.7.x，以保持 Java 8 兼容性。SDD2.0 流程控制器本身不依赖 Maven；Maven 仅用于本 Demo 和采用 Maven 的业务项目执行其已有测试。
 
 ## 运行测试
 

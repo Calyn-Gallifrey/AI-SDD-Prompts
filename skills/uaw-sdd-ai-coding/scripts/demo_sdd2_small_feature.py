@@ -13,7 +13,7 @@ from typing import Any
 
 
 ROOT = Path(__file__).resolve().parents[3]
-CONTROL = Path(__file__).resolve().with_name("sdd2_control.py")
+CONTROL = Path(__file__).resolve().parent / "runtime/sdd2-control.jar"
 DEMO_SOURCE = ROOT / "uaw-sdd-demo"
 FEATURE_RELATIVE = Path(
     "sdd2-features/DemoSprint/contact-display-name-normalization"
@@ -55,7 +55,7 @@ def run_control(
     expected: int = 0,
 ) -> dict[str, Any]:
     process = run_process(
-        [sys.executable, str(CONTROL), *arguments],
+        ["java", "-jar", str(CONTROL), *arguments],
         cwd=repo,
         expected=expected,
     )
@@ -112,6 +112,14 @@ def approve_demo(
 
 
 def main() -> int:
+    if shutil.which("java") is None:
+        raise DemoFailure(
+            "当前环境未检测到 Java。请安装或启用 Java 8 及以上版本，"
+            "并正确配置 PATH/JAVA_HOME。"
+        )
+    if not CONTROL.is_file():
+        raise DemoFailure(f"缺少 Java 8 控制器 JAR：{CONTROL}")
+    run_control(ROOT, "doctor", "--repo-root", str(ROOT))
     if shutil.which("mvn") is None:
         raise DemoFailure("当前环境未安装 Maven，无法执行真实 Java 单元测试 Demo。")
     checks: list[dict[str, Any]] = []

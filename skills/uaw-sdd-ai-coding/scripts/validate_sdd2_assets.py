@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 import sys
@@ -30,6 +31,9 @@ PUBLIC_ASSETS = {
 }
 
 REQUIRED_RUNTIME = {
+    "skills/uaw-sdd-ai-coding/scripts/Sdd2Control.java",
+    "skills/uaw-sdd-ai-coding/scripts/runtime/sdd2-control.jar",
+    "skills/uaw-sdd-ai-coding/scripts/runtime/sdd2-control.sha256",
     "skills/uaw-sdd-ai-coding/references/sdd2-control-contract.md",
     "skills/uaw-sdd-ai-coding/references/language-policy.md",
     "skills/uaw-sdd-ai-coding/references/schemas/feature-state.schema.json",
@@ -58,6 +62,20 @@ ALLOWED_ORIGINAL_REFERENCES = {
 }
 
 LIVE_EXECUTION_MODES = {"real", "demo"}
+CONTROLLER_JAR = (
+    SKILLS / "uaw-sdd-ai-coding/scripts/runtime/sdd2-control.jar"
+)
+POST_JAVA8_API_PATTERNS = {
+    r"\b(?:List|Set|Map)\.(?:of|copyOf)\s*\(": "collection-factory",
+    r"\bPath\.of\s*\(": "path-of",
+    r"\bFiles\.(?:readString|writeString)\s*\(": "files-string-api",
+    r"\.(?:isBlank|strip|stripLeading|stripTrailing|repeat|lines)\s*\(": "string-api",
+    r"\bOptional\.isEmpty\s*\(": "optional-is-empty",
+    r"\bStream\.ofNullable\s*\(": "stream-of-nullable",
+    r"\.toList\s*\(": "stream-to-list",
+    r"\bObjects\.(?:requireNonNullElse|requireNonNullElseGet)\s*\(": "objects-default",
+    r"\b(?:InputStream|Reader)\.(?:readAllBytes|transferTo)\s*\(": "io-convenience",
+}
 
 
 def relative(path: Path) -> str:
@@ -92,6 +110,39 @@ def read_docx_text(path: Path) -> str:
                 if paragraph_text:
                     text_parts.append(paragraph_text)
     return "\n".join(text_parts)
+
+
+def validate_java8_controller(errors: list[str]) -> None:
+    try:
+        with zipfile.ZipFile(CONTROLLER_JAR) as archive:
+            names = set(archive.namelist())
+            if "Sdd2Control.class" not in names:
+                errors.append("JAVA_CONTROLLER_MAIN_CLASS_MISSING")
+                return
+            class_bytes = archive.read("Sdd2Control.class")
+            if len(class_bytes) < 8 or class_bytes[:4] != b"\xca\xfe\xba\xbe":
+                errors.append("JAVA_CONTROLLER_CLASS_INVALID")
+                return
+            major_version = int.from_bytes(class_bytes[6:8], "big")
+            if major_version != 52:
+                errors.append(
+                    f"JAVA_CONTROLLER_NOT_JAVA8_BYTECODE:{major_version}"
+                )
+            manifest = archive.read("META-INF/MANIFEST.MF").decode(
+                "utf-8", errors="strict"
+            )
+            if "Main-Class: Sdd2Control" not in manifest:
+                errors.append("JAVA_CONTROLLER_MANIFEST_INVALID")
+            expected_sha256 = CONTROLLER_JAR.with_name(
+                "sdd2-control.sha256"
+            ).read_text(encoding="utf-8").strip()
+            actual_sha256 = hashlib.sha256(
+                CONTROLLER_JAR.read_bytes()
+            ).hexdigest()
+            if expected_sha256 != actual_sha256:
+                errors.append("JAVA_CONTROLLER_CHECKSUM_MISMATCH")
+    except (OSError, KeyError, UnicodeDecodeError, zipfile.BadZipFile) as exc:
+        errors.append(f"JAVA_CONTROLLER_JAR_INVALID:{exc}")
 
 
 def validate_feature_directory(
@@ -155,6 +206,8 @@ def main() -> int:
     for item in sorted(REQUIRED_RUNTIME):
         if not (ROOT / item).is_file():
             errors.append(f"MISSING_RUNTIME_ASSET:{item}")
+    if CONTROLLER_JAR.is_file():
+        validate_java8_controller(errors)
 
     for schema in sorted((SKILLS / "uaw-sdd-ai-coding/references/schemas").glob("*.json")):
         value = read_json(schema, errors)
@@ -253,7 +306,7 @@ def main() -> int:
             errors.append(f"P0_GATE_GUARD_MISSING:{marker}")
 
     control_text = (
-        SKILLS / "uaw-sdd-ai-coding/scripts/sdd2_control.py"
+        SKILLS / "uaw-sdd-ai-coding/scripts/Sdd2Control.java"
     ).read_text(encoding="utf-8")
     for marker in (
         "PREMATURE_IMPLEMENTATION_CHANGE",
@@ -266,6 +319,48 @@ def main() -> int:
     ):
         if marker not in control_text:
             errors.append(f"P0_DETERMINISTIC_GUARD_MISSING:{marker}")
+
+    runtime_invocation_files = (
+        SKILLS / "uaw-sdd-ai-coding/SKILL.md",
+        SKILLS / "uaw-sdd-ai-coding/references/process-control.md",
+        SKILLS / "uaw-sdd-ai-coding/references/sdd2-control-contract.md",
+        SKILLS / "uaw-code-review/references/code-review-rules.md",
+        SKILLS / "uaw-unit-test/SKILL.md",
+    )
+    for path in runtime_invocation_files:
+        content = path.read_text(encoding="utf-8")
+        if re.search(
+            r"python(?:3)?[^\n`]*sdd2_control\.py",
+            content,
+            flags=re.IGNORECASE,
+        ):
+            errors.append(
+                f"PYTHON_CONTROLLER_RUNTIME_REFERENCE:{relative(path)}"
+            )
+    for marker in (
+        "scripts/runtime/sdd2-control.jar",
+        "doctor --repo-root",
+        "Java 8",
+        "PATH/JAVA_HOME",
+        "sdd2-control.sha256",
+    ):
+        if marker not in skill_text:
+            errors.append(f"JAVA8_RUNTIME_GUARD_MISSING:{marker}")
+
+    demo_pom = ElementTree.parse(ROOT / "uaw-sdd-demo/pom.xml")
+    namespace = {"m": "http://maven.apache.org/POM/4.0.0"}
+    java_version = demo_pom.findtext(
+        "./m:properties/m:java.version", namespaces=namespace
+    )
+    if java_version != "8":
+        errors.append(f"DEMO_NOT_JAVA8_TARGET:{java_version}")
+    for source in sorted((ROOT / "uaw-sdd-demo/src").rglob("*.java")):
+        content = source.read_text(encoding="utf-8")
+        for pattern, label in POST_JAVA8_API_PATTERNS.items():
+            if re.search(pattern, content):
+                errors.append(
+                    f"DEMO_POST_JAVA8_API:{relative(source)}:{label}"
+                )
 
     feature_dirs = sorted({path.parent for path in FEATURES.rglob("brief-design.md")})
     historical_feature_count = 0

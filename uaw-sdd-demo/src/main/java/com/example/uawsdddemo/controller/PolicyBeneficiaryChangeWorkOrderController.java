@@ -4,7 +4,7 @@ import com.example.uawsdddemo.model.dto.CreatePolicyBeneficiaryChangeWorkOrderRe
 import com.example.uawsdddemo.model.dto.CreatePolicyBeneficiaryEmailChangeWorkOrderRequest;
 import com.example.uawsdddemo.model.dto.PolicyBeneficiaryChangeWorkOrderResponse;
 import com.example.uawsdddemo.service.PolicyBeneficiaryChangeWorkOrderService;
-import jakarta.validation.Valid;
+import javax.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
