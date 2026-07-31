@@ -140,3 +140,4 @@ Feature 阻塞或进入终态后，用户明确要求重试或重启时，在内
 - `scripts/runtime/sdd2-control.sha256`：JAR 运行时完整性基线，由控制器自动校验。
 - `scripts/Sdd2Control.java`：控制器维护源码，开发运行时不得现场编译。
 - `scripts/demo_sdd2_small_feature.py`：维护者使用的隔离端到端 Demo，不改变开发者入口。
+- `scripts/demo_sdd2_large_feature.py`：维护者使用的 Java 8 大型深度 Demo，覆盖需求修订、返工恢复、并行 worktree 和攻击矩阵，不属于开发运行依赖。

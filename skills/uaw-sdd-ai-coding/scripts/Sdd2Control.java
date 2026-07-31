@@ -3495,7 +3495,7 @@ public final class Sdd2Control {
             "java_8_compatible", true,
             "git_version", git.stdout.trim(),
             "schema_version", SCHEMA_VERSION,
-            "controller_version", "2.0-java8.1",
+            "controller_version", "2.0-java8.2",
             "jar_sha256", verifiedRuntimeSha256,
             "jar_integrity_verified", true,
             "wrote_feature_files", false,
@@ -3906,16 +3906,16 @@ public final class Sdd2Control {
         String source = args.required("--source");
         String approverRole = args.required("--approver-role");
         String approvalText = args.required("--approval-text");
+        if (!explicitApproval(stage, approvalText)) {
+            throw new ControlError(
+                "Approval text is ambiguous or does not identify the "
+                + stage + " stage"
+            );
+        }
         if ("user-message".equals(source)) {
             if (!setOf("human", "user").contains(approverRole)) {
                 throw new ControlError(
                     "A real user-message approval must use approver_role=human or user"
-                );
-            }
-            if (!explicitApproval(stage, approvalText)) {
-                throw new ControlError(
-                    "Approval text is ambiguous or does not identify the "
-                    + stage + " stage"
                 );
             }
         } else if ("demo-simulation".equals(source)) {

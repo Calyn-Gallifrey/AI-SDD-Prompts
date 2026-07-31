@@ -2575,11 +2575,11 @@ def cmd_approve(args: argparse.Namespace) -> dict[str, Any]:
         raise ControlError("This user message ID has already been used for an SDD2 approval")
     if current_artifact_hash(feature_dir, stage) != state["artifacts"][stage]["sha256"]:
         raise ControlError(f"Artifact drift detected before approval: {stage}")
+    if not explicit_approval(stage, args.approval_text):
+        raise ControlError(f"Approval text is ambiguous or does not identify the {stage} stage")
     if args.source == "user-message":
         if args.approver_role not in {"human", "user"}:
             raise ControlError("A real user-message approval must use approver_role=human or user")
-        if not explicit_approval(stage, args.approval_text):
-            raise ControlError(f"Approval text is ambiguous or does not identify the {stage} stage")
     elif args.source == "demo-simulation":
         if state["execution_mode"] != "demo" or not state.get("demo_authorization"):
             raise ControlError("AI demo approval requires prior explicit user demo authorization")

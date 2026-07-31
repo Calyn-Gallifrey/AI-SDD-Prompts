@@ -447,6 +447,31 @@ class Sdd2ControlTest(unittest.TestCase):
             "基于当前提交重新跑一次完整 Demo。",
         )
 
+    def test_authorized_demo_still_rejects_ambiguous_stage_approval(self) -> None:
+        self._start_demo_feature()
+        self._run(
+            "authorize-demo", "--feature-dir", str(self.feature),
+            "--authorization-text", "请进行完整 Demo 演练",
+            "--message-id", "authorized-demo",
+        )
+        self._record("proposal-input", "proposal-input.md", "# 内部规划输入\n")
+        self._record("spec", "spec.md", "# 需求规格\n")
+        ambiguous = self._run(
+            "approve", "--feature-dir", str(self.feature), "--stage", "spec",
+            "--source", "demo-simulation",
+            "--approver-role", "ai-as-human-reviewer",
+            "--approval-text", "ok",
+            "--message-id", "ambiguous-authorized-demo",
+            expected=2,
+        )
+        self.assertIn("ambiguous", ambiguous["error"])
+        state = json.loads(
+            (self.feature / ".sdd2/feature-state.json").read_text(encoding="utf-8")
+        )
+        self.assertEqual(state["current_stage"], "spec")
+        self.assertEqual(state["stage_status"], "awaiting-approval")
+        self.assertNotIn("spec", state["approvals"])
+
     def test_demo_phase_review_records_simulation_provenance(self) -> None:
         self._start_demo_feature()
         self._run(

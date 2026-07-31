@@ -122,4 +122,7 @@ Archive 批准不是 Git 授权。完成 Archive 后立即结束当前回合；�
 
 ## 维护验证
 
-维护者可在具备仓库维护工具的隔离环境运行完整 Demo。该维护动作不在开发者 Skill 运行路径中，流程控制必须调用正式 Java 8 JAR。Demo 在临时 Git 仓库中实现一个 Java 8 小功能，执行真实 Maven 测试，走完全部 Gate，并验证乱文件、重复 Feature、状态篡改、批准链、自动提交和测试证据篡改均被控制器阻断。临时仓库结束后自动清理，不在正式 Feature 目录留下演练资产。
+维护者可在具备 Python 和 Maven 的隔离维护环境中运行两级 Demo；这些工具只负责测试编排和 Demo 项目构建，不属于开发者 Skill 运行依赖。两级 Demo 的流程控制都必须调用正式 Java 8 JAR，临时仓库结束后自动清理，不在正式 Feature 目录留下演练资产。
+
+- `scripts/demo_sdd2_small_feature.py`：快速端到端回归，覆盖单一小功能、全部 Gate、乱文件、重复 Feature、状态篡改、自动提交和测试证据篡改。
+- `scripts/demo_sdd2_large_feature.py`：大型深度回归，覆盖多文件与多 Phase 实现、需求修订失效、双 worktree 隔离、批准防重放、范围违规恢复、Code Review 失败返工、Unit Test 两轮交接、真实测试失败返工、提交/推送保护及 Archive 证据一致性。
