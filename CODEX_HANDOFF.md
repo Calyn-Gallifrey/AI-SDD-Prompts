@@ -1,6 +1,48 @@
 # Codex 交接
 
-## 当前任务
+更新时间：2026-10-20 10:46（Asia/Shanghai，UTC+08:00）。
+
+更新设备：`MBA-M4`｜13 英寸 M4 MacBook Air｜现场核对 ComputerName=`George-Air`、机型 `Mac16,12`、芯片 `Apple M4`，与已登记设备相符。
+
+## 当前任务与状态
+
+- 当前任务：交接与运行包核对已完成；Git 门禁首轮故障复现已完成，完整执行体系审计按用户最新指令暂停。用户先查看 SDD2.1 规划清单，再决定下一步；后续如有实施变更，目标版本为 SDD2.2。当前实现仍为 SDD2.0。
+- 实际工作目录：本仓库根目录 `AI-SDD-Prompts/`；上层 `UAW-SDD/` 是非 Git 项目，整体交接见 `../CODEX_HANDOFF.md`。
+- 当前体系为 SDD2.0，控制器 `doctor` 报告版本 `2.0-java8.2`。Skill 主入口为 `skills/uaw-sdd-ai-coding/SKILL.md`，配套 `skills/uaw-code-review/` 和 `skills/uaw-unit-test/` 均存在。
+- 本轮在 `sdd2-features/` 核对到三个状态文件，均为 `execution_mode=historical-example`、`current_stage=archive`、`stage_status=superseded`、`next_required_action=none-historical-example`；这些是历史示例，没有据此确认新的真实功能已交付。
+- 本轮未在 `~/.codex/skills/uaw-sdd-ai-coding` 或 `~/.agents/skills/uaw-sdd-ai-coding` 发现安装目录，当前会话可用技能列表也未列出该技能；其他工具或设备的安装情况未核对。
+
+## 运行包位置、生成与验证
+
+| 文件 | 用途与维护方式 |
+| --- | --- |
+| `skills/uaw-sdd-ai-coding/scripts/runtime/sdd2-control.jar` | 已编译的正式流程控制器，随 Skill 分发，日常运行直接使用 |
+| `skills/uaw-sdd-ai-coding/scripts/runtime/sdd2-control.sha256` | JAR 的 SHA-256 完整性校验值；控制器每次启动自动核对，缺失或不匹配即拒绝执行 |
+| `skills/uaw-sdd-ai-coding/scripts/Sdd2Control.java` | 控制器维护源码 |
+| `skills/uaw-sdd-ai-coding/scripts/build_sdd2_java8.sh` | 维护者运行一次后，自动编译、打包并更新上述两个运行文件 |
+
+- 两个运行文件均已纳入 Git。首次引入提交为 `b32791b`（2026-07-31 14:09:02，UTC+08:00）；当前内容最后更新于 `7cc93ad`（2026-07-31 15:34:02，UTC+08:00）。提交时间不等同于实际构建时间。
+- 当前设备文件系统显示：JAR 与 SHA-256 文件修改时间均为 2026-07-31 15:24:20（Asia/Shanghai，UTC+08:00）；JAR 内清单及主类 ZIP 条目时间同为 2026-07-31 15:24:20，ZIP 时间本身不带时区。该时间是当前包的构建时间证据，原始构建执行设备未注明。
+- 当前 JAR 与提交 `7cc93ad` 中的二进制一致，SHA-256 为 `dedc3bac2981886296a84bb163576d861b167cc77f590ae524f17b58d928c407`，与校验文件匹配；所有 `.class` 的 major version 均为 52，即 Java 8 字节码。
+- 日常开发者无需生成 JAR、手工填写 SHA-256 或在开发机现场编译。仅维护者修改控制器源码后才需要构建；在仓库根目录运行 `sh skills/uaw-sdd-ai-coding/scripts/build_sdd2_java8.sh` 即可自动更新两项产物。
+- 构建脚本需要支持 `javac --release 8` 的 JDK 9 及以上版本、`jar`，以及 `shasum` 或 `sha256sum`。正式运行仅需 Java 8 及以上版本和 Git；业务项目编译测试使用自身工具。
+- 已确认的版本标记差异：`doctor` 和源码报告 `2.0-java8.2`，`scripts/java8/MANIFEST.MF` 及 JAR 内 `Implementation-Version` 仍为 `2.0-java8.1`。本次预检通过；本轮未修改源码、清单或重建运行包，后续若维护发布版本需对齐该标记。
+
+## 本轮验证与设备接续
+
+| 操作/核验或记录时间（带时区） | 执行设备标识与名称 | 已做事项及结果 | 未完成事项 |
+| --- | --- | --- | --- |
+| 2026-10-20，记录时间 10:39（Asia/Shanghai，UTC+08:00） | `MBA-M4`｜13 英寸 M4 MacBook Air | 完整读取两级交接；核对 Git、Skill、三个历史状态文件、构建脚本、Git 与文件时间、SHA-256、字节码；OpenJDK `17.0.19` 下 `doctor --repo-root .` 退出码 0，版本 `2.0-java8.2`，`jar_integrity_verified=true`、`wrote_feature_files=false` | 本次请求无待办；未重跑下列历史回归或 Java 8 实机验收 |
+| 历史交接注明日期 2026-07-31；分项实际执行时刻原记录未注明 | 原记录未注明 | 下文保留 Java 8 改造、控制器回归和各 Demo 的历史记录 | 不代表当前设备已重跑，也不代表真实弱模型自主执行验收 |
+| 2026-10-20，结果核验时间 10:46（Asia/Shanghai，UTC+08:00） | `MBA-M4`｜13 英寸 M4 MacBook Air | Java 17 下原有控制器回归 53/53 通过，耗时 130.494 秒，原命令退出码 0；三个新增 Git 问题在外部临时仓库复现，未写入真实业务功能或替代真实批准 | 原有回归没有覆盖三个新增 Git 失败场景；未改控制器、重建运行包或升级版本 |
+
+- 新增审计接续：`MBA-M4` 于 2026-10-20 完成临时仓库故障复现，尚未改控制器。已确认：无效 `init --mode` 在拒绝前已写入锁和快照，缺失状态导致 `close` 与重试 `init` 均失败；关闭流程时若删除锁失败，状态已为 `aborted`，后续 `close` 拒绝终态且 `resume` 不清锁；原有 Hook 被改名为 `.sdd2-original` 后，依赖脚本名称的 Hook 即使流程关闭也会报错。正常活动门禁约 0.03 秒返回非零，并非持续等待。
+- 当前源码仓库没有活动锁、`index.lock`、`HEAD.lock`、`prepare-commit-msg` 或 `pre-push` Hook；同事当时的仓库、设备和错误输出尚未提供，因此未归因其历史故障。
+- 用户最新决定（2026-10-20，记录时间 10:45，Asia/Shanghai，UTC+08:00，`MBA-M4`）：先展示 SDD2.1 规划清单，再确定下一步。规划原文为 `../Knowledge/sdd21-brief-design-sample-library-plan.md`（2026-07-09），内容为历史样本库、BA 用户故事生成 brief-design 草稿、事实/推断/待确认分区、人工审核、离线回放及试点验收；不是已实现版本。
+- 下一接续设备：不限已确认设备；前置条件为用户读完规划清单后明确后续范围。若继续全面审计，覆盖批准语义、状态恢复、范围许可、测试证据、归档及现有测试覆盖。原有控制器回归 53/53 已通过；未修改控制器或重建运行包，未切换至 SDD2.2。
+- 若用户后续要求运行该技能：目标为不限已确认设备；接手时先读取交接，确认主 Skill 与两个配套 Skill 的加载方式，再执行 Java 与 JAR `doctor` 预检。完成标准为技能入口可用且预检通过；业务功能开发另按用户指定 Brief 开始。
+
+## 2026-07-31 历史实施与深度验证
 
 已在真实 Java 8 环境中从新增/修改业务角度完成 UAW-SDD 2.0 第二轮深度验证，同时保持开发者公开入口不变：
 
@@ -24,7 +66,6 @@
 - 开发者入口、Brief 字段和调用方式均未改变。
 - 正式运行文件和生成资产继续以简体中文为主体。
 - 未更新 Word 操作指南及其生成器。
-- `docs/.DS_Store` 是无关未跟踪文件，保持未暂存、未修改。
 - 本轮只创建本地提交，不执行 push；用户后续手动推送。
 
 ## 已实施修复
@@ -88,7 +129,7 @@
 - 覆盖模糊人工批准、提前 Design、散落字段映射文件、许可前修改既有代码、Phase 乱序、跨业务模块修改、活动 commit/push、测试失败提前 Archive 和最终锁释放。
 - 最终形成四次冻结代码修订、九项公开资产、十六份不可变资产快照、九条批准链记录和四十八条事件链记录；临时仓库 Git 提交数始终为基线 1。
 
-## 当前验证结果
+## 2026-07-31 历史验证结果
 
 - Java 8 正式控制器扩展回归：53/53 通过。
 - Python 维护参考实现同套回归：53 项通过，三个 Java 专属检查按设计跳过。
@@ -116,7 +157,7 @@
 
 ## Java 8 实机环境验收
 
-2026-07-31 已在本机安装的 Amazon Corretto `1.8.0_502` 上完成环境验收，结论为通过：
+历史交接记载：2026-07-31 在 Amazon Corretto `1.8.0_502` 上完成环境验收，结论为通过。执行设备及分项实际执行时刻原记录未注明：
 
 1. 显式设置 Java 8 `JAVA_HOME` 和 `PATH` 后，控制器 `doctor` 返回 `java_specification_version=1.8`、JAR 完整性通过、`wrote_feature_files=false`。
 2. Java 8 下完整控制器回归 `53/53` 通过，覆盖阶段 Gate、人工批准链、实现许可、范围冻结、乱文件、串 Feature、状态/证据篡改、质量门和自动提交阻断。
@@ -151,9 +192,8 @@ Python 仅用于仓库维护者的合同对照测试和隔离 Demo 编排，不�
 ## Git 与下一步
 
 - Git 根目录：`AI-SDD-Prompts/`。
-- 分支：`main`，相对 `origin/main` 存在未推送提交。
-- Java 8 环境验收前的控制器提交为 `b32791b`。
-- 不得暂存 `docs/.DS_Store`。
-- 不执行 push。
-- 本轮第二轮 Demo、维护说明和交接结果只保留本地提交，不执行 push。
+- 分支：`main`，上游 `origin/main`。本轮交接维护前 HEAD 为 `f42d3b9`，相对本地保存的上游引用 ahead 7、behind 0，工作区干净。
+- 本轮交接维护另作本地提交；最终提交和 ahead 数以 `git log -1`、`git status -sb` 为准。
+- 本轮未获取远端，未核对远端实时状态。沿用仅本地提交、用户手动推送约定。
+- 本轮仅修改本交接，未运行新 Demo、重建控制器或变更业务代码。
 - 内网开发继续使用原入口：简要提示词加 `uaw-sdd-ai-coding` Skill，不要求开发者手工运行控制命令。
