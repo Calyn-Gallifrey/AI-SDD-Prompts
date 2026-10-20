@@ -5,12 +5,14 @@ import java.nio.ByteBuffer;
 import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.AtomicMoveNotSupportedException;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileVisitOption;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.PosixFilePermission;
 import java.security.MessageDigest;
 import java.time.Instant;
@@ -944,18 +946,22 @@ public final class Sdd2Control {
         return path.isAbsolute() ? path.normalize() : repoRoot.resolve(path).normalize();
     }
 
-    static byte[] gitGuardScript(String hookName) {
-        String originalName = hookName + ".sdd2-original";
+    static String shellQuote(String value) {
+        return "'" + value.replace("'", "'\\''") + "'";
+    }
+
+    static byte[] gitGuardScript(String hookName, Path originalHook) {
+        boolean guarded = setOf("prepare-commit-msg", "pre-push").contains(hookName);
         String script = "#!/bin/sh\n"
             + COMMIT_GUARD_MARKER + "\n"
-            + "active_lock=\"$(git rev-parse --git-path sdd2-active-feature.json 2>/dev/null)\"\n"
+            + (guarded
+            ? "active_lock=\"$(git rev-parse --git-path sdd2-active-feature.json 2>/dev/null)\" || exit 1\n"
             + "if [ -n \"$active_lock\" ] && [ -f \"$active_lock\" ]; then\n"
             + "  echo \"SDD2_COMMIT_BLOCKED: 当前 worktree 存在未结束的 SDD2 Feature，禁止提交或推送。\" >&2\n"
-            + "  echo \"请先完成或明确关闭当前 SDD2 Attempt；本 Skill 不会自动执行 git add、git commit 或 git push。\" >&2\n"
+            + "  printf '%s\\n' \"活动锁：${active_lock}。请通过 Skill 恢复并完成或明确关闭当前 Attempt；已结束流程可重试恢复以释放残留锁。\" >&2\n"
             + "  exit 1\n"
-            + "fi\n"
-            + "hook_dir=\"$(dirname \"$0\")\"\n"
-            + "original_hook=\"$hook_dir/" + originalName + "\"\n"
+            + "fi\n" : "")
+            + "original_hook=" + shellQuote(slash(originalHook)) + "\n"
             + "if [ -x \"$original_hook\" ]; then\n"
             + "  exec \"$original_hook\" \"$@\"\n"
             + "fi\n"
@@ -964,37 +970,108 @@ public final class Sdd2Control {
     }
 
     static List<String> installGitGuards(Path repoRoot) {
-        Path hooksDir = gitHooksPath(repoRoot);
-        try {
-            Files.createDirectories(hooksDir);
-        } catch (IOException exc) {
-            throw new ControlError("Cannot create Git hooks directory: " + hooksDir, exc);
+        boolean worktreeConfig = "true".equals(runGit(
+            repoRoot, false, "config", "--bool", "--get", "extensions.worktreeConfig"
+        ));
+        String configScope = worktreeConfig ? "--worktree" : "--local";
+        Path common = Paths.get(runGit(repoRoot, "rev-parse", "--git-common-dir"));
+        if (!common.isAbsolute()) common = repoRoot.resolve(common);
+        Path hooksDir = worktreeConfig
+            ? gitPath(repoRoot, "sdd2-git-guard/hooks")
+            : common.normalize().resolve("sdd2-git-guard/hooks");
+        Path metadata = hooksDir.getParent().resolve("routing.json");
+        String configured = runGit(
+            repoRoot, false, "config", "--path", "--get", "core.hooksPath"
+        );
+        Path originalDir;
+        Path configuredPath = configured.isEmpty() ? null : Paths.get(configured);
+        if (configuredPath != null && !configuredPath.isAbsolute()) {
+            configuredPath = repoRoot.resolve(configuredPath);
+        }
+        if (configuredPath != null && configuredPath.normalize().equals(hooksDir)) {
+            if (!Files.isRegularFile(metadata)) {
+                throw new ControlError("GIT_GUARD_ROUTING_MISSING: " + metadata);
+            }
+            Map<String, Object> routing = readJson(metadata);
+            String originalPath = text(routing, "original_hooks_path");
+            if (integer(routing.get("version"), 0) != 2 || blank(originalPath)) {
+                throw new ControlError("GIT_GUARD_ROUTING_INVALID: " + metadata);
+            }
+            originalDir = Paths.get(originalPath);
+        } else {
+            originalDir = configured.isEmpty()
+                ? common.normalize().resolve("hooks") : Paths.get(configured);
+            atomicWriteJson(metadata, map(
+                "version", 2L, "original_hooks_path", slash(originalDir)
+            ));
+        }
+        Set<String> hookNames = new LinkedHashSet<>(listOf(
+            "applypatch-msg", "pre-applypatch", "post-applypatch", "pre-commit",
+            "pre-merge-commit", "prepare-commit-msg", "commit-msg", "post-commit",
+            "pre-rebase", "post-checkout", "post-merge", "pre-push", "pre-receive",
+            "update", "proc-receive", "post-receive", "post-update",
+            "reference-transaction", "push-to-checkout", "pre-auto-gc",
+            "post-rewrite", "sendemail-validate", "fsmonitor-watchman",
+            "p4-changelist", "p4-prepare-changelist", "p4-post-changelist",
+            "p4-pre-submit", "post-index-change"
+        ));
+        Path resolvedOriginal = originalDir.isAbsolute()
+            ? originalDir : repoRoot.resolve(originalDir);
+        if (resolvedOriginal.normalize().startsWith(hooksDir)) {
+            throw new ControlError("GIT_GUARD_ROUTING_CYCLE: " + metadata);
+        }
+        if (Files.isDirectory(resolvedOriginal)) {
+            try (Stream<Path> entries = Files.list(resolvedOriginal)) {
+                entries.map(path -> path.getFileName().toString())
+                    .filter(name -> name.matches("[A-Za-z0-9._-]+"))
+                    .filter(name -> !name.endsWith(".sample")
+                        && !name.endsWith(".sdd2-original"))
+                    .forEach(hookNames::add);
+            } catch (IOException exc) {
+                throw new ControlError("Cannot inspect original Git hooks", exc);
+            }
         }
         List<String> installed = new ArrayList<>();
-        for (String hookName : listOf("prepare-commit-msg", "pre-push")) {
+        for (String hookName : hookNames) {
             Path hook = hooksDir.resolve(hookName);
-            Path backup = hooksDir.resolve(hookName + ".sdd2-original");
+            byte[] script = gitGuardScript(hookName, originalDir.resolve(hookName));
             try {
                 if (Files.isRegularFile(hook)
-                    && readUtf8(hook)
-                        .contains(COMMIT_GUARD_MARKER)) {
+                    && Arrays.equals(Files.readAllBytes(hook), script)) {
                     makeExecutable(hook);
                     continue;
                 }
-                if (Files.exists(hook)) {
-                    if (Files.exists(backup)) {
-                        throw new ControlError(
-                            "Cannot install SDD2 Git guard because both "
-                            + hook + " and " + backup + " exist"
-                        );
-                    }
-                    Files.move(hook, backup);
-                }
-                atomicWriteBytes(hook, gitGuardScript(hookName));
+                atomicWriteBytes(hook, script);
                 makeExecutable(hook);
-                installed.add(hookName);
+                if (setOf("prepare-commit-msg", "pre-push").contains(hookName)) {
+                    installed.add(hookName);
+                }
             } catch (IOException exc) {
                 throw new ControlError("Cannot install SDD2 Git guard: " + hook, exc);
+            }
+        }
+        if (!slash(hooksDir).equals(configured)) {
+            runGit(repoRoot, "config", configScope, "core.hooksPath", slash(hooksDir));
+        }
+        if (!gitHooksPath(repoRoot).equals(hooksDir)) {
+            throw new ControlError("GIT_GUARD_ROUTING_OVERRIDDEN: core.hooksPath");
+        }
+        // Migrate the old in-place wrappers only after the new route protects commits.
+        for (String hookName : listOf("prepare-commit-msg", "pre-push")) {
+            Path legacy = resolvedOriginal.resolve(hookName);
+            Path backup = resolvedOriginal.resolve(hookName + ".sdd2-original");
+            try {
+                if (Files.isRegularFile(legacy)
+                    && readUtf8(legacy).contains(COMMIT_GUARD_MARKER)
+                    && readUtf8(legacy).contains(hookName + ".sdd2-original")) {
+                    if (Files.exists(backup, LinkOption.NOFOLLOW_LINKS)) {
+                        Files.move(backup, legacy, StandardCopyOption.REPLACE_EXISTING);
+                    } else {
+                        Files.delete(legacy);
+                    }
+                }
+            } catch (IOException exc) {
+                throw new ControlError("Cannot restore original Git hook: " + legacy, exc);
             }
         }
         return installed;
@@ -1400,30 +1477,33 @@ public final class Sdd2Control {
         return gitPath(repoRoot, "sdd2-active-feature.json");
     }
 
-    static void acquireLock(Path repoRoot, Path featureDir, String featureId) {
+    static boolean acquireLock(Path repoRoot, Path featureDir, String featureId) {
         Path path = lockPath(repoRoot);
         String featureRepoPath = relative(repoRoot, featureDir);
-        if (Files.exists(path)) {
+        Map<String, Object> record = map(
+            "schema_version", SCHEMA_VERSION, "feature_id", featureId,
+            "feature_dir", featureRepoPath, "repository_id", repositoryId(repoRoot),
+            "acquired_at", utcNow()
+        );
+        try {
+            Files.write(path, (Json.pretty(record) + "\n").getBytes(StandardCharsets.UTF_8),
+                StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE);
+            return true;
+        } catch (FileAlreadyExistsException exists) {
             Map<String, Object> current = readJson(path);
-            if (!featureRepoPath.equals(text(current, "feature_dir"))) {
+            if (!featureRepoPath.equals(text(current, "feature_dir"))
+                || !featureId.equals(text(current, "feature_id"))
+                || !Objects.equals(record.get("repository_id"), current.get("repository_id"))) {
                 throw new ControlError(
                     "This Git worktree is locked by another SDD2 feature: "
                     + text(current, "feature_id") + " at " + text(current, "feature_dir")
                     + ". Use a separate Git worktree for parallel features."
                 );
             }
-            return;
+            return false;
+        } catch (IOException exc) {
+            throw new ControlError("Cannot acquire worktree lock: " + path, exc);
         }
-        atomicWriteJson(
-            path,
-            map(
-                "schema_version", SCHEMA_VERSION,
-                "feature_id", featureId,
-                "feature_dir", featureRepoPath,
-                "repository_id", repositoryId(repoRoot),
-                "acquired_at", utcNow()
-            )
-        );
     }
 
     static void releaseLock(Path repoRoot, Path featureDir, String featureId) {
@@ -1442,6 +1522,61 @@ public final class Sdd2Control {
         } catch (IOException exc) {
             throw new ControlError("Cannot release worktree lock: " + path, exc);
         }
+    }
+
+    static void releaseTerminalLock(Path featureDir, Map<String, Object> state) {
+        assertHistoryAndLock(featureDir, state);
+        Path repoRoot = stateRepoRoot(featureDir, state);
+        Path path = lockPath(repoRoot);
+        if (!Files.exists(path)) return;
+        Map<String, Object> current = readJson(path);
+        if (relative(repoRoot, featureDir).equals(text(current, "feature_dir"))
+            && Objects.equals(state.get("feature_id"), current.get("feature_id"))
+            && repositoryId(repoRoot).equals(text(current, "repository_id"))) {
+            installGitGuards(repoRoot);
+            releaseLock(repoRoot, featureDir, text(state, "feature_id"));
+        }
+    }
+
+    static void removeInitializationFiles(Path controlDir) {
+        if (!Files.exists(controlDir, LinkOption.NOFOLLOW_LINKS)) return;
+        try (Stream<Path> paths = Files.walk(controlDir)) {
+            for (Path path : paths.sorted(Comparator.reverseOrder()).collect(Collectors.toList())) {
+                Files.delete(path);
+            }
+        } catch (IOException exc) {
+            throw new ControlError("Cannot roll back incomplete initialization: " + controlDir, exc);
+        }
+    }
+
+    static void recoverIncompleteInitialization(
+        Path repoRoot, Path featureDir, String featureId
+    ) {
+        Path lock = lockPath(repoRoot);
+        Map<String, Path> paths = featurePaths(featureDir);
+        if (Files.exists(paths.get("state")) || !Files.isRegularFile(lock)) return;
+        Map<String, Object> owner = readJson(lock);
+        if (!relative(repoRoot, featureDir).equals(text(owner, "feature_dir"))
+            || !featureId.equals(text(owner, "feature_id"))
+            || !repositoryId(repoRoot).equals(text(owner, "repository_id"))) return;
+        Path control = paths.get("control");
+        Path brief = featureDir.resolve("brief-design.md");
+        String digest = sha256File(brief);
+        Path snapshot = control.resolve("revisions/brief-design/r0001-" + digest + ".md");
+        Set<Path> allowed = setOf(control, control.resolve("revisions"),
+            control.resolve("revisions/brief-design"), snapshot);
+        if (Files.exists(control, LinkOption.NOFOLLOW_LINKS)) {
+            try (Stream<Path> entries = Files.walk(control)) {
+                for (Path path : entries.collect(Collectors.toList())) {
+                    if (!allowed.contains(path) || Files.isSymbolicLink(path)) return;
+                }
+            } catch (IOException exc) {
+                throw new ControlError("Cannot inspect incomplete initialization", exc);
+            }
+            if (Files.exists(snapshot) && !digest.equals(sha256File(snapshot))) return;
+        }
+        removeInitializationFiles(control);
+        releaseLock(repoRoot, featureDir, featureId);
     }
 
     static List<String> verifyLock(Path featureDir, Map<String, Object> state) {
@@ -2320,6 +2455,10 @@ public final class Sdd2Control {
     static List<String> scopeDrift(Path featureDir, Map<String, Object> state) {
         Path scopePath = featurePaths(featureDir).get("scope");
         if (!Files.exists(scopePath)) {
+            if (TERMINAL_STATUSES.contains(text(state, "stage_status"))
+                && !"completed".equals(text(state, "stage_status"))) {
+                return new ArrayList<String>();
+            }
             if (stageIndex(text(state, "current_stage")) >= stageIndex("implementation")
                 && !"capture-implementation-scope".equals(
                     text(state, "next_required_action")
@@ -3504,6 +3643,11 @@ public final class Sdd2Control {
     }
 
     static Map<String, Object> cmdInit(Opts args) {
+        String featureId = args.required("--feature-id");
+        String mode = args.one("--mode", "real");
+        if (!setOf("real", "demo").contains(mode)) {
+            throw new ControlError("Invalid --mode: " + mode + "; expected real or demo");
+        }
         Path featureDir = normalizeFeatureDir(args.required("--feature-dir"));
         Map<String, Path> paths = featurePaths(featureDir);
         if (Files.exists(paths.get("state"))) {
@@ -3521,6 +3665,7 @@ public final class Sdd2Control {
                 + String.join(",", boundaryErrors)
             );
         }
+        recoverIncompleteInitialization(repoRoot, featureDir, featureId);
         String featureRepoPath = relative(repoRoot, featureDir);
         boundaryErrors.addAll(featureLayoutErrors(featureDir, null, null));
         boundaryErrors.addAll(
@@ -3546,91 +3691,100 @@ public final class Sdd2Control {
             );
         }
         List<String> installedGuards = installGitGuards(repoRoot);
-        String featureId = args.required("--feature-id");
-        acquireLock(repoRoot, featureDir, featureId);
-        String briefDigest = sha256File(brief);
-        String briefSnapshot = persistArtifactSnapshot(
-            featureDir, "brief-design", 1, briefDigest
-        );
-        Map<String, Object> baseline = planningSnapshot(
-            repoRoot, featureRepoPath
-        );
-        Map<String, Object> artifacts = map(
-            "brief-design", map(
-                "path", ARTIFACT_FILES.get("brief-design"),
-                "revision", 1L,
-                "sha256", briefDigest,
-                "snapshot_path", briefSnapshot,
-                "status", "recorded",
-                "recorded_at", utcNow()
-            )
-        );
-        String mode = args.one("--mode", "real");
-        if (!setOf("real", "demo").contains(mode)) {
-            throw new ControlError(
-                "Invalid --mode: " + mode + "; expected real or demo"
-            );
+        boolean lockAcquired = acquireLock(repoRoot, featureDir, featureId);
+        if (!lockAcquired) {
+            throw new ControlError("Incomplete initialization has unrecognized evidence; preserve it for recovery");
         }
-        Map<String, Object> state = map(
-            "schema_version", SCHEMA_VERSION,
-            "feature_id", featureId,
-            "feature_dir", featureRepoPath,
-            "feature_repo_path", featureRepoPath,
-            "execution_mode", mode,
-            "entry_contract", map(
-                "user_entry", "brief-prompt-and-skill-call",
-                "developer_action_required", false,
-                "version", 1L
-            ),
-            "workspace_binding", map(
-                "repo_root", ".",
-                "worktree", ".",
-                "repository_id", repositoryId(repoRoot),
-                "branch", branch
-            ),
-            "revision", 1L,
-            "attempt", 1L,
-            "current_stage", "proposal-input",
-            "stage_status", "ready",
-            "last_completed_stage", "brief-design",
-            "next_required_action", "assemble-proposal-input",
-            "blocked", null,
-            "artifacts", artifacts,
-            "approvals", new LinkedHashMap<String, Object>(),
-            "quality_gates", new LinkedHashMap<String, Object>(),
-            "required_phases", new ArrayList<Object>(),
-            "phase_reviews", new LinkedHashMap<String, Object>(),
-            "invalidations", new ArrayList<Object>(),
-            "demo_authorization", null,
-            "planning_baseline", baseline,
-            "implementation_started", false,
-            "implementation_permit", null,
-            "implementation_permit_history", new ArrayList<Object>(),
-            "unit_test_execution", null,
-            "created_at", utcNow(),
-            "updated_at", utcNow()
-        );
         try {
-            Files.createDirectories(paths.get("control"));
-            if (!Files.exists(paths.get("approvals"))) {
-                Files.createFile(paths.get("approvals"));
+            String briefDigest = sha256File(brief);
+            String briefSnapshot = persistArtifactSnapshot(
+                featureDir, "brief-design", 1, briefDigest
+            );
+            Map<String, Object> baseline = planningSnapshot(
+                repoRoot, featureRepoPath
+            );
+            Map<String, Object> artifacts = map(
+                "brief-design", map(
+                    "path", ARTIFACT_FILES.get("brief-design"),
+                    "revision", 1L,
+                    "sha256", briefDigest,
+                    "snapshot_path", briefSnapshot,
+                    "status", "recorded",
+                    "recorded_at", utcNow()
+                )
+            );
+            Map<String, Object> state = map(
+                "schema_version", SCHEMA_VERSION,
+                "feature_id", featureId,
+                "feature_dir", featureRepoPath,
+                "feature_repo_path", featureRepoPath,
+                "execution_mode", mode,
+                "entry_contract", map(
+                    "user_entry", "brief-prompt-and-skill-call",
+                    "developer_action_required", false,
+                    "version", 1L
+                ),
+                "workspace_binding", map(
+                    "repo_root", ".",
+                    "worktree", ".",
+                    "repository_id", repositoryId(repoRoot),
+                    "branch", branch
+                ),
+                "revision", 1L,
+                "attempt", 1L,
+                "current_stage", "proposal-input",
+                "stage_status", "ready",
+                "last_completed_stage", "brief-design",
+                "next_required_action", "assemble-proposal-input",
+                "blocked", null,
+                "artifacts", artifacts,
+                "approvals", new LinkedHashMap<String, Object>(),
+                "quality_gates", new LinkedHashMap<String, Object>(),
+                "required_phases", new ArrayList<Object>(),
+                "phase_reviews", new LinkedHashMap<String, Object>(),
+                "invalidations", new ArrayList<Object>(),
+                "demo_authorization", null,
+                "planning_baseline", baseline,
+                "implementation_started", false,
+                "implementation_permit", null,
+                "implementation_permit_history", new ArrayList<Object>(),
+                "unit_test_execution", null,
+                "created_at", utcNow(),
+                "updated_at", utcNow()
+            );
+            try {
+                Files.createDirectories(paths.get("control"));
+                if (!Files.exists(paths.get("approvals"))) {
+                    Files.createFile(paths.get("approvals"));
+                }
+                if (!Files.exists(paths.get("events"))) {
+                    Files.createFile(paths.get("events"));
+                }
+            } catch (IOException exc) {
+                throw new ControlError("Cannot initialize Feature control files", exc);
             }
-            if (!Files.exists(paths.get("events"))) {
-                Files.createFile(paths.get("events"));
+            saveState(featureDir, state);
+            appendEvent(
+                featureDir, state, "feature-initialized",
+                map(
+                    "mode", state.get("execution_mode"),
+                    "planning_baseline_sha256", baseline.get("snapshot_sha256"),
+                    "git_guards_installed", installedGuards
+                )
+            );
+            return state;
+        } catch (RuntimeException failure) {
+            if (lockAcquired) {
+                try {
+                    removeInitializationFiles(paths.get("control"));
+                    releaseLock(repoRoot, featureDir, featureId);
+                } catch (RuntimeException rollback) {
+                    throw new ControlError(failure.getMessage()
+                        + "; initialization rollback failed: " + rollback.getMessage(), failure);
+                }
             }
-        } catch (IOException exc) {
-            throw new ControlError("Cannot initialize Feature control files", exc);
+            throw failure;
         }
-        saveState(featureDir, state);
-        appendEvent(
-            featureDir, state, "feature-initialized",
-            map(
-                "mode", state.get("execution_mode"),
-                "planning_baseline_sha256", baseline.get("snapshot_sha256"),
-                "git_guards_installed", installedGuards
-            )
-        );
-        return state;
     }
 
     static Map<String, Object> cmdMigrateLegacy(Opts args) {
@@ -5104,6 +5258,10 @@ public final class Sdd2Control {
                 }
             }
         }
+        if (!"historical-example".equals(text(state, "execution_mode"))
+            && TERMINAL_STATUSES.contains(text(state, "stage_status"))) {
+            releaseTerminalLock(featureDir, state);
+        }
         Map<String, Object> validation = validateState(featureDir, state);
         Map<String, Object> permit = objectOrEmpty(
             state.get("implementation_permit")
@@ -5129,6 +5287,10 @@ public final class Sdd2Control {
         Map<String, Object> state = loadState(featureDir);
         assertHistoryAndLock(featureDir, state);
         if (TERMINAL_STATUSES.contains(text(state, "stage_status"))) {
+            if (Objects.equals(state.get("stage_status"), args.required("--result"))) {
+                releaseTerminalLock(featureDir, state);
+                return state;
+            }
             throw new ControlError(
                 "Terminal attempts are immutable; use restart-attempt for new work"
             );

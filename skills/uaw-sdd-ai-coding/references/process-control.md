@@ -99,13 +99,16 @@ java -jar "$CONTROL" doctor --repo-root <git-repo-root>
 
 ## Git 写操作
 
-本 Skill 不执行 `git add`、`git commit` 或 `git push`。活动锁存在时，内部 `prepare-commit-msg` Guard 会阻止所有提交，包括带 `--no-verify` 的提交；`pre-push` Guard 会阻止普通推送。Guard 遵循仓库当前的 `core.hooksPath`，保留既有同名 Hook，流程释放活动锁后自动放行并继续执行原 Hook。
+本 Skill 不执行 `git add`、`git commit` 或 `git push`。活动锁存在时，内部 `prepare-commit-msg` Guard 会阻止所有提交，包括带 `--no-verify` 的提交；`pre-push` Guard 会阻止普通推送。Guard 通过 Git 内部 `sdd2-git-guard/` 的独立分发目录和仓库/worktree 配置启用，保存并转发原 `core.hooksPath` 下的各项 Hook；既有脚本保持原文件名与位置。其他 worktree 按各自的活动锁判断，流程释放活动锁后自动放行。旧版被改名的脚本在迁移后恢复原位。
 
 Archive 批准不是 Git 授权。完成 Archive 后立即结束当前回合；只有用户在后续新消息中明确要求，才可由 SDD2 之外的 Git 工作流处理提交。
 
 ## 恢复规则
 
 - 锁缺失或不匹配：只有没有其他 Feature 占用 worktree 时，`resume` 才可重新获取；否则使用另一个 worktree。
+- 初始化失败：无效参数在写入前拒绝；写入故障只撤销该次新建的控制文件和归属锁。旧版孤立初始快照可在归属及内容完全核实后随重试 `init` 恢复；存在状态、批准、事件或未知内容时保留现场并停止。
+- 终态残留锁：通过 `resume` 或重复相同关闭结果的 `close` 重试释放；必须先通过状态历史校验，不新增批准或修订，不删除其他功能的锁。规划阶段已终止的流程无需伪造范围文件。
+- `GIT_GUARD_ROUTING_*`：分发路由缺失、损坏、循环或被更高优先级 Git 配置覆盖。保留现场并停止，不将其当作门禁已安装成功。
 - 范围漂移：冻结新快照，然后按失效结果重新执行 Code Review、Auto-fix 关闭、Unit Test、Unit Test Summary 批准和 Archive 证据。
 - 资产漂移：记录已变更资产，再重复所有失效的下游动作。
 - 哈希链损坏：停止并保留证据，不得自动修复或重写历史。

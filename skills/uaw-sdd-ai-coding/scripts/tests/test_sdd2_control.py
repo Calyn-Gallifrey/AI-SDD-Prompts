@@ -865,12 +865,10 @@ class Sdd2ControlTest(unittest.TestCase):
             "close", "--feature-dir", str(self.feature), "--result", "aborted",
             "--approval-text", "同意终止并关闭", "--message-id", "close-before-hook-test",
         )
-        hooks = Path(self._git("rev-parse", "--git-path", "hooks"))
-        if not hooks.is_absolute():
-            hooks = self.repo / hooks
+        hooks = self.repo / ".git/hooks"
         hook = hooks / "prepare-commit-msg"
         backup = hooks / "prepare-commit-msg.sdd2-original"
-        hook.unlink()
+        hook.unlink(missing_ok=True)
         backup.unlink(missing_ok=True)
         hook.write_text(
             "#!/bin/sh\n"
@@ -885,7 +883,7 @@ class Sdd2ControlTest(unittest.TestCase):
         self._run(
             "init", "--feature-dir", str(self.feature), "--feature-id", "hook-compatible",
         )
-        self.assertTrue(backup.is_file())
+        self.assertEqual(backup.is_file(), not USING_JAVA_CONTROLLER)
 
         blocked = subprocess.run(
             ["git", "commit", "--allow-empty", "--no-verify", "-m", "blocked"],
@@ -926,8 +924,16 @@ class Sdd2ControlTest(unittest.TestCase):
         self._run(
             "init", "--feature-dir", str(self.feature), "--feature-id", "custom-hooks",
         )
-        self.assertIn("UAW-SDD2 GIT GUARD", existing.read_text(encoding="utf-8"))
-        self.assertTrue((custom_hooks / "prepare-commit-msg.sdd2-original").is_file())
+        if USING_JAVA_CONTROLLER:
+            self.assertNotIn("UAW-SDD2 GIT GUARD", existing.read_text(encoding="utf-8"))
+            routed = Path(self._git("rev-parse", "--git-path", "hooks"))
+            self.assertIn("UAW-SDD2 GIT GUARD", (routed / "prepare-commit-msg").read_text())
+        else:
+            self.assertIn("UAW-SDD2 GIT GUARD", existing.read_text(encoding="utf-8"))
+        self.assertEqual(
+            (custom_hooks / "prepare-commit-msg.sdd2-original").is_file(),
+            not USING_JAVA_CONTROLLER,
+        )
 
         blocked = subprocess.run(
             ["git", "commit", "--allow-empty", "--no-verify", "-m", "blocked"],
@@ -946,6 +952,232 @@ class Sdd2ControlTest(unittest.TestCase):
         )
         self._git("commit", "--allow-empty", "--no-verify", "-m", "allowed after close")
         self.assertTrue((self.repo / ".git/custom-hook-ran").is_file())
+
+    def _reset_initialization_fixture(self) -> bytes:
+        lock = (self.repo / ".git/sdd2-active-feature.json").read_bytes()
+        self._run("close", "--feature-dir", str(self.feature), "--result", "aborted",
+                  "--approval-text", "隔离测试模拟：同意终止并关闭")
+        shutil.rmtree(self.feature / ".sdd2")
+        return lock
+
+    @unittest.skipUnless(USING_JAVA_CONTROLLER, "正式 Java 控制器的 Git 恢复修复")
+    def test_invalid_init_has_no_lock_or_partial_state_and_can_retry(self) -> None:
+        self._reset_initialization_fixture()
+        self._run("init", "--feature-dir", str(self.feature), "--feature-id", "example",
+                  "--mode", "typo", expected=2)
+        self.assertFalse((self.repo / ".git/sdd2-active-feature.json").exists())
+        self.assertFalse((self.feature / ".sdd2").exists())
+        self._git("commit", "--allow-empty", "-m", "allowed after invalid init")
+        self._run("init", "--feature-dir", str(self.feature), "--feature-id", "example")
+        self.assertTrue(self._run("resume", "--feature-dir", str(self.feature))["result"]["valid"])
+
+    @unittest.skipUnless(USING_JAVA_CONTROLLER and os.name != "nt", "需要 POSIX 权限故障注入")
+    def test_init_write_failure_rolls_back_its_lock_and_can_retry(self) -> None:
+        self._reset_initialization_fixture()
+        permissions = self.feature.stat().st_mode
+        self.feature.chmod(0o555)
+        try:
+            self._run("init", "--feature-dir", str(self.feature), "--feature-id", "example",
+                      expected=2)
+        finally:
+            self.feature.chmod(permissions)
+        self.assertFalse((self.repo / ".git/sdd2-active-feature.json").exists())
+        self.assertFalse((self.feature / ".sdd2").exists())
+        self._git("commit", "--allow-empty", "-m", "allowed after init I/O failure")
+        self._run("init", "--feature-dir", str(self.feature), "--feature-id", "example")
+
+    @unittest.skipUnless(USING_JAVA_CONTROLLER, "旧 Java 运行包遗留初始化恢复")
+    def test_init_recovers_only_proven_legacy_partial_initialization(self) -> None:
+        lock = self._reset_initialization_fixture()
+        (self.repo / ".git/sdd2-active-feature.json").write_bytes(lock)
+        content = (self.feature / "brief-design.md").read_bytes()
+        snapshot = self.feature / ".sdd2/revisions/brief-design" / (
+            "r0001-" + hashlib.sha256(content).hexdigest() + ".md"
+        )
+        snapshot.parent.mkdir(parents=True)
+        snapshot.write_bytes(content)
+        self._run("init", "--feature-dir", str(self.feature), "--feature-id", "example")
+        self.assertTrue(self._run("resume", "--feature-dir", str(self.feature))["result"]["valid"])
+
+    @unittest.skipUnless(USING_JAVA_CONTROLLER, "旧 Java 初始化证据保护")
+    def test_init_does_not_discard_unrecognized_or_approved_orphan_evidence(self) -> None:
+        lock = self._reset_initialization_fixture()
+        path = self.repo / ".git/sdd2-active-feature.json"
+        path.write_bytes(lock)
+        evidence = self.feature / ".sdd2/gate-approvals.jsonl"
+        evidence.parent.mkdir()
+        evidence.write_text('{"evidence":"不得自动丢弃"}\n')
+        self._run("init", "--feature-dir", str(self.feature), "--feature-id", "example", expected=2)
+        self.assertEqual(path.read_bytes(), lock)
+        self.assertIn("不得自动丢弃", evidence.read_text())
+
+    @unittest.skipUnless(USING_JAVA_CONTROLLER and os.name != "nt", "需要 POSIX 权限故障注入")
+    def test_terminal_unlock_failure_recovers_without_new_approval_or_revision(self) -> None:
+        gitdir = self.repo / ".git"
+        permissions = gitdir.stat().st_mode
+        gitdir.chmod(0o555)
+        try:
+            self._run("close", "--feature-dir", str(self.feature), "--result", "aborted",
+                      "--approval-text", "隔离测试模拟：同意终止并关闭", expected=2)
+        finally:
+            gitdir.chmod(permissions)
+        state_path = self.feature / ".sdd2/feature-state.json"
+        state_before = state_path.read_bytes()
+        lock_path = gitdir / "sdd2-active-feature.json"
+        lock_before = lock_path.read_bytes()
+        self.assertEqual(json.loads(state_before)["stage_status"], "aborted")
+        self.assertTrue(self._run("resume", "--feature-dir", str(self.feature))["result"]["valid"])
+        self.assertFalse(lock_path.exists())
+        self.assertEqual(state_before, state_path.read_bytes())
+        self._git("commit", "--allow-empty", "-m", "allowed after resume repairs unlock")
+        lock_path.write_bytes(lock_before)
+        self._run("close", "--feature-dir", str(self.feature), "--result", "aborted",
+                  "--approval-text", "隔离测试模拟：重试原关闭操作")
+        self.assertFalse(lock_path.exists())
+        self.assertEqual(state_before, state_path.read_bytes())
+
+    @unittest.skipUnless(USING_JAVA_CONTROLLER, "终态恢复不得解除其他功能的锁")
+    def test_terminal_resume_preserves_another_active_feature_lock(self) -> None:
+        self._run("close", "--feature-dir", str(self.feature), "--result", "aborted",
+                  "--approval-text", "隔离测试模拟：同意终止并关闭")
+        other = self.repo / "sdd2-features/Sprint1/other"
+        other.mkdir(parents=True)
+        (other / "brief-design.md").write_text("# 其他功能\n" + VALID_CHINESE_BODY)
+        self._run("init", "--feature-dir", str(other), "--feature-id", "other")
+        lock = self.repo / ".git/sdd2-active-feature.json"
+        before = lock.read_bytes()
+        self._run("resume", "--feature-dir", str(self.feature))
+        self.assertEqual(before, lock.read_bytes())
+
+    @unittest.skipUnless(USING_JAVA_CONTROLLER, "终态恢复必须保留损坏证据")
+    def test_terminal_resume_does_not_unlock_corrupted_history(self) -> None:
+        lock = (self.repo / ".git/sdd2-active-feature.json").read_bytes()
+        self._run("close", "--feature-dir", str(self.feature), "--result", "aborted",
+                  "--approval-text", "隔离测试模拟：同意终止并关闭")
+        path = self.repo / ".git/sdd2-active-feature.json"
+        path.write_bytes(lock)
+        events = self.feature / ".sdd2/events.jsonl"
+        records = events.read_text().splitlines()
+        changed = json.loads(records[-1])
+        changed["event_hash"] = "0" * 64
+        records[-1] = json.dumps(changed)
+        events.write_text("\n".join(records) + "\n")
+        self._run("resume", "--feature-dir", str(self.feature), expected=2)
+        self.assertEqual(path.read_bytes(), lock)
+
+    @unittest.skipUnless(USING_JAVA_CONTROLLER, "已有 Hook 必须保留名称与相邻资源")
+    def test_git_guard_preserves_original_hook_name_location_and_other_hooks(self) -> None:
+        self._run("close", "--feature-dir", str(self.feature), "--result", "aborted",
+                  "--approval-text", "隔离测试模拟：同意终止并关闭")
+        hooks = self.repo / ".git/hooks"
+        (hooks / "hook-resource").write_text("resource\n")
+        original = hooks / "prepare-commit-msg"
+        content = ('#!/bin/sh\n'
+                   'test "$(basename "$0")" = prepare-commit-msg || exit 37\n'
+                   'test -f "$(dirname "$0")/hook-resource" || exit 38\n'
+                   'touch "$(git rev-parse --git-dir)/original-name-ran"\n')
+        original.write_text(content)
+        original.chmod(0o755)
+        post = hooks / "post-commit"
+        post.write_text('#!/bin/sh\ntouch "$(git rev-parse --git-dir)/post-commit-ran"\n')
+        post.chmod(0o755)
+        other = self.repo / "sdd2-features/Sprint1/name-compatible"
+        other.mkdir(parents=True)
+        (other / "brief-design.md").write_text("# Hook 兼容\n" + VALID_CHINESE_BODY)
+        self._run("init", "--feature-dir", str(other), "--feature-id", "name-compatible")
+        self._run("close", "--feature-dir", str(other), "--result", "aborted",
+                  "--approval-text", "隔离测试模拟：同意终止并关闭")
+        self.assertEqual(original.read_text(), content)
+        self._git("commit", "--allow-empty", "-m", "original hooks remain valid")
+        self.assertTrue((self.repo / ".git/original-name-ran").exists())
+        self.assertTrue((self.repo / ".git/post-commit-ran").exists())
+
+    @unittest.skipUnless(USING_JAVA_CONTROLLER, "升级原地 Hook 时恢复原脚本")
+    def test_git_guard_migrates_legacy_renamed_hook(self) -> None:
+        hooks = self.repo / ".git/hooks"
+        original = hooks / "prepare-commit-msg"
+        backup = hooks / "prepare-commit-msg.sdd2-original"
+        content = '#!/bin/sh\ntest "$(basename "$0")" = prepare-commit-msg\n'
+        backup.write_text(content)
+        backup.chmod(0o755)
+        original.write_text('#!/bin/sh\n# UAW-SDD2 GIT GUARD v1\n'
+                            'exec "$(dirname "$0")/prepare-commit-msg.sdd2-original" "$@"\n')
+        original.chmod(0o755)
+        self._git("config", "core.hooksPath", str(hooks))
+        self._run("resume", "--feature-dir", str(self.feature))
+        self.assertEqual(original.read_text(), content)
+        self.assertFalse(backup.exists())
+        self._run("close", "--feature-dir", str(self.feature), "--result", "aborted",
+                  "--approval-text", "隔离测试模拟：同意终止并关闭")
+        self._git("commit", "--allow-empty", "-m", "legacy hook restored")
+
+    @unittest.skipUnless(USING_JAVA_CONTROLLER, "并行 worktree 必须独立保护")
+    def test_git_guard_allows_inactive_worktree_commit_and_push_with_original_hook(self) -> None:
+        original = self.repo / ".git/hooks/prepare-commit-msg"
+        original.write_text('#!/bin/sh\ntest "$(basename "$0")" = prepare-commit-msg\n')
+        original.chmod(0o755)
+        with tempfile.TemporaryDirectory(prefix="sdd2-linked-") as temp:
+            linked = Path(temp) / "worktree"
+            remote = Path(temp) / "remote.git"
+            self._git("worktree", "add", "-q", "-b", "inactive", str(linked), "HEAD")
+            try:
+                for cmd in [
+                    ["git", "commit", "--allow-empty", "-m", "inactive worktree allowed"],
+                    ["git", "init", "--bare", "-q", str(remote)],
+                    ["git", "push", str(remote), "HEAD:refs/heads/inactive"],
+                ]:
+                    result = subprocess.run(cmd, cwd=linked, capture_output=True, text=True, timeout=30)
+                    self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                blocked = subprocess.run(["git", "commit", "--allow-empty", "--no-verify", "-m", "active"],
+                                         cwd=self.repo, capture_output=True, text=True, timeout=30)
+                self.assertNotEqual(blocked.returncode, 0)
+                self.assertIn("SDD2_COMMIT_BLOCKED", blocked.stderr)
+                self.assertIn("sdd2-active-feature.json", blocked.stderr)
+            finally:
+                self._git("worktree", "remove", "--force", str(linked))
+
+    @unittest.skipUnless(USING_JAVA_CONTROLLER, "保留 worktree 专用 hooks 配置")
+    def test_git_guard_respects_worktree_specific_hooks_configuration(self) -> None:
+        original_route = self._git("config", "--get", "core.hooksPath")
+        self._git("config", "extensions.worktreeConfig", "true")
+        with tempfile.TemporaryDirectory(prefix="sdd2-scoped-hooks-") as temp:
+            linked = Path(temp) / "worktree"
+            self._git("worktree", "add", "-q", "-b", "scoped", str(linked), "HEAD")
+            try:
+                hooks = Path(temp) / "custom hooks'quoted"
+                hooks.mkdir()
+                marker = hooks / "ran"
+                hook = hooks / "prepare-commit-msg"
+                hook.write_text('#!/bin/sh\ntest "$(basename "$0")" = prepare-commit-msg || exit 37\n'
+                                'touch "$(dirname "$0")/ran"\n')
+                hook.chmod(0o755)
+                subprocess.run(["git", "config", "--worktree", "core.hooksPath", str(hooks)],
+                               cwd=linked, check=True, capture_output=True)
+                feature = linked / "sdd2-features/Sprint1/scoped"
+                feature.mkdir(parents=True)
+                (feature / "brief-design.md").write_text("# 隔离工作树\n" + VALID_CHINESE_BODY)
+                self._run("init", "--feature-dir", str(feature), "--feature-id", "scoped")
+                self._run("close", "--feature-dir", str(feature), "--result", "aborted",
+                          "--approval-text", "隔离测试模拟：同意终止并关闭")
+                result = subprocess.run(["git", "commit", "--allow-empty", "-m", "scoped original hook"],
+                                        cwd=linked, capture_output=True, text=True, timeout=30)
+                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                self.assertTrue(marker.exists())
+                self.assertEqual(original_route, self._git("config", "--get", "core.hooksPath"))
+            finally:
+                self._git("worktree", "remove", "--force", str(linked))
+
+    @unittest.skipUnless(USING_JAVA_CONTROLLER, "相对分发目录不得形成递归 Hook")
+    def test_git_guard_canonicalizes_relative_router_without_recursion(self) -> None:
+        router = Path(self._git("config", "--get", "core.hooksPath"))
+        self._git("config", "core.hooksPath", os.path.relpath(router, self.repo))
+        self._run("resume", "--feature-dir", str(self.feature))
+        self.assertEqual(str(router), self._git("config", "--get", "core.hooksPath"))
+        self._run("close", "--feature-dir", str(self.feature), "--result", "aborted",
+                  "--approval-text", "隔离测试模拟：同意终止并关闭")
+        result = subprocess.run(["git", "commit", "--allow-empty", "-m", "no recursive hook"],
+                                cwd=self.repo, capture_output=True, text=True, timeout=30)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
     def test_phase_order_and_parallel_feature_lock_are_enforced(self) -> None:
         self._reach_tasks_approval()

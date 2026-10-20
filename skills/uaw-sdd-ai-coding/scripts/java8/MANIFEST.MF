@@ -1,4 +1,4 @@
 Manifest-Version: 1.0
 Main-Class: Sdd2Control
 Implementation-Title: UAW-SDD 2.0 Process Controller
-Implementation-Version: 2.0-java8.1
+Implementation-Version: 2.0-java8.2

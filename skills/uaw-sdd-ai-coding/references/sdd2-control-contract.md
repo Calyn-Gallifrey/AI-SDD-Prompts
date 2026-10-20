@@ -122,7 +122,9 @@ java -jar scripts/runtime/sdd2-control.jar init \
 
 `init` 必须保存 Feature 目录外的规划期 Git 快照。首次实现许可签发前，分支、HEAD 或任一代码、测试、配置、构建及其他 Feature 外文件发生变化，都记录为 `PREMATURE_IMPLEMENTATION_CHANGE` 并进入 `blocked`。只有恢复到原规划基线后，`resume` 才能返回原人工 Gate。
 
-`init` 和活动 Feature 的 `resume` 必须透明安装 Git Guard，并遵循仓库当前的 `core.hooksPath`。Guard 通过 Git `prepare-commit-msg` 拒绝活动 Attempt 下的所有提交，因此 `git commit --no-verify` 也不能绕过；普通 `git push` 由 `pre-push` 同步拒绝。已有同名 Hook 必须保留并在 Guard 放行时继续执行。
+`init` 和活动 Feature 的 `resume` 必须透明安装 Git Guard。控制器在 Git 内部的 `sdd2-git-guard/` 保存分发脚本及原 `core.hooksPath` 路由，通过仓库或 worktree 专用配置启用；既有 Hook 保持原文件名、位置、解释器、参数和标准输入，其他 Git Hook 也继续转发。Guard 通过 `prepare-commit-msg` 拒绝活动 Attempt 下的所有提交，因此 `git commit --no-verify` 也不能绕过；普通 `git push` 由 `pre-push` 同步拒绝。活动锁按 worktree 隔离，不能阻止其他已结束或未启动流程的 worktree 正常提交。旧版 `.sdd2-original` 备份在新分发路由生效后恢复原位。
+
+`init` 必须在写入前检查必需参数与模式；初始化写入失败时，仅回滚该次新建的内部控制文件和归属锁，保留 `brief-design.md`。旧运行包留下的未完成初始化，只有锁的仓库、路径、功能标识一致，且内部内容仅包含可验证的初始 Brief 快照、没有状态/批准/事件或其他内容时，才允许在重试 `init` 时恢复。存在未知内容或审批证据时保留现场并停止。
 
 ## 6. 资产记录与人工 Gate
 
@@ -209,6 +211,8 @@ Archive 要求以下条件全部绑定到同一个当前快照：
 ## 10. 恢复、继续与重复执行
 
 `resume` 会校验状态事件投影、批准链、哈希、资产、锁、分支、范围和测试执行证据，并且只返回一个 `next_required_action`。存在任何校验错误时返回非零并硬停止；不得继续执行返回中的旧动作。控制状态存在时，禁止根据聊天记忆或 Markdown 文字重建状态。
+
+已进入终态但释放锁失败时，`resume` 在校验状态与历史后重试释放本功能的残留锁；对已关闭状态重复相同结果的 `close` 也可重试释放。恢复不新增批准、不修改终态或修订，不解除其他功能的锁；历史损坏时不清理。规划阶段终止无需补造实现范围文件。
 
 `resume` 还必须检查规划基线和实现许可。规划期出现提前实现时保存原 Gate 恢复点并进入 `blocked`；变更恢复后只回到原 Gate，不得把提前代码视为已完成阶段。
 
