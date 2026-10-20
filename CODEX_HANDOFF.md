@@ -1,6 +1,6 @@
 # Codex 交接
 
-更新时间：2026-10-20 11:27（Asia/Shanghai，UTC+08:00）。
+更新时间：2026-10-20 12:18（Asia/Shanghai，UTC+08:00）。
 
 更新设备：`MBA-M4`｜13 英寸 M4 MacBook Air｜本会话现场核对 ComputerName=`George-Air`、机型 `Mac16,12`、芯片 `Apple M4`，与已登记设备相符。
 
@@ -34,8 +34,9 @@
 | --- | --- | --- | --- |
 | 2026-10-20 10:46（Asia/Shanghai，UTC+08:00；结果核验） | `MBA-M4`｜M4 MacBook Air | 修复前原回归 53/53 通过；另在临时仓库复现三个 Git 问题，原回归未覆盖这些场景 | 已由本轮补充针对性回归 |
 | 2026-10-20 11:23:27（Asia/Shanghai，UTC+08:00；运行包构建） | `MBA-M4`｜M4 MacBook Air | Java 源码、合同及测试更新；重建 Java 8 字节码运行包；静态检查 58 个运行文件、51 个中文主体文件，0 error/0 warning；静态检查器测试 2/2 通过 | 后续验收结果见下行 |
-
 | 2026-10-20 11:27（Asia/Shanghai，UTC+08:00；结果核验） | `MBA-M4`｜M4 MacBook Air | Corretto `1.8.0_502` 下控制器 65/65 通过（原 53 项及新增 12 项），耗时 189.174 秒，原命令退出码 0；Java 8 `doctor` 通过；所有 class major 52，JAR 与校验文件匹配；小功能 Demo Maven 3/3，最终 `archive/completed`，九项资产、Git 提交数保持基线 1；静态检查器测试 2/2 通过 | 无开发待办 |
+
+| 2026-10-20 12:18（Asia/Shanghai，UTC+08:00；登录核验） | `MBA-M4`｜M4 MacBook Air | 用户完成浏览器设备授权；gh 已核验登录 `Calyn-Gallifrey`，凭据存于系统钥匙串；使用命令级 gh 凭据助手获取远端成功，未修改全局 Git 配置 | 随本次交接提交推送；同步结果以 Git 上游对比为准 |
 
 - 最新小功能 Demo 测试证据 SHA-256：`98cbb49183f86f25a583f590dfb19411ef3d6f7f8c4c8702f9d613c9ce33678b`。隔离维护测试使用模拟批准，不代表真实用户批准或内网业务验收；无仍运行任务。
 - 下一接续设备：不限已确认设备；使用修复时更新完整 Skill 目录（含配套 JAR 和 SHA-256），沿用原入口。旧终态残留锁由 Skill 的 `resume` 校验后恢复，旧初始化残留按已记录的严格条件随 `init` 重试。SDD2.1 等用户收齐资料后再讨论，SDD2.2 已取消；无版本升级或全面审计待办。
@@ -45,7 +46,8 @@
 
 - 分支 `main`，上游 `origin/main`；本轮开始前 HEAD `0d6b89c`，工作区干净。已获取远端，分支 ahead 8、behind 0，无需合并。
 - 本轮修改：`skills/uaw-sdd-ai-coding/scripts/Sdd2Control.java`、`skills/uaw-sdd-ai-coding/scripts/tests/test_sdd2_control.py`、同目录 `java8/MANIFEST.MF` 和 `runtime/`，主 Skill 的 `references/process-control.md`、`references/sdd2-control-contract.md`，以及本交接。
-- 本轮修复及交接纳入同一维护提交，用户已明确授权提交并 push。以 `git log -1`、`git status -sb` 和上游对比核实交付同步，不为单独记录 push 状态新增提交。
+- 修复提交为 `1f60c87`；本轮登录恢复及接续说明另作交接提交，用户已明确授权提交并 push。以 `git log -1`、`git status -sb` 和上游对比核实交付同步，不为单独记录 push 状态新增提交。
+- GitHub 登录阻塞已解除。此设备已通过 gh 登录 `Calyn-Gallifrey`；后续推送可用命令级凭据助手 `git -c credential.helper= -c 'credential.helper=!gh auth git-credential' push origin main`，避免调用原图形凭据管理器。其他设备的登录状态需现场核对；不复制或保存令牌。
 - 上层根交接不属于 Git 仓库，仅在该设备保存。业务代码、SDD1.0、Word 指南和 SDD2.1 规划未修改。
 
 ## 2026-07-31 历史实施与深度验证
