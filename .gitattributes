@@ -1,0 +1,4 @@
+
+# 原始验收日志保留输出字节，不按源文件的行尾空白风格处理。
+docs/reviews/sdd2-2026-10-23/*.log -whitespace
+docs/reviews/sdd2-2026-10-23/baseline/*.log -whitespace

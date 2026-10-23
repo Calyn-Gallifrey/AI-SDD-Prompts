@@ -1,0 +1,402 @@
+{
+  "format_version": 1,
+  "product": "SDD2.0",
+  "controller_version": "2.0-java8.3",
+  "freeze_tag": "sdd2.0-frozen-2026-10-23",
+  "created_at": "2026-10-23T16:44:07.863402+08:00",
+  "source_tree_sha256": "e40b16b496a7441031b85c38aaa06ddcedc0c8a09305cfb520a5e004df003bcc",
+  "files": [
+    {
+      "path": "skills/uaw-code-review/SKILL.md",
+      "git_mode": "100644",
+      "size": 3288,
+      "sha256": "d3c913744cdeb48525672137b021a2537f19f89b83f4f6f0fe7564c4053c5b92"
+    },
+    {
+      "path": "skills/uaw-code-review/agents/openai.yaml",
+      "git_mode": "100644",
+      "size": 187,
+      "sha256": "22ca3e4b4afd7389359d5c157e86ab0e32f5e2cda8ce1ee545ae1391d955e9ce"
+    },
+    {
+      "path": "skills/uaw-code-review/references/code-review-rules.md",
+      "git_mode": "100644",
+      "size": 7775,
+      "sha256": "88c060a812c538653759069ccec5f7becabdcf2f0339024608c7a7eec2a30768"
+    },
+    {
+      "path": "skills/uaw-code-review/references/input-examples.md",
+      "git_mode": "100644",
+      "size": 1664,
+      "sha256": "c0577b9f5b4be22271a6c039f36e040e57837f59aefbf7e406685cc985de91df"
+    },
+    {
+      "path": "skills/uaw-code-review/references/templates/personal-report-template.html",
+      "git_mode": "100644",
+      "size": 7551,
+      "sha256": "fca84dfef42b4da3ad8354651395f21a778879d7ca5dfe0e752bad8408ff326d"
+    },
+    {
+      "path": "skills/uaw-code-review/references/templates/sdd-code-review-findings-template.md",
+      "git_mode": "100644",
+      "size": 3186,
+      "sha256": "098c44ab2d4c60b978213f5db342ecac61d51884ebd496470b15ec6e1b8ca3c5"
+    },
+    {
+      "path": "skills/uaw-code-review/references/templates/standalone-review-input-template.md",
+      "git_mode": "100644",
+      "size": 2533,
+      "sha256": "70bd3d68e37955c80159a2e4bb85bf08242c47b983af92de6629d1230bab2a4a"
+    },
+    {
+      "path": "skills/uaw-code-review/references/templates/summary-report-template.html",
+      "git_mode": "100644",
+      "size": 8768,
+      "sha256": "99b4bef2734c164209981a789b744dbef309c9660b851b3f76b54643766cc248"
+    },
+    {
+      "path": "skills/uaw-sdd-ai-coding/SKILL.md",
+      "git_mode": "100644",
+      "size": 12167,
+      "sha256": "e247dbc6fd2a49153ba4a9b3bbc47dc3202f18ac4a81233a2887331a8e7305c4"
+    },
+    {
+      "path": "skills/uaw-sdd-ai-coding/agents/openai.yaml",
+      "git_mode": "100644",
+      "size": 217,
+      "sha256": "b7c55f77dcc752c699f7d282924e2fdbe768346184f82a9807f24deaa6ce63cc"
+    },
+    {
+      "path": "skills/uaw-sdd-ai-coding/references/context/routing-index.md",
+      "git_mode": "100644",
+      "size": 6467,
+      "sha256": "57a196f93de875c784d29ec36733efb478ed8f22afd1266007ad41ce73124bb6"
+    },
+    {
+      "path": "skills/uaw-sdd-ai-coding/references/context/source-provenance.json",
+      "git_mode": "100644",
+      "size": 5333,
+      "sha256": "e09b5e9978eb0cf9cdcce17a5e0319f67811a0f41efb6bcfc90fddc28ac91a8b"
+    },
+    {
+      "path": "skills/uaw-sdd-ai-coding/references/context/transactions-dictionary.md",
+      "git_mode": "100644",
+      "size": 8997,
+      "sha256": "298c7fde493ea34085fe5f271769934e4ca86dc885e85b1f772f9300efd63cf1"
+    },
+    {
+      "path": "skills/uaw-sdd-ai-coding/references/input-examples.md",
+      "git_mode": "100644",
+      "size": 4350,
+      "sha256": "d2e3d3c81379c326942ab89e2d1e26bc47bc45d26139588636a80b920a26887c"
+    },
+    {
+      "path": "skills/uaw-sdd-ai-coding/references/language-policy.md",
+      "git_mode": "100644",
+      "size": 3881,
+      "sha256": "ed8e4c78fb298f574da498d4ff4fb466de9158e466e588ba6148a1b72160e181"
+    },
+    {
+      "path": "skills/uaw-sdd-ai-coding/references/process-control.md",
+      "git_mode": "100644",
+      "size": 13368,
+      "sha256": "4d52c21450f3294ad49d9748394da84e8e79d1775577d392cd8aa09448d1d5f3"
+    },
+    {
+      "path": "skills/uaw-sdd-ai-coding/references/rules/backend/backend-api.md",
+      "git_mode": "100644",
+      "size": 2758,
+      "sha256": "aede919b95d07bc88cf13692bf076de7f9bf7c37a076dd10be64770de4b9fc23"
+    },
+    {
+      "path": "skills/uaw-sdd-ai-coding/references/rules/backend/case-tracker-compatibility.md",
+      "git_mode": "100644",
+      "size": 1888,
+      "sha256": "acd6e804b2e83386f6bce582bf95b44eea53b1b6ed8f601df6177341d7e80ce1"
+    },
+    {
+      "path": "skills/uaw-sdd-ai-coding/references/rules/backend/create-table.md",
+      "git_mode": "100644",
+      "size": 2456,
+      "sha256": "bbb32743cc5fbacc3f82b04e97c4f8d99462f87539de2b4ef560fd71533298ce"
+    },
+    {
+      "path": "skills/uaw-sdd-ai-coding/references/rules/backend/current-user.md",
+      "git_mode": "100644",
+      "size": 1722,
+      "sha256": "473d6172f574290aad5945c8335e33a347bc0531218161c29b6788f25dbddb29"
+    },
+    {
+      "path": "skills/uaw-sdd-ai-coding/references/rules/backend/epi-gateway.md",
+      "git_mode": "100644",
+      "size": 1856,
+      "sha256": "bb10a1110f11f32cade74e3819c6faa7cc46d6f0b98ef5ed49f8a6358748fe2f"
+    },
+    {
+      "path": "skills/uaw-sdd-ai-coding/references/rules/backend/mapstruct-conversion.md",
+      "git_mode": "100644",
+      "size": 1797,
+      "sha256": "8cc08caa1e62a76a7639ec4f7fd36f8a46d92b8ea997d36dbe2a3ef86bcb7cd3"
+    },
+    {
+      "path": "skills/uaw-sdd-ai-coding/references/rules/backend/mybatis-orm.md",
+      "git_mode": "100644",
+      "size": 2290,
+      "sha256": "6c124ac002b43d1918b46e16df456b88ffa168f62ddb58007f094aea9181173b"
+    },
+    {
+      "path": "skills/uaw-sdd-ai-coding/references/rules/backend/om-api-acl.md",
+      "git_mode": "100644",
+      "size": 1835,
+      "sha256": "f4843d3bd5f7f0068f42298f28280ff8a95874d10bf6c07b56160aa72f0b504d"
+    },
+    {
+      "path": "skills/uaw-sdd-ai-coding/references/rules/backend/transaction-package-structure.md",
+      "git_mode": "100644",
+      "size": 2470,
+      "sha256": "f1439924fb4a0a1c84be52bcf327a565793ff41922381ea4154b9731d6ecb479"
+    },
+    {
+      "path": "skills/uaw-sdd-ai-coding/references/rules/model/bo.md",
+      "git_mode": "100644",
+      "size": 1764,
+      "sha256": "37becfe99ba8d9a58cce3076fc1ac97deeb05a23a6ddf6e6473f4c279397fea8"
+    },
+    {
+      "path": "skills/uaw-sdd-ai-coding/references/rules/model/dto.md",
+      "git_mode": "100644",
+      "size": 1391,
+      "sha256": "8a712e6491857eb15824f669f7aecfd4124faa782f8f9ab227be17255491038d"
+    },
+    {
+      "path": "skills/uaw-sdd-ai-coding/references/rules/model/entity.md",
+      "git_mode": "100644",
+      "size": 1747,
+      "sha256": "7ab1c48da253305ea8961f362337bbb879d89ea5d2fc6a3d7188eb7f8ad6b392"
+    },
+    {
+      "path": "skills/uaw-sdd-ai-coding/references/rules/model/vo.md",
+      "git_mode": "100644",
+      "size": 1375,
+      "sha256": "aa3cc1a200f4fefeb6879accde63b8085060ff997363109f233a9bb83d49a42f"
+    },
+    {
+      "path": "skills/uaw-sdd-ai-coding/references/schemas/feature-state.schema.json",
+      "git_mode": "100644",
+      "size": 4188,
+      "sha256": "1935a705f96848e938856dee08e090d96e01e6c9d9080c2c96b84dadb83b0366"
+    },
+    {
+      "path": "skills/uaw-sdd-ai-coding/references/schemas/gate-approval.schema.json",
+      "git_mode": "100644",
+      "size": 1487,
+      "sha256": "7877d3f731cc1e98dde872e11d82c291287272b5e1d7ad33d745cfb61bb1c8fb"
+    },
+    {
+      "path": "skills/uaw-sdd-ai-coding/references/schemas/implementation-scope.schema.json",
+      "git_mode": "100644",
+      "size": 3441,
+      "sha256": "622e489f31b608c9a64f353a743df5d92cb5f6ace24b3d2ba2b549fbffd60a33"
+    },
+    {
+      "path": "skills/uaw-sdd-ai-coding/references/schemas/unit-test-evidence.schema.json",
+      "git_mode": "100644",
+      "size": 3241,
+      "sha256": "f42c7122a655b57e19693ff2bca23196959effcdf341776c0250932ff0f0a0e8"
+    },
+    {
+      "path": "skills/uaw-sdd-ai-coding/references/sdd2-control-contract.md",
+      "git_mode": "100644",
+      "size": 18870,
+      "sha256": "6ae09cbc0fdb2a11b0531f9ceb758e8f0576d06b958a953f12cf6f645ec2cbe0"
+    },
+    {
+      "path": "skills/uaw-sdd-ai-coding/references/sdd2-workflow.md",
+      "git_mode": "100644",
+      "size": 6395,
+      "sha256": "9c7cca9ee972f4a18a8cab6fd9a5d18dd7a5a4dac03c6f29ee03b5c65eb17d4b"
+    },
+    {
+      "path": "skills/uaw-sdd-ai-coding/references/templates/archive-template.md",
+      "git_mode": "100644",
+      "size": 4410,
+      "sha256": "3083bee0f7907b438dd2142df9a3b8193e3f752121f66170a9f6627bd1b79b6b"
+    },
+    {
+      "path": "skills/uaw-sdd-ai-coding/references/templates/auto-fix-summary-template.md",
+      "git_mode": "100644",
+      "size": 2280,
+      "sha256": "d7dfd075a0f3113bb4619fa5dadf0f88a487d01eea02d42db3d55aef192df867"
+    },
+    {
+      "path": "skills/uaw-sdd-ai-coding/references/templates/design-template.md",
+      "git_mode": "100644",
+      "size": 4452,
+      "sha256": "74e81c0a0d192f338afe89a80d67fe725a4ceef0d7639882ccdb2a56b790cb18"
+    },
+    {
+      "path": "skills/uaw-sdd-ai-coding/references/templates/proposal-input-internal-template.md",
+      "git_mode": "100644",
+      "size": 2257,
+      "sha256": "ed9e93d6a88fa29159dee892efbda3f4288e425259722f8db609d8d20a935806"
+    },
+    {
+      "path": "skills/uaw-sdd-ai-coding/references/templates/spec-template.md",
+      "git_mode": "100644",
+      "size": 3385,
+      "sha256": "356bb49a1eec293705bb959f2aa8a79ca6933cda68631c23eaadf950897c45bf"
+    },
+    {
+      "path": "skills/uaw-sdd-ai-coding/references/templates/tasks-template.md",
+      "git_mode": "100644",
+      "size": 4907,
+      "sha256": "e6b8d60509b60f446bba814406950e645cbb67471ff556ffbba8cb509dfa3f34"
+    },
+    {
+      "path": "skills/uaw-sdd-ai-coding/scripts/Sdd2Control.java",
+      "git_mode": "100644",
+      "size": 252496,
+      "sha256": "d2e6965fa014669f983abc37ad015610cc09073956842dbdea4416a3ea827430"
+    },
+    {
+      "path": "skills/uaw-sdd-ai-coding/scripts/build_sdd2_java8.sh",
+      "git_mode": "100755",
+      "size": 1356,
+      "sha256": "d8c595ee575e61a80a309e49f191b3684c525942a986919dc029a028b9ae8a0e"
+    },
+    {
+      "path": "skills/uaw-sdd-ai-coding/scripts/demo_sdd2_large_feature.py",
+      "git_mode": "100755",
+      "size": 69122,
+      "sha256": "cdfbfc51c7cdb5f7fdee6ee7237cf7f8ee9d58ffdc56f3315ebf821185023862"
+    },
+    {
+      "path": "skills/uaw-sdd-ai-coding/scripts/demo_sdd2_mutation_mapping_feature.py",
+      "git_mode": "100755",
+      "size": 96803,
+      "sha256": "486b21c40eefc348e00a586c0f1ff76dbf4f0aed4e399d1b64a497efc3c3183d"
+    },
+    {
+      "path": "skills/uaw-sdd-ai-coding/scripts/demo_sdd2_small_feature.py",
+      "git_mode": "100755",
+      "size": 23224,
+      "sha256": "449a41ee19e732d04c15b7cdf7e1cd20951e2ec845b5b9edbff77a5f6d0c090f"
+    },
+    {
+      "path": "skills/uaw-sdd-ai-coding/scripts/java8/MANIFEST.MF",
+      "git_mode": "100644",
+      "size": 135,
+      "sha256": "bb875ba77250bce88264ce605957fae69f6c9593927c7741445be72669f1d6ca"
+    },
+    {
+      "path": "skills/uaw-sdd-ai-coding/scripts/runtime/sdd2-control.jar",
+      "git_mode": "100644",
+      "size": 73150,
+      "sha256": "8396b5c0b1e9c9ea009cf1ea002e1c7df4fd826b51d336409255c30c8d0fdf1d"
+    },
+    {
+      "path": "skills/uaw-sdd-ai-coding/scripts/runtime/sdd2-control.sha256",
+      "git_mode": "100644",
+      "size": 65,
+      "sha256": "f47cb6997e5aff436c0348dc2e84b00dddac6980590db4d85f2c5f5f61f55b8e"
+    },
+    {
+      "path": "skills/uaw-sdd-ai-coding/scripts/sdd2_control.py",
+      "git_mode": "100644",
+      "size": 146898,
+      "sha256": "694b97b5b0693c3245c4be07f41c4dd22d82be04a19ac0df9151df2f2f2957d1"
+    },
+    {
+      "path": "skills/uaw-sdd-ai-coding/scripts/tests/test_sdd2_control.py",
+      "git_mode": "100644",
+      "size": 97771,
+      "sha256": "bd45cf964264625c240cb5584c198e65342b0a91c707b7957b29f23aa69ce7b6"
+    },
+    {
+      "path": "skills/uaw-sdd-ai-coding/scripts/tests/test_validate_sdd2_assets.py",
+      "git_mode": "100644",
+      "size": 3071,
+      "sha256": "e577d6e81c423112ba730c0585c4287870e3715e56e08e73fcf572de414a8dd2"
+    },
+    {
+      "path": "skills/uaw-sdd-ai-coding/scripts/validate_sdd2_assets.py",
+      "git_mode": "100644",
+      "size": 17091,
+      "sha256": "51be6959bfac02f11023c3d221e3f5a2689c2a4277aab7ba5a14c46ac88422f7"
+    },
+    {
+      "path": "skills/uaw-unit-test/SKILL.md",
+      "git_mode": "100644",
+      "size": 4399,
+      "sha256": "89def81903156be6ae6e3e2465e5edbe86a687c76bfd9ac35a5e4564825fbae8"
+    },
+    {
+      "path": "skills/uaw-unit-test/agents/openai.yaml",
+      "git_mode": "100644",
+      "size": 233,
+      "sha256": "8ba2bf489e6e0a3711bdae3f8bf15f98ed421cb51dca884358a119337ca9f55f"
+    },
+    {
+      "path": "skills/uaw-unit-test/references/input-examples.md",
+      "git_mode": "100644",
+      "size": 1653,
+      "sha256": "6e277e258f59abffcf55a6bc182be485b84b0816db4233b871d9b9f9bed79f3a"
+    },
+    {
+      "path": "skills/uaw-unit-test/references/java/controller-unit-test.md",
+      "git_mode": "100644",
+      "size": 1720,
+      "sha256": "7146f4831d8b8f4743ded89bee4700421c5da6f4603c24b4e9e3022787a821f3"
+    },
+    {
+      "path": "skills/uaw-unit-test/references/java/method-unit-test.md",
+      "git_mode": "100644",
+      "size": 1879,
+      "sha256": "66b089ea817361ed3d3d1415693443c8806d80351e8c1db67ad7d589b912ef36"
+    },
+    {
+      "path": "skills/uaw-unit-test/references/java/service-strategy-unit-test.md",
+      "git_mode": "100644",
+      "size": 1545,
+      "sha256": "2bf3948955da7868ba971ba5515f1d96c94170f0d9936ac221c3b096095eaa97"
+    },
+    {
+      "path": "skills/uaw-unit-test/references/java/service-unit-test.md",
+      "git_mode": "100644",
+      "size": 1743,
+      "sha256": "a01a96876bba96a81611e5c2170e4e7e01a805df5a38b0aab133feb6d6bdc183"
+    },
+    {
+      "path": "skills/uaw-unit-test/references/java/static-method-unit-test.md",
+      "git_mode": "100644",
+      "size": 1369,
+      "sha256": "1add4c361ac78a6d3eb8b00bd3489c32d7647459b553a38e65b336e6128332f4"
+    },
+    {
+      "path": "skills/uaw-unit-test/references/templates/unit-test-summary-template.md",
+      "git_mode": "100644",
+      "size": 3020,
+      "sha256": "d5ccf430eae6cb759114135cd183742cda8bc2ba65915a80c2543e6c7940406a"
+    },
+    {
+      "path": "skills/uaw-unit-test/references/testing-profile-routing.md",
+      "git_mode": "100644",
+      "size": 3531,
+      "sha256": "b6ad95964b363b01ecb99f51e04ddc4524691fac8e9c29820bfe8701aad1db53"
+    }
+  ],
+  "evidence": {
+    "docs/reviews/sdd2-2026-10-23/verification.json": "4f9b9a2c2a8548b235ad21bcc433b9c2c1f9bb6e2bf556f51df5321f5f7e1049",
+    "docs/reviews/sdd2-2026-10-23/probe-results.json": "c88c25a1fc56607396f5bcfc5464c8c973783cf64eb84a67a21239db726d3847",
+    "docs/reviews/sdd2-2026-10-23/run_audit.py": "a27b3e77e68dcd390789b99c5a60fadb6e3fbd2785606474fe60b33d71408d52",
+    "docs/reviews/sdd2-2026-10-23/audit_probes.py": "2c411ec6824cf35ad0ea20ab9af8fb88fbf2def9709d76cf85b7a36a86430bd7",
+    "docs/reviews/sdd2-2026-10-23/build-consistency.json": "234c0ef1ce8fc8d31f3047bf526a6cd5de21611cf169aa5201e5b1b0db435e58",
+    "docs/reviews/sdd2-2026-10-23/verify_build.py": "6b0e3c324cfa7ba8cb185ceaff384354787f46a13a88f187f79c680d3a9167a3",
+    "tools/freeze_sdd20.py": "b9cc0ab90a841291202ce8fc4da8f539877cddf24db10804cb331287b7427a38"
+  },
+  "package": {
+    "path": "releases/sdd2.0/sdd2.0-skills.zip",
+    "size": 310466,
+    "sha256": "2cadf365008fd31033b5104322a9407ce9e8cf9e9dde1f6b85392e3ed4262ede"
+  }
+}

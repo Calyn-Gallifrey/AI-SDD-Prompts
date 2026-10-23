@@ -1,0 +1,12 @@
+{
+  "recorded_at": "2026-10-23T16:43:42.684552+08:00",
+  "device": "Mac-Air",
+  "source_sha256": "d2e6965fa014669f983abc37ad015610cc09073956842dbdea4416a3ea827430",
+  "jar_sha256": "8396b5c0b1e9c9ea009cf1ea002e1c7df4fd826b51d336409255c30c8d0fdf1d",
+  "class_count": 6,
+  "class_majors": [
+    52
+  ],
+  "class_bytes_identical": true,
+  "compiler_exit_code": 0
+}

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import concurrent.futures
 import json
 import os
 import shutil
@@ -291,7 +292,7 @@ class Sdd2ControlTest(unittest.TestCase):
             "--cwd",
             ".",
             "--",
-            sys.executable,
+            "python3",
             "-m",
             "unittest",
             "discover",
@@ -1965,6 +1966,155 @@ class Sdd2ControlTest(unittest.TestCase):
         state = json.loads((self.feature / ".sdd2/feature-state.json").read_text(encoding="utf-8"))
         self.assertNotIn("proposal-input", state["artifacts"])
         self.assertFalse((self.feature / ".sdd2/revisions/proposal-input").exists())
+
+
+    @unittest.skipUnless(USING_JAVA_CONTROLLER, "正式控制器冻结前审批反例")
+    def test_negative_conditional_and_question_approvals_are_rejected(self) -> None:
+        self._record("proposal-input", "proposal-input.md", "# 规划\n")
+        self._record("spec", "spec.md", "# 需求\n")
+        before = (self.feature / ".sdd2/feature-state.json").read_bytes()
+        for message in ["请不要批准 spec", "如果接口确认无误，再批准 spec", "暂不批准 spec",
+                        "是否批准 spec？", "do not approve spec", "approve spec after confirmation",
+                        "don't approve spec", "please wait before approving spec"]:
+            with self.subTest(message=message):
+                self._run("approve", "--feature-dir", str(self.feature), "--stage", "spec",
+                          "--source", "user-message", "--approver-role", "human",
+                          "--approval-text", message, expected=2)
+                self.assertEqual(before, (self.feature / ".sdd2/feature-state.json").read_bytes())
+        self._approve("spec")
+
+    @unittest.skipUnless(USING_JAVA_CONTROLLER, "正式控制器关闭与重试意图校验")
+    def test_negative_close_and_restart_do_not_mutate_state(self) -> None:
+        before = (self.feature / ".sdd2/feature-state.json").read_bytes()
+        self._run("close", "--feature-dir", str(self.feature), "--result", "aborted",
+                  "--approval-text", "不同意终止，继续保留当前流程", expected=2)
+        self.assertEqual(before, (self.feature / ".sdd2/feature-state.json").read_bytes())
+        self._run("close", "--feature-dir", str(self.feature), "--result", "aborted",
+                  "--approval-text", "同意终止")
+        closed = (self.feature / ".sdd2/feature-state.json").read_bytes()
+        for message in ["不要重试", "如果环境恢复再重试", "do not restart"]:
+            self._run("restart-attempt", "--feature-dir", str(self.feature),
+                      "--approval-text", message, expected=2)
+            self.assertEqual(closed, (self.feature / ".sdd2/feature-state.json").read_bytes())
+
+    @unittest.skipUnless(USING_JAVA_CONTROLLER, "阶段名称不能被误判为审批意图")
+    def test_phase_identifier_is_separate_from_approval_intent(self) -> None:
+        self._reach_tasks_approval()
+        phase = "Phase1-实现历史批准记录与幂等计划"
+        self._run("capture-scope", "--feature-dir", str(self.feature),
+                  "--allowed-path", "app/**", "--required-phase", phase)
+        self._run("phase-review", "--feature-dir", str(self.feature), "--phase", phase,
+                  "--source", "user-message", "--approver-role", "human",
+                  "--approval-text", phase, expected=2)
+        self._run("phase-review", "--feature-dir", str(self.feature), "--phase", phase,
+                  "--source", "user-message", "--approver-role", "human",
+                  "--approval-text", "批准 " + phase)
+
+    @unittest.skipUnless(USING_JAVA_CONTROLLER, "Phase1 不能接受 Phase10 的批准")
+    def test_phase_approval_requires_identifier_boundary(self) -> None:
+        self._reach_tasks_approval()
+        self._capture_scope()
+        self._run("phase-review", "--feature-dir", str(self.feature), "--phase", "Phase1",
+                  "--source", "user-message", "--approver-role", "human",
+                  "--approval-text", "批准 Phase10", expected=2)
+        self._run("phase-review", "--feature-dir", str(self.feature), "--phase", "Phase1",
+                  "--source", "user-message", "--approver-role", "human",
+                  "--approval-text", "批准 Phase1")
+
+    @unittest.skipUnless(USING_JAVA_CONTROLLER, "范围通配符等价形式必须受限")
+    def test_repository_wide_wildcard_variants_are_rejected(self) -> None:
+        self._reach_tasks_approval()
+        for pattern in ["?*", "*/*", "*/**", "[!z]**", "**/../**", "C:/work/**"]:
+            with self.subTest(pattern=pattern):
+                self._run("capture-scope", "--feature-dir", str(self.feature),
+                          "--allowed-path", pattern, "--required-phase", "Phase1", expected=2)
+                self.assertFalse((self.feature / ".sdd2/implementation-scope.json").exists())
+        self._capture_scope()
+
+    @unittest.skipUnless(USING_JAVA_CONTROLLER, "同一工作目录的控制命令串行化")
+    def test_concurrent_duplicate_approval_has_exactly_one_success(self) -> None:
+        self._record("proposal-input", "proposal-input.md", "# 规划\n")
+        self._record("spec", "spec.md", "# 需求\n")
+        cmd = [*CONTROL_COMMAND, "approve", "--feature-dir", str(self.feature),
+               "--stage", "spec", "--source", "user-message", "--approver-role", "human",
+               "--approval-text", "批准 spec", "--message-id", "same-concurrent-message"]
+        with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:
+            results = list(pool.map(lambda _: subprocess.run(cmd, cwd=self.repo,
+                               text=True, capture_output=True, timeout=45), range(4)))
+        self.assertEqual([p.returncode for p in results].count(0), 1)
+        self.assertTrue(self._run("resume", "--feature-dir", str(self.feature))["result"]["valid"])
+        approvals = (self.feature / ".sdd2/gate-approvals.jsonl").read_text().splitlines()
+        self.assertEqual(len(approvals), 1)
+
+    @unittest.skipUnless(USING_JAVA_CONTROLLER, "执行器必须与 PATH 已安装工具一致")
+    def test_fake_named_runner_is_rejected_before_execution(self) -> None:
+        self._reach_unit_test_ready("import unittest\nclass T(unittest.TestCase):\n def test_bad(self): self.fail('bad')\n")
+        with tempfile.TemporaryDirectory() as tmp:
+            fake = Path(tmp) / "mvn"
+            marker = Path(tmp) / "ran"
+            fake.write_text('#!/bin/sh\ntouch "$(dirname "$0")/ran"\necho "Tests run: 1, Failures: 0, Errors: 0, Skipped: 0"\n')
+            fake.chmod(0o755)
+            result = self._run("run-unit-test", "--feature-dir", str(self.feature),
+                               "--", str(fake), "test", expected=2)
+            self.assertIn("TEST_RUNNER_UNTRUSTED", result["error"])
+            self.assertFalse(marker.exists())
+        self.assertFalse((self.feature / ".sdd2/unit-test-evidence.json").exists())
+        self.assertEqual(self._run_observed_unit_tests()["outcome"], "failed")
+
+    @unittest.skipUnless(USING_JAVA_CONTROLLER, "不同 Runner 的输出不能混作测试证明")
+    def test_fake_maven_output_cannot_turn_zero_python_tests_into_pass(self) -> None:
+        self._reach_unit_test_ready('print("Tests run: 10, Failures: 0, Errors: 0, Skipped: 0")\n')
+        execution = self._run_observed_unit_tests()
+        self.assertEqual(execution["outcome"], "blocked")
+        self.assertEqual(execution["test_counts"]["total"], 0)
+
+    @unittest.skipUnless(USING_JAVA_CONTROLLER and os.name != "nt", "POSIX 执行权限范围证据")
+    def test_execute_permission_change_invalidates_frozen_scope(self) -> None:
+        self._reach_unit_test_ready("import unittest\nclass T(unittest.TestCase):\n def test_ok(self): self.assertTrue(True)\n")
+        app = self.repo / "app/src/main/java/App.java"
+        app.chmod(app.stat().st_mode | 0o111)
+        result = self._run("validate", "--feature-dir", str(self.feature), expected=1)
+        self.assertIn("IMPLEMENTATION_SCOPE_DRIFT", result["result"]["errors"])
+        self._run("freeze-scope", "--feature-dir", str(self.feature))
+        self.assertEqual(self._run("resume", "--feature-dir", str(self.feature))["result"]["next_required_action"], "run-code-review")
+
+    @unittest.skipUnless(USING_JAVA_CONTROLLER and os.name != "nt", "实现范围不能通过符号链接出界")
+    def test_implementation_symlink_is_rejected(self) -> None:
+        self._reach_unit_test_ready("import unittest\nclass T(unittest.TestCase):\n def test_ok(self): self.assertTrue(True)\n")
+        with tempfile.TemporaryDirectory() as tmp:
+            external = Path(tmp) / "External.java"
+            external.write_text("class External {}\n")
+            app = self.repo / "app/src/main/java/App.java"
+            app.unlink()
+            app.symlink_to(external)
+            result = self._run("freeze-scope", "--feature-dir", str(self.feature), expected=2)
+            self.assertIn("IMPLEMENTATION_SYMLINK", result["error"])
+
+    @unittest.skipUnless(USING_JAVA_CONTROLLER, "旧快照须重新冻结并重新评审")
+    def test_java8_2_active_scope_requires_refreeze_without_rewriting_approvals(self) -> None:
+        repository = Path(__file__).resolve().parents[4]
+        binary = subprocess.run(
+            ["git", "show", "4452d43:skills/uaw-sdd-ai-coding/scripts/runtime/sdd2-control.jar"],
+            cwd=repository, capture_output=True, check=True,
+        ).stdout
+        with tempfile.TemporaryDirectory(prefix="sdd2-legacy-runtime-") as tmp:
+            old_jar = Path(tmp) / "sdd2-control.jar"
+            old_jar.write_bytes(binary)
+            old_jar.with_suffix(".sha256").write_text(hashlib.sha256(binary).hexdigest()+"\n")
+            original_run = self._run
+            self._run = lambda *args, **kwargs: self._run_with(
+                ["java", "-jar", str(old_jar)], *args, **kwargs)
+            try:
+                self._reach_unit_test_ready("import unittest\nclass T(unittest.TestCase):\n def test_ok(self): self.assertTrue(True)\n")
+            finally:
+                self._run = original_run
+        approvals = self.feature / ".sdd2/gate-approvals.jsonl"
+        before = approvals.read_bytes()
+        result = self._run("resume", "--feature-dir", str(self.feature), expected=1)
+        self.assertIn("IMPLEMENTATION_SCOPE_DRIFT", result["result"]["validation"]["errors"])
+        self._run("freeze-scope", "--feature-dir", str(self.feature))
+        self.assertEqual(approvals.read_bytes(), before)
+        self.assertEqual(self._run("resume", "--feature-dir", str(self.feature))["result"]["next_required_action"], "run-code-review")
 
 
 if __name__ == "__main__":

@@ -1,0 +1,15 @@
+{
+  "ok": true,
+  "result": {
+    "controller_version": "2.0-java8.3",
+    "git_version": "git version 2.54.0 (Apple Git-157)",
+    "jar_integrity_verified": true,
+    "jar_sha256": "8396b5c0b1e9c9ea009cf1ea002e1c7df4fd826b51d336409255c30c8d0fdf1d",
+    "java_8_compatible": true,
+    "java_specification_version": "1.8",
+    "message": "SDD2.0 Java 8 控制器运行环境检查通过",
+    "runtime": "java",
+    "schema_version": "2.0.0",
+    "wrote_feature_files": false
+  }
+}

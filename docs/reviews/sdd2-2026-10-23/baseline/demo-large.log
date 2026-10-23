@@ -1,0 +1,4 @@
+{
+  "Demo 结论": "失败",
+  "错误": "命令返回码不符合预期：['git', 'checkout', '-q', 'main']，expected=0, actual=1\nerror: pathspec 'main' did not match any file(s) known to git\n"
+}

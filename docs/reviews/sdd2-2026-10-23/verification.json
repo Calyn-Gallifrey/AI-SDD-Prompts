@@ -1,0 +1,427 @@
+{
+  "recorded_at": "2026-10-23T16:33:29.291018+08:00",
+  "device": "Mac-Air",
+  "baseline_commit": "4452d4359554ec223bcaeb5b4af0a3d79b1b24a3",
+  "source_hashes": {
+    "skills/uaw-code-review/SKILL.md": "d3c913744cdeb48525672137b021a2537f19f89b83f4f6f0fe7564c4053c5b92",
+    "skills/uaw-code-review/agents/openai.yaml": "22ca3e4b4afd7389359d5c157e86ab0e32f5e2cda8ce1ee545ae1391d955e9ce",
+    "skills/uaw-code-review/references/code-review-rules.md": "88c060a812c538653759069ccec5f7becabdcf2f0339024608c7a7eec2a30768",
+    "skills/uaw-code-review/references/input-examples.md": "c0577b9f5b4be22271a6c039f36e040e57837f59aefbf7e406685cc985de91df",
+    "skills/uaw-code-review/references/templates/personal-report-template.html": "fca84dfef42b4da3ad8354651395f21a778879d7ca5dfe0e752bad8408ff326d",
+    "skills/uaw-code-review/references/templates/sdd-code-review-findings-template.md": "098c44ab2d4c60b978213f5db342ecac61d51884ebd496470b15ec6e1b8ca3c5",
+    "skills/uaw-code-review/references/templates/standalone-review-input-template.md": "70bd3d68e37955c80159a2e4bb85bf08242c47b983af92de6629d1230bab2a4a",
+    "skills/uaw-code-review/references/templates/summary-report-template.html": "99b4bef2734c164209981a789b744dbef309c9660b851b3f76b54643766cc248",
+    "skills/uaw-sdd-ai-coding/SKILL.md": "e247dbc6fd2a49153ba4a9b3bbc47dc3202f18ac4a81233a2887331a8e7305c4",
+    "skills/uaw-sdd-ai-coding/agents/openai.yaml": "b7c55f77dcc752c699f7d282924e2fdbe768346184f82a9807f24deaa6ce63cc",
+    "skills/uaw-sdd-ai-coding/references/context/routing-index.md": "57a196f93de875c784d29ec36733efb478ed8f22afd1266007ad41ce73124bb6",
+    "skills/uaw-sdd-ai-coding/references/context/source-provenance.json": "e09b5e9978eb0cf9cdcce17a5e0319f67811a0f41efb6bcfc90fddc28ac91a8b",
+    "skills/uaw-sdd-ai-coding/references/context/transactions-dictionary.md": "298c7fde493ea34085fe5f271769934e4ca86dc885e85b1f772f9300efd63cf1",
+    "skills/uaw-sdd-ai-coding/references/input-examples.md": "d2e3d3c81379c326942ab89e2d1e26bc47bc45d26139588636a80b920a26887c",
+    "skills/uaw-sdd-ai-coding/references/language-policy.md": "ed8e4c78fb298f574da498d4ff4fb466de9158e466e588ba6148a1b72160e181",
+    "skills/uaw-sdd-ai-coding/references/process-control.md": "4d52c21450f3294ad49d9748394da84e8e79d1775577d392cd8aa09448d1d5f3",
+    "skills/uaw-sdd-ai-coding/references/rules/backend/backend-api.md": "aede919b95d07bc88cf13692bf076de7f9bf7c37a076dd10be64770de4b9fc23",
+    "skills/uaw-sdd-ai-coding/references/rules/backend/case-tracker-compatibility.md": "acd6e804b2e83386f6bce582bf95b44eea53b1b6ed8f601df6177341d7e80ce1",
+    "skills/uaw-sdd-ai-coding/references/rules/backend/create-table.md": "bbb32743cc5fbacc3f82b04e97c4f8d99462f87539de2b4ef560fd71533298ce",
+    "skills/uaw-sdd-ai-coding/references/rules/backend/current-user.md": "473d6172f574290aad5945c8335e33a347bc0531218161c29b6788f25dbddb29",
+    "skills/uaw-sdd-ai-coding/references/rules/backend/epi-gateway.md": "bb10a1110f11f32cade74e3819c6faa7cc46d6f0b98ef5ed49f8a6358748fe2f",
+    "skills/uaw-sdd-ai-coding/references/rules/backend/mapstruct-conversion.md": "8cc08caa1e62a76a7639ec4f7fd36f8a46d92b8ea997d36dbe2a3ef86bcb7cd3",
+    "skills/uaw-sdd-ai-coding/references/rules/backend/mybatis-orm.md": "6c124ac002b43d1918b46e16df456b88ffa168f62ddb58007f094aea9181173b",
+    "skills/uaw-sdd-ai-coding/references/rules/backend/om-api-acl.md": "f4843d3bd5f7f0068f42298f28280ff8a95874d10bf6c07b56160aa72f0b504d",
+    "skills/uaw-sdd-ai-coding/references/rules/backend/transaction-package-structure.md": "f1439924fb4a0a1c84be52bcf327a565793ff41922381ea4154b9731d6ecb479",
+    "skills/uaw-sdd-ai-coding/references/rules/model/bo.md": "37becfe99ba8d9a58cce3076fc1ac97deeb05a23a6ddf6e6473f4c279397fea8",
+    "skills/uaw-sdd-ai-coding/references/rules/model/dto.md": "8a712e6491857eb15824f669f7aecfd4124faa782f8f9ab227be17255491038d",
+    "skills/uaw-sdd-ai-coding/references/rules/model/entity.md": "7ab1c48da253305ea8961f362337bbb879d89ea5d2fc6a3d7188eb7f8ad6b392",
+    "skills/uaw-sdd-ai-coding/references/rules/model/vo.md": "aa3cc1a200f4fefeb6879accde63b8085060ff997363109f233a9bb83d49a42f",
+    "skills/uaw-sdd-ai-coding/references/schemas/feature-state.schema.json": "1935a705f96848e938856dee08e090d96e01e6c9d9080c2c96b84dadb83b0366",
+    "skills/uaw-sdd-ai-coding/references/schemas/gate-approval.schema.json": "7877d3f731cc1e98dde872e11d82c291287272b5e1d7ad33d745cfb61bb1c8fb",
+    "skills/uaw-sdd-ai-coding/references/schemas/implementation-scope.schema.json": "622e489f31b608c9a64f353a743df5d92cb5f6ace24b3d2ba2b549fbffd60a33",
+    "skills/uaw-sdd-ai-coding/references/schemas/unit-test-evidence.schema.json": "f42c7122a655b57e19693ff2bca23196959effcdf341776c0250932ff0f0a0e8",
+    "skills/uaw-sdd-ai-coding/references/sdd2-control-contract.md": "6ae09cbc0fdb2a11b0531f9ceb758e8f0576d06b958a953f12cf6f645ec2cbe0",
+    "skills/uaw-sdd-ai-coding/references/sdd2-workflow.md": "9c7cca9ee972f4a18a8cab6fd9a5d18dd7a5a4dac03c6f29ee03b5c65eb17d4b",
+    "skills/uaw-sdd-ai-coding/references/templates/archive-template.md": "3083bee0f7907b438dd2142df9a3b8193e3f752121f66170a9f6627bd1b79b6b",
+    "skills/uaw-sdd-ai-coding/references/templates/auto-fix-summary-template.md": "d7dfd075a0f3113bb4619fa5dadf0f88a487d01eea02d42db3d55aef192df867",
+    "skills/uaw-sdd-ai-coding/references/templates/design-template.md": "74e81c0a0d192f338afe89a80d67fe725a4ceef0d7639882ccdb2a56b790cb18",
+    "skills/uaw-sdd-ai-coding/references/templates/proposal-input-internal-template.md": "ed9e93d6a88fa29159dee892efbda3f4288e425259722f8db609d8d20a935806",
+    "skills/uaw-sdd-ai-coding/references/templates/spec-template.md": "356bb49a1eec293705bb959f2aa8a79ca6933cda68631c23eaadf950897c45bf",
+    "skills/uaw-sdd-ai-coding/references/templates/tasks-template.md": "e6b8d60509b60f446bba814406950e645cbb67471ff556ffbba8cb509dfa3f34",
+    "skills/uaw-sdd-ai-coding/scripts/Sdd2Control.java": "d2e6965fa014669f983abc37ad015610cc09073956842dbdea4416a3ea827430",
+    "skills/uaw-sdd-ai-coding/scripts/build_sdd2_java8.sh": "d8c595ee575e61a80a309e49f191b3684c525942a986919dc029a028b9ae8a0e",
+    "skills/uaw-sdd-ai-coding/scripts/demo_sdd2_large_feature.py": "cdfbfc51c7cdb5f7fdee6ee7237cf7f8ee9d58ffdc56f3315ebf821185023862",
+    "skills/uaw-sdd-ai-coding/scripts/demo_sdd2_mutation_mapping_feature.py": "486b21c40eefc348e00a586c0f1ff76dbf4f0aed4e399d1b64a497efc3c3183d",
+    "skills/uaw-sdd-ai-coding/scripts/demo_sdd2_small_feature.py": "449a41ee19e732d04c15b7cdf7e1cd20951e2ec845b5b9edbff77a5f6d0c090f",
+    "skills/uaw-sdd-ai-coding/scripts/java8/MANIFEST.MF": "bb875ba77250bce88264ce605957fae69f6c9593927c7741445be72669f1d6ca",
+    "skills/uaw-sdd-ai-coding/scripts/runtime/sdd2-control.jar": "8396b5c0b1e9c9ea009cf1ea002e1c7df4fd826b51d336409255c30c8d0fdf1d",
+    "skills/uaw-sdd-ai-coding/scripts/runtime/sdd2-control.sha256": "f47cb6997e5aff436c0348dc2e84b00dddac6980590db4d85f2c5f5f61f55b8e",
+    "skills/uaw-sdd-ai-coding/scripts/sdd2_control.py": "694b97b5b0693c3245c4be07f41c4dd22d82be04a19ac0df9151df2f2f2957d1",
+    "skills/uaw-sdd-ai-coding/scripts/tests/test_sdd2_control.py": "bd45cf964264625c240cb5584c198e65342b0a91c707b7957b29f23aa69ce7b6",
+    "skills/uaw-sdd-ai-coding/scripts/tests/test_validate_sdd2_assets.py": "e577d6e81c423112ba730c0585c4287870e3715e56e08e73fcf572de414a8dd2",
+    "skills/uaw-sdd-ai-coding/scripts/validate_sdd2_assets.py": "51be6959bfac02f11023c3d221e3f5a2689c2a4277aab7ba5a14c46ac88422f7",
+    "skills/uaw-unit-test/SKILL.md": "89def81903156be6ae6e3e2465e5edbe86a687c76bfd9ac35a5e4564825fbae8",
+    "skills/uaw-unit-test/agents/openai.yaml": "8ba2bf489e6e0a3711bdae3f8bf15f98ed421cb51dca884358a119337ca9f55f",
+    "skills/uaw-unit-test/references/input-examples.md": "6e277e258f59abffcf55a6bc182be485b84b0816db4233b871d9b9f9bed79f3a",
+    "skills/uaw-unit-test/references/java/controller-unit-test.md": "7146f4831d8b8f4743ded89bee4700421c5da6f4603c24b4e9e3022787a821f3",
+    "skills/uaw-unit-test/references/java/method-unit-test.md": "66b089ea817361ed3d3d1415693443c8806d80351e8c1db67ad7d589b912ef36",
+    "skills/uaw-unit-test/references/java/service-strategy-unit-test.md": "2bf3948955da7868ba971ba5515f1d96c94170f0d9936ac221c3b096095eaa97",
+    "skills/uaw-unit-test/references/java/service-unit-test.md": "a01a96876bba96a81611e5c2170e4e7e01a805df5a38b0aab133feb6d6bdc183",
+    "skills/uaw-unit-test/references/java/static-method-unit-test.md": "1add4c361ac78a6d3eb8b00bd3489c32d7647459b553a38e65b336e6128332f4",
+    "skills/uaw-unit-test/references/templates/unit-test-summary-template.md": "d5ccf430eae6cb759114135cd183742cda8bc2ba65915a80c2543e6c7940406a",
+    "skills/uaw-unit-test/references/testing-profile-routing.md": "b6ad95964b363b01ecb99f51e04ddc4524691fac8e9c29820bfe8701aad1db53"
+  },
+  "driver_sha256": "a27b3e77e68dcd390789b99c5a60fadb6e3fbd2785606474fe60b33d71408d52",
+  "java_home": "/Users/chenjialin763/Library/Java/JavaVirtualMachines/amazon-corretto-8.jdk/Contents/Home",
+  "jar_sha256": "8396b5c0b1e9c9ea009cf1ea002e1c7df4fd826b51d336409255c30c8d0fdf1d",
+  "results": [
+    {
+      "name": "static-assets",
+      "started_at": "2026-10-23T16:29:06.314987+08:00",
+      "seconds": 0.12,
+      "exit_code": 0,
+      "command": [
+        "/Library/Developer/CommandLineTools/usr/bin/python3",
+        "-B",
+        "/Users/chenjialin763/Documents/Codex/UAW/UAW-SDD/AI-SDD-Prompts/skills/uaw-sdd-ai-coding/scripts/validate_sdd2_assets.py"
+      ],
+      "log_sha256": "009db105720f491ccf29900fb7fe566929904db3273bb353715381be86d72f5d"
+    },
+    {
+      "name": "java8-git-only",
+      "started_at": "2026-10-23T16:29:06.337608+08:00",
+      "seconds": 0.2,
+      "exit_code": 0,
+      "command": [
+        "java",
+        "-jar",
+        "/var/folders/sc/013hjtq14g7cfrh0hj5zk8j00000gn/T/sdd2-audit-offline-nsl3hqc6/skills/uaw-sdd-ai-coding/scripts/runtime/sdd2-control.jar",
+        "doctor",
+        "--repo-root",
+        "/var/folders/sc/013hjtq14g7cfrh0hj5zk8j00000gn/T/sdd2-audit-offline-nsl3hqc6"
+      ],
+      "log_sha256": "909226a031d2dbf2cd73fee824bc8f81bff97f03227987e27f49dd12207cadee"
+    },
+    {
+      "name": "maven-baseline",
+      "started_at": "2026-10-23T16:29:06.335815+08:00",
+      "seconds": 11.292,
+      "exit_code": 0,
+      "command": [
+        "mvn",
+        "-q",
+        "test"
+      ],
+      "log_sha256": "0f7fc0c891ca45c170f9f37886e7bfd358579b6d1a5c8c477fbafb0442575313",
+      "counts": {
+        "tests": 36,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    },
+    {
+      "name": "demo-small",
+      "started_at": "2026-10-23T16:29:06.434765+08:00",
+      "seconds": 27.903,
+      "exit_code": 0,
+      "command": [
+        "/Library/Developer/CommandLineTools/usr/bin/python3",
+        "-B",
+        "/Users/chenjialin763/Documents/Codex/UAW/UAW-SDD/AI-SDD-Prompts/skills/uaw-sdd-ai-coding/scripts/demo_sdd2_small_feature.py"
+      ],
+      "log_sha256": "3d5445b43063c837e4a849d40ee50da6da35b7f075b6fe2f81c6db312aea0934",
+      "summary": {
+        "Demo 结论": "通过",
+        "Git 提交数": 1,
+        "公开资产数量": 9,
+        "实现功能": "联系人显示名称规范化",
+        "最终状态": "completed",
+        "最终阶段": "archive",
+        "检查点": [
+          {
+            "检查": "乱文件、提前资产和重复 Feature",
+            "结果": "已阻断"
+          },
+          {
+            "检查": "控制状态直接篡改",
+            "结果": "已阻断"
+          },
+          {
+            "检查": "人工 Gate 前提前生成生产代码",
+            "结果": "已阻断"
+          },
+          {
+            "检查": "阶段 Gate 与 Phase Review 批准链",
+            "结果": "绑定有效"
+          },
+          {
+            "检查": "活动流程自动提交",
+            "结果": "已阻断"
+          },
+          {
+            "检查": "真实 Maven 单元测试",
+            "结果": "已通过",
+            "通过数": 3
+          },
+          {
+            "检查": "单元测试执行证据篡改",
+            "结果": "已阻断"
+          },
+          {
+            "检查": "最终状态、Archive 与无自动提交",
+            "结果": "已通过"
+          }
+        ],
+        "测试执行证据 SHA-256": "23ef1448e95fe8482d61d4ace964e976021caa194b68624fd3f29ec8a4c334f5",
+        "测试计数": {
+          "errors": 0,
+          "failed": 0,
+          "passed": 3,
+          "skipped": 0,
+          "source": "maven-surefire-output",
+          "total": 3
+        }
+      }
+    },
+    {
+      "name": "demo-mutation",
+      "started_at": "2026-10-23T16:29:17.642732+08:00",
+      "seconds": 46.056,
+      "exit_code": 0,
+      "command": [
+        "/Library/Developer/CommandLineTools/usr/bin/python3",
+        "-B",
+        "/Users/chenjialin763/Documents/Codex/UAW/UAW-SDD/AI-SDD-Prompts/skills/uaw-sdd-ai-coding/scripts/demo_sdd2_mutation_mapping_feature.py"
+      ],
+      "log_sha256": "5a90306f8366c7c36705df364b22fa1576ff397539b80d19978cd5d7e50b3e57",
+      "summary": {
+        "Demo 结论": "通过",
+        "Git 提交数": 1,
+        "Java 运行版本": "1.8",
+        "不可变修订快照数量": 16,
+        "事件链记录数量": 48,
+        "公开资产数量": 9,
+        "冻结代码修订数量": 4,
+        "功能类型": "新增 + 修改 + 字段映射 + 幂等 + 乐观版本",
+        "实现功能": "保单联系方式变更草稿创建、查询与修改",
+        "批准链记录数量": 9,
+        "最终归档证据 SHA-256": "c2f0209e5835a443772c7fba20a787809a2b72e9fbf5bef2b3375ee0f7958783",
+        "最终测试计数": {
+          "errors": 0,
+          "failed": 0,
+          "passed": 23,
+          "skipped": 0,
+          "source": "maven-surefire-output",
+          "total": 23
+        },
+        "最终测试证据 SHA-256": "81ad7d598a87ad985377558fcf727436d89e12b2b66084ab9befd8dd642bc010",
+        "最终状态": "completed",
+        "最终阶段": "archive",
+        "检查点": [
+          {
+            "检查": "Java 8 实机预检",
+            "版本": "1.8",
+            "结果": "已通过"
+          },
+          {
+            "检查": "活动流程自动提交与推送",
+            "结果": "commit --no-verify 与 push 均被阻断"
+          },
+          {
+            "检查": "人工审核与文件生成边界",
+            "结果": "模糊批准、提前 Design 和散落映射文件均被拒绝"
+          },
+          {
+            "检查": "许可前修改既有生产文件",
+            "结果": "已阻断，恢复后仍停在原实现许可动作"
+          },
+          {
+            "检查": "精确实现范围",
+            "结果": "新包、单一共享处理器、异常类与测试目录已显式绑定"
+          },
+          {
+            "检查": "四阶段实现顺序",
+            "结果": "乱序已拒绝，十四个生产变更文件逐阶段批准"
+          },
+          {
+            "检查": "跨业务模块修改",
+            "结果": "已阻断并在恢复后形成首个冻结快照"
+          },
+          {
+            "检查": "字段映射 Code Review 返工",
+            "结果": "P0 错配未放行，修复并全量复审后关闭"
+          },
+          {
+            "检查": "Unit Test 两轮交接",
+            "结果": "四层测试仅在首次评审关闭后生成，并重新冻结复审"
+          },
+          {
+            "检查": "真实脱敏测试失败与提前归档",
+            "结果": "二十三项中一项失败，Archive 已阻断"
+          },
+          {
+            "检查": "测试返工与四层业务验收",
+            "结果": "脱敏修复、复审后 23/23 通过"
+          },
+          {
+            "检查": "最终状态、批准链、资产、锁与 Git",
+            "结果": "全部一致且无自动提交推送"
+          }
+        ],
+        "测试文件数量": 4,
+        "深度检查点数量": 12,
+        "生产变更文件数量": 14,
+        "首次失败测试计数": {
+          "errors": 0,
+          "failed": 1,
+          "passed": 22,
+          "skipped": 0,
+          "source": "maven-surefire-output",
+          "total": 23
+        }
+      }
+    },
+    {
+      "name": "demo-large",
+      "started_at": "2026-10-23T16:29:06.545452+08:00",
+      "seconds": 58.005,
+      "exit_code": 0,
+      "command": [
+        "/Library/Developer/CommandLineTools/usr/bin/python3",
+        "-B",
+        "/Users/chenjialin763/Documents/Codex/UAW/UAW-SDD/AI-SDD-Prompts/skills/uaw-sdd-ai-coding/scripts/demo_sdd2_large_feature.py"
+      ],
+      "log_sha256": "bfdf9e22de3f1e098c5f8782679496600dfcd24f7c5549a6a847c0e02563befb",
+      "summary": {
+        "Demo 结论": "通过",
+        "Git 提交数": 1,
+        "Java 运行版本": "1.8",
+        "不可变修订快照数量": 19,
+        "事件链记录数量": 55,
+        "公开资产数量": 9,
+        "冻结代码修订数量": 4,
+        "实现功能": "批量保单联系方式变更预检与幂等计划生成",
+        "批准链记录数量": 11,
+        "最终归档证据 SHA-256": "7a14e878d2e68c7335bb292e1085386dabf84a9282313f5da7ab7a75b4ae6e25",
+        "最终测试计数": {
+          "errors": 0,
+          "failed": 0,
+          "passed": 14,
+          "skipped": 0,
+          "source": "maven-surefire-output",
+          "total": 14
+        },
+        "最终测试证据 SHA-256": "e09700eeb56bf36651bb2db4a76efe9f37c9b1f3e3aa3ac4921aef994692a71c",
+        "最终状态": "completed",
+        "最终阶段": "archive",
+        "检查点": [
+          {
+            "检查": "Java 8 实机预检",
+            "版本": "1.8",
+            "结果": "已通过"
+          },
+          {
+            "检查": "未知控制参数",
+            "结果": "已拒绝且状态未前进"
+          },
+          {
+            "检查": "不同 worktree 并行隔离",
+            "结果": "状态与锁均独立"
+          },
+          {
+            "检查": "同一 worktree 串 Feature",
+            "结果": "已阻断并恢复"
+          },
+          {
+            "检查": "活动流程提交与推送",
+            "结果": "双重 Git Guard 已阻断"
+          },
+          {
+            "检查": "未授权模拟与模糊批准",
+            "结果": "均已拒绝"
+          },
+          {
+            "检查": "提前资产与额外目录",
+            "结果": "已阻断并恢复原 Gate"
+          },
+          {
+            "检查": "规划期分支漂移",
+            "结果": "已阻断并恢复"
+          },
+          {
+            "检查": "过宽实现范围",
+            "结果": "已拒绝"
+          },
+          {
+            "检查": "需求修订与下游失效",
+            "结果": "Spec/Design/Tasks 已全部重审"
+          },
+          {
+            "检查": "实现许可篡改",
+            "结果": "已阻断"
+          },
+          {
+            "检查": "三阶段顺序与批准消息防重放",
+            "结果": "顺序错误及消息复用均已拒绝"
+          },
+          {
+            "检查": "范围外文件修改",
+            "结果": "已阻断、记录并恢复"
+          },
+          {
+            "检查": "Code Review 失败、修复与完整复审",
+            "结果": "首轮失败未放行，第二轮闭环通过"
+          },
+          {
+            "检查": "Unit Test Skill 两轮交接",
+            "结果": "先生成测试，再冻结、复审并关闭 Auto-fix"
+          },
+          {
+            "检查": "真实测试失败与提前 Archive",
+            "结果": "十四项中一项失败，Archive 已阻断"
+          },
+          {
+            "检查": "测试失败修复、复审与证据防篡改",
+            "结果": "第四轮范围十四项全部通过，篡改已拒绝"
+          },
+          {
+            "检查": "Archive 证据篡改与最终归档",
+            "结果": "篡改拒绝，恢复后通过"
+          },
+          {
+            "检查": "最终状态、资产、哈希链、锁与 Git",
+            "结果": "全部一致且无自动提交推送"
+          }
+        ],
+        "测试文件数量": 2,
+        "深度检查点数量": 19,
+        "生产文件数量": 6,
+        "首次失败测试计数": {
+          "errors": 0,
+          "failed": 1,
+          "passed": 13,
+          "skipped": 0,
+          "source": "maven-surefire-output",
+          "total": 14
+        }
+      }
+    },
+    {
+      "name": "controller-and-validator",
+      "started_at": "2026-10-23T16:29:06.313409+08:00",
+      "seconds": 262.977,
+      "exit_code": 0,
+      "command": [
+        "/Library/Developer/CommandLineTools/usr/bin/python3",
+        "-B",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "/Users/chenjialin763/Documents/Codex/UAW/UAW-SDD/AI-SDD-Prompts/skills/uaw-sdd-ai-coding/scripts/tests",
+        "-p",
+        "test_*.py",
+        "-v"
+      ],
+      "log_sha256": "f2cc4db682d21ff039384721f566ee1c46c2dab57da4e0aa7800c5d3449aeef8"
+    }
+  ],
+  "source_unchanged_during_verification": true
+}

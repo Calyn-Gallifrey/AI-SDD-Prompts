@@ -837,6 +837,7 @@ def main() -> int:
         remote = workspace / "remote.git"
         shutil.copytree(DEMO_SOURCE, repo / "uaw-sdd-demo")
         git(repo, "init", "-q")
+        git(repo, "symbolic-ref", "HEAD", "refs/heads/main")
         git(repo, "config", "user.email", "sdd2-large-demo@example.invalid")
         git(repo, "config", "user.name", "SDD2 Large Demo")
         git(repo, "add", ".")

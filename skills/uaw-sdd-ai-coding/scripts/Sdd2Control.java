@@ -2,6 +2,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
+import java.nio.channels.FileLock;
 import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.AtomicMoveNotSupportedException;
@@ -1676,13 +1678,49 @@ public final class Sdd2Control {
 
     static boolean directApproval(String value, Collection<String> stageTerms) {
         String lowered = value.trim().toLowerCase(Locale.ROOT);
+        boolean stageIdentified = stageTerms.stream().anyMatch(
+            term -> approvalStagePattern(term).matcher(lowered).find()
+        );
+        String intent = lowered;
+        for (String term : stageTerms.stream().sorted(Comparator.comparingInt(String::length).reversed())
+            .collect(Collectors.toList())) {
+            intent = approvalStagePattern(term).matcher(intent).replaceAll("");
+        }
         List<String> rejected = new ArrayList<>(APPROVAL_REJECTION_TERMS);
         rejected.addAll(APPROVAL_META_TERMS);
-        if (containsAny(lowered, rejected)) return false;
-        return APPROVAL_PATTERN.matcher(lowered).find()
-            && stageTerms.stream().anyMatch(
-                term -> lowered.contains(term.toLowerCase(Locale.ROOT))
-            );
+        if (containsAny(intent, rejected) || unsafeApprovalIntent(intent)) return false;
+        return stageIdentified && APPROVAL_PATTERN.matcher(intent).find();
+    }
+
+    static Pattern approvalStagePattern(String term) {
+        return Pattern.compile("(?<![A-Za-z0-9_-])" + Pattern.quote(term.toLowerCase(Locale.ROOT))
+            + "(?![A-Za-z0-9_-])");
+    }
+
+    static boolean unsafeApprovalIntent(String value) {
+        String lower = value.toLowerCase(Locale.ROOT);
+        return containsAny(lower, listOf(
+            "不要", "不得", "别", "不", "未", "没", "拒绝", "驳回", "撤回", "取消", "禁止", "勿", "休想",
+            "如果", "假如", "若", "等待", "等到", "之后", "以后", "后再", "再批准", "暂缓",
+            "能否", "是否", "解释", "讨论", "建议", "吗", "?", "？"
+        )) || Pattern.compile(
+            "(?:等|待).{0,80}(?:后|完成|通过|确认|结束)|计划\\s*(?:批准|通过|关闭|终止|重试)|先.{0,80}再"
+        ).matcher(lower).find() || Pattern.compile(
+            "\\b(?:not|never|no|cannot|can't|don't|unless|if|when|after|before|once|until|pending|wait|hold|deny|denied|reject|rejected|refuse|avoid|cancel|should|could|would|perhaps|maybe)\\b",
+            Pattern.CASE_INSENSITIVE
+        ).matcher(lower).find();
+    }
+
+    static boolean explicitLifecycleRequest(String value, Collection<String> actions) {
+        String lower = value.trim().toLowerCase(Locale.ROOT);
+        boolean affirmative = APPROVAL_PATTERN.matcher(lower).find()
+            || Pattern.compile("\\b(?:agree|confirm|please|authorize)\\b").matcher(lower).find()
+            || lower.startsWith("请")
+            || listOf("终止", "关闭", "重试", "重新开始", "abort", "close", "retry", "restart")
+                .stream().anyMatch(lower::startsWith);
+        return affirmative && !unsafeApprovalIntent(lower)
+            && !containsAny(lower, APPROVAL_META_TERMS)
+            && containsAny(lower, actions);
     }
 
     static boolean explicitApproval(String stage, String value) {
@@ -2036,6 +2074,12 @@ public final class Sdd2Control {
         List<String> bad = patterns.stream()
             .filter(pattern ->
                 unsafe.contains(pattern.trim()) || Paths.get(pattern).isAbsolute()
+                || !pattern.equals(pattern.trim()) || pattern.indexOf('\\') >= 0
+                || pattern.matches("^[A-Za-z]:.*")
+                || Arrays.asList(pattern.split("/", -1)).contains("..")
+                || !Pattern.compile("[\\p{L}\\p{N}_-]").matcher(
+                    pattern.replaceAll("\\[[^]]*\\]", "").replaceAll("[?*/.]", "")
+                ).find()
             )
             .collect(Collectors.toList());
         if (!bad.isEmpty()) {
@@ -2076,9 +2120,19 @@ public final class Sdd2Control {
                 continue;
             }
             Path path = repoRoot.resolve(rel);
+            if (Files.isSymbolicLink(path)) {
+                violations.add("IMPLEMENTATION_SYMLINK:" + rel);
+                continue;
+            }
+            if (Files.exists(path, LinkOption.NOFOLLOW_LINKS)
+                && !Files.isRegularFile(path, LinkOption.NOFOLLOW_LINKS)) {
+                violations.add("IMPLEMENTATION_PATH_TYPE:" + rel);
+                continue;
+            }
             files.add(map(
                 "path", rel,
-                "sha256", Files.isRegularFile(path) ? sha256File(path) : "<deleted>"
+                "sha256", Files.isRegularFile(path) ? sha256File(path) : "<deleted>",
+                "mode", implementationFileMode(repoRoot, path, rel)
             ));
         }
         Map<String, Object> payload = map(
@@ -2097,6 +2151,21 @@ public final class Sdd2Control {
             sha256Bytes(canonicalJson(payload).getBytes(StandardCharsets.UTF_8)),
             "violations", violations
         );
+    }
+
+    static String implementationFileMode(Path repoRoot, Path path, String rel) {
+        if (!Files.exists(path, LinkOption.NOFOLLOW_LINKS)) return "000000";
+        try {
+            Set<PosixFilePermission> permissions = Files.getPosixFilePermissions(path);
+            return permissions.contains(PosixFilePermission.OWNER_EXECUTE)
+                || permissions.contains(PosixFilePermission.GROUP_EXECUTE)
+                || permissions.contains(PosixFilePermission.OTHERS_EXECUTE) ? "100755" : "100644";
+        } catch (UnsupportedOperationException exc) {
+            String indexed = runGit(repoRoot, "ls-files", "--stage", "--", rel);
+            return indexed.startsWith("100755 ") ? "100755" : "100644";
+        } catch (IOException exc) {
+            throw new ControlError("Cannot read implementation file mode: " + rel, exc);
+        }
     }
 
     static List<String> changedTestPaths(
@@ -2140,19 +2209,21 @@ public final class Sdd2Control {
         for (int index = 1; index < command.size(); index++) {
             arguments.add(command.get(index).toLowerCase(Locale.ROOT));
         }
-        if (executable.startsWith("python")) {
+        if (executable.matches("python(?:[23](?:\\.[0-9]+)?)?(?:\\.exe)?")) {
             if (arguments.size() >= 2 && "-m".equals(arguments.get(0))
                 && setOf("unittest", "pytest").contains(arguments.get(1))) {
                 return "python-" + arguments.get(1);
             }
         } else if (setOf("pytest", "py.test").contains(executable)) {
             return "pytest";
-        } else if (setOf("mvn", "mvnw", "mvnw.cmd").contains(executable)) {
+        } else if (setOf("mvn", "mvn.cmd", "mvnw", "mvnw.cmd").contains(executable)) {
             boolean skipped = false;
             for (String value : arguments) {
-                if ("-dskiptests".equals(value)
-                    || "-dmaven.test.skip=true".equals(value)
-                    || value.startsWith("-dskiptests=")) {
+                if (setOf("-fn", "--fail-never").contains(value)
+                    || (value.startsWith("-dskiptests") && !"-dskiptests=false".equals(value))
+                    || (value.startsWith("-dmaven.test.skip") && !"-dmaven.test.skip=false".equals(value))
+                    || (value.startsWith("-dmaven.test.failure.ignore")
+                        && !"-dmaven.test.failure.ignore=false".equals(value))) {
                     skipped = true;
                 }
             }
@@ -2163,12 +2234,15 @@ public final class Sdd2Control {
             for (int index = 0; index < arguments.size(); index++) {
                 String value = arguments.get(index);
                 if ("test".equals(value) || value.endsWith(":test")) hasTest = true;
-                if ("-x".equals(value) && index + 1 < arguments.size()
-                    && "test".equals(arguments.get(index + 1))) skipped = true;
+                if (setOf("-x", "--exclude-task").contains(value)
+                    || value.startsWith("--exclude-task=")
+                    || setOf("-m", "--dry-run").contains(value)) skipped = true;
             }
             if (hasTest && !skipped) return "gradle-test";
         } else if (setOf("npm", "pnpm", "yarn", "bun").contains(executable)) {
-            if (arguments.contains("test")) return executable + "-test";
+            if ((!arguments.isEmpty() && "test".equals(arguments.get(0)))
+                || (arguments.size() >= 2 && "run".equals(arguments.get(0))
+                    && "test".equals(arguments.get(1)))) return executable + "-test";
         } else if ("dotnet".equals(executable)
             && !arguments.isEmpty() && "test".equals(arguments.get(0))) {
             return "dotnet-test";
@@ -2183,6 +2257,54 @@ public final class Sdd2Control {
             "Unsupported or non-test command. Use a recognized test runner "
             + "without shell wrappers or skip-test flags."
         );
+    }
+
+    static Path trustedTestExecutable(List<String> command, Path cwd, Path repoRoot, Map<String, Object> scope) {
+        String name = executableName(command.get(0));
+        Path requested = Paths.get(command.get(0));
+        boolean explicit = requested.isAbsolute() || command.get(0).contains("/") || command.get(0).contains("\\");
+        try {
+            if (setOf("mvnw", "mvnw.cmd", "gradlew", "gradlew.bat").contains(name)) {
+                Path wrapper = cwd.resolve(requested).normalize();
+                Path real = wrapper.toRealPath();
+                if (!real.startsWith(repoRoot) || Files.isSymbolicLink(wrapper)) {
+                    throw new ControlError("TEST_RUNNER_UNTRUSTED: wrapper escapes repository");
+                }
+                String rel = relative(repoRoot, real);
+                String original = runGit(repoRoot, false, "rev-parse", "--verify",
+                    text(scope, "base_commit") + ":" + rel);
+                String actual = runGit(repoRoot, "hash-object", "--", rel);
+                if (!original.matches("[0-9a-f]{40}") || !original.equals(actual)) {
+                    throw new ControlError("TEST_RUNNER_UNTRUSTED: use an unchanged versioned wrapper or a PATH runner");
+                }
+                return real;
+            }
+            Path trusted = null;
+            String searchPath = System.getenv("PATH");
+            if (searchPath != null) {
+                for (String folder : searchPath.split(Pattern.quote(java.io.File.pathSeparator))) {
+                    if (folder.isEmpty() || !Paths.get(folder).isAbsolute()) continue;
+                    for (String suffix : System.getProperty("os.name", "").toLowerCase(Locale.ROOT).contains("win")
+                        ? listOf("", ".exe", ".cmd", ".bat") : listOf("")) {
+                        Path candidate = Paths.get(folder).resolve(name + suffix);
+                        if (Files.isRegularFile(candidate) && Files.isExecutable(candidate)) {
+                            trusted = candidate.toRealPath();
+                            break;
+                        }
+                    }
+                    if (trusted != null) break;
+                }
+            }
+            if (trusted == null || trusted.startsWith(repoRoot)) {
+                throw new ControlError("TEST_RUNNER_UNTRUSTED: no installed runner on PATH: " + name);
+            }
+            if (explicit && !cwd.resolve(requested).toRealPath().equals(trusted)) {
+                throw new ControlError("TEST_RUNNER_UNTRUSTED: executable differs from the installed PATH runner");
+            }
+            return trusted;
+        } catch (IOException exc) {
+            throw new ControlError("TEST_RUNNER_UNTRUSTED: cannot resolve executable", exc);
+        }
     }
 
     static List<Matcher> allMatches(Pattern pattern, String value) {
@@ -2208,7 +2330,7 @@ public final class Sdd2Control {
         );
     }
 
-    static Map<String, Object> parsedTestCounts(String stdout, String stderr) {
+    static Map<String, Object> parsedTestCounts(String stdout, String stderr, String runnerKind) {
         String output = stdout + "\n" + stderr;
         Pattern mavenPattern = Pattern.compile(
             "Tests run:\\s*(\\d+),\\s*Failures:\\s*(\\d+),\\s*Errors:\\s*(\\d+),"
@@ -2223,7 +2345,7 @@ public final class Sdd2Control {
                 Long.parseLong(maven.group(3)), Long.parseLong(maven.group(4))
             };
         }
-        if (lastMaven != null) {
+        if ("maven-test".equals(runnerKind) && lastMaven != null) {
             long passed = Math.max(
                 0, lastMaven[0] - lastMaven[1] - lastMaven[2] - lastMaven[3]
             );
@@ -2236,8 +2358,10 @@ public final class Sdd2Control {
         Matcher unittest = Pattern.compile(
             "Ran\\s+(\\d+)\\s+tests?", Pattern.CASE_INSENSITIVE
         ).matcher(output);
-        if (unittest.find()) {
-            long total = Long.parseLong(unittest.group(1));
+        String lastUnittest = null;
+        while (unittest.find()) lastUnittest = unittest.group(1);
+        if ("python-unittest".equals(runnerKind) && lastUnittest != null) {
+            long total = Long.parseLong(lastUnittest);
             long failed = 0;
             long errors = 0;
             long skipped = 0;
@@ -2280,7 +2404,8 @@ public final class Sdd2Control {
         for (String line : lines) {
             if (pytestTerm.matcher(line).find()) pytestSummary = line;
         }
-        if (pytestSummary != null) {
+        if (("pytest".equals(runnerKind) || "python-pytest".equals(runnerKind))
+            && pytestSummary != null) {
             long passed = 0;
             long failed = 0;
             long errors = 0;
@@ -2322,7 +2447,7 @@ public final class Sdd2Control {
             cargoFailed += Long.parseLong(cargo.group(2));
             cargoSkipped += Long.parseLong(cargo.group(3));
         }
-        if (cargoFound) {
+        if ("cargo-test".equals(runnerKind) && cargoFound) {
             return testCounts(
                 cargoPassed + cargoFailed + cargoSkipped, cargoPassed, cargoFailed,
                 0, cargoSkipped, "cargo-output"
@@ -2342,7 +2467,8 @@ public final class Sdd2Control {
                 Long.parseLong(jest.group(3)), Long.parseLong(jest.group(4))
             };
         }
-        if (lastJest != null) {
+        if (setOf("npm-test", "pnpm-test", "yarn-test", "bun-test").contains(runnerKind)
+            && lastJest != null) {
             return testCounts(
                 lastJest[3], lastJest[2], lastJest[0], 0, lastJest[1], "jest-output"
             );
@@ -3634,7 +3760,7 @@ public final class Sdd2Control {
             "java_8_compatible", true,
             "git_version", git.stdout.trim(),
             "schema_version", SCHEMA_VERSION,
-            "controller_version", "2.0-java8.2",
+            "controller_version", "2.0-java8.3",
             "jar_sha256", verifiedRuntimeSha256,
             "jar_integrity_verified", true,
             "wrote_feature_files", false,
@@ -4646,6 +4772,9 @@ public final class Sdd2Control {
                 "Unit Test cwd does not exist: " + args.one("--cwd", ".")
             );
         }
+        Path executable = trustedTestExecutable(command, executionCwd, repoRoot, scope);
+        String runnerHash = sha256File(executable);
+        command.set(0, executable.toString());
         String startedAt = utcNow();
         String stdout = "";
         String stderr = "";
@@ -4674,8 +4803,9 @@ public final class Sdd2Control {
         Map<String, Object> afterSnapshot = snapshotForScope(repoRoot, scope);
         boolean scopeChanged =
             !stringList(afterSnapshot.get("violations")).isEmpty()
-            || !currentSha.equals(text(afterSnapshot, "snapshot_sha256"));
-        Map<String, Object> counts = parsedTestCounts(stdout, stderr);
+            || !currentSha.equals(text(afterSnapshot, "snapshot_sha256"))
+            || !runnerHash.equals(sha256File(executable));
+        Map<String, Object> counts = parsedTestCounts(stdout, stderr, runnerKind);
         String outcome;
         String failureReason = null;
         if (timedOut) {
@@ -5297,7 +5427,7 @@ public final class Sdd2Control {
         }
         String approvalText = args.required("--approval-text");
         String lowered = approvalText.toLowerCase(Locale.ROOT);
-        if (!containsAny(
+        if (!explicitLifecycleRequest(
             lowered,
             listOf("风险", "risk", "终止", "abort", "关闭", "close")
         )) {
@@ -5374,7 +5504,7 @@ public final class Sdd2Control {
         }
         String approvalText = args.required("--approval-text");
         String lowered = approvalText.toLowerCase(Locale.ROOT);
-        if (!containsAny(
+        if (!explicitLifecycleRequest(
             lowered, listOf("重试", "重新开始", "retry", "restart")
         )) {
             throw new ControlError(
@@ -5542,6 +5672,35 @@ public final class Sdd2Control {
         throw new ControlError("Unknown command: " + command);
     }
 
+    static Map<String, Object> dispatchSerialized(String command, Opts args) {
+        validateCommandOptions(command, args);
+        if ("doctor".equals(command)) return dispatch(command, args);
+        Path feature = normalizeFeatureDir(args.required("--feature-dir"));
+        Path mutex = gitPath(gitRoot(feature), "sdd2-command.lock");
+        // OS file locks are released on process exit; file existence never blocks a command.
+        try (FileChannel channel = FileChannel.open(mutex,
+            StandardOpenOption.CREATE, StandardOpenOption.WRITE)) {
+            long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(30);
+            FileLock lock;
+            while ((lock = channel.tryLock()) == null) {
+                if (System.nanoTime() >= deadline) {
+                    throw new ControlError("SDD2_COMMAND_BUSY: 当前工作目录有控制命令正在执行，请结束后重试。");
+                }
+                Thread.sleep(25);
+            }
+            try {
+                return dispatch(command, args);
+            } finally {
+                lock.release();
+            }
+        } catch (IOException exc) {
+            throw new ControlError("Cannot lock SDD2 command execution: " + mutex, exc);
+        } catch (InterruptedException exc) {
+            Thread.currentThread().interrupt();
+            throw new ControlError("SDD2 command lock wait interrupted", exc);
+        }
+    }
+
     static int runMain(String[] argv) {
         if (argv.length == 0) {
             System.out.println(canonicalJson(map(
@@ -5552,7 +5711,7 @@ public final class Sdd2Control {
         }
         try {
             ensureRuntimeIntegrity();
-            Map<String, Object> result = dispatch(
+            Map<String, Object> result = dispatchSerialized(
                 argv[0], Opts.parse(argv, 1)
             );
             boolean ok = !Boolean.FALSE.equals(result.get("valid"));

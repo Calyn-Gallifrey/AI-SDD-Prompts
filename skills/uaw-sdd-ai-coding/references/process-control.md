@@ -42,11 +42,15 @@ java -jar "$CONTROL" doctor --repo-root <git-repo-root>
 
 按需重复 `--allowed-path`、`--forbidden-path`、`--required-phase` 和 `--test-path`。路径模式必须足够窄；`*`、`**`、仓库根目录和绝对路径均会被拒绝。
 
+`?*`、`*/*` 等全仓库等价模式也会拒绝。冻结清单包含文件执行模式；执行权限变化与内容变化一样要求重新冻结。实现文件不接受符号链接。
+
 只有已批准 Tasks 不包含生产代码变更时，才能使用 `--non-production-change`。理由必须记录在 Design 和 Tasks 中。不得用它绕过测试源码要求。
 
 `init` 会保存规划期 Git 基线并安装 Git Guard；活动 Feature 的 `resume` 会复核并补装 Guard。`capture-scope` 成功结果必须同时包含 `implementation_permit_sha256`，状态中的 `implementation_permit.status` 必须为 `active`。缺少这两个结果时禁止任何实现编辑。
 
 `run-unit-test` 只接受明确的测试 Runner，不通过 Shell 包装执行任意命令，也拒绝跳过测试参数。控制器亲自观察退出码和测试数量，将命令、输出哈希、有限输出片段、测试计数、当前范围和已变更测试源码写入 `.sdd2/unit-test-evidence.json`。Unit Test 的 `passed` 必须绑定该文件的 SHA-256；单独提供 `--evidence` 文字不能替代。
+
+系统工具使用 PATH 中已安装的入口，显式路径须与该入口一致；项目 Wrapper 须是仓库内与基线提交一致的既有文件。数量只使用当前 Runner 的输出格式。零测试或无法识别输出保持 blocked；工具链与断言质量仍需实际评审。
 
 ## 每回合分派
 
@@ -85,7 +89,7 @@ java -jar "$CONTROL" doctor --repo-root <git-repo-root>
 
 退出码为 `1`、`2` 或 `3`，`valid=false`，或返回任何校验错误时立即停止。退出码 `3` 或 JAR 无法启动时，向开发者提示检查 Java 8 及以上版本、`PATH/JAVA_HOME` 和 JAR 完整性；此时不得创建或继续生成流程资产。保留返回错误；人类可读资产中的状态只能作为 `.sdd2/feature-state.json` 的投影；当前状态本身还必须匹配最新事件的状态投影哈希。按照后续有效 `resume.next_required_action` 恢复。禁止手工编辑控制 JSON/JSONL。
 
-`PRE_IMPLEMENTATION_CHANGE` 表示实现许可签发前发生了 Feature 目录外变更。控制器会保存原 Gate 恢复点并进入 `blocked`。必须撤销或移走提前代码、测试、配置、构建变更及提前 Git 提交，再调用 `resume`；不得通过补写 Tasks、手工编辑状态或重新捕获范围来追认。
+`PREMATURE_IMPLEMENTATION_CHANGE` 表示实现许可签发前发生了 Feature 目录外变更。控制器会保存原 Gate 恢复点并进入 `blocked`。必须撤销或移走提前代码、测试、配置、构建变更及提前 Git 提交，再调用 `resume`；不得通过补写 Tasks、手工编辑状态或重新捕获范围来追认。
 
 `IMPLEMENTATION_PERMIT_*` 表示批准、资产、Attempt、范围或许可哈希不一致。立即停止并从最早失效资产重新审批；不得继续实现或复用旧快照。
 
@@ -106,6 +110,8 @@ Archive 批准不是 Git 授权。完成 Archive 后立即结束当前回合；�
 ## 恢复规则
 
 - 锁缺失或不匹配：只有没有其他 Feature 占用 worktree 时，`resume` 才可重新获取；否则使用另一个 worktree。
+- `SDD2_COMMAND_BUSY`：同一工作目录另一个控制命令仍在执行；等待该命令结束后重试，不删除操作系统锁文件或手改状态。
+- 旧运行包升级：`2.0-java8.2` 的活动冻结范围需按新文件模式证据重新冻结，并重走受影响评审和测试；原批准历史不重写，已归档记录保持只读。
 - 初始化失败：无效参数在写入前拒绝；写入故障只撤销该次新建的控制文件和归属锁。旧版孤立初始快照可在归属及内容完全核实后随重试 `init` 恢复；存在状态、批准、事件或未知内容时保留现场并停止。
 - 终态残留锁：通过 `resume` 或重复相同关闭结果的 `close` 重试释放；必须先通过状态历史校验，不新增批准或修订，不删除其他功能的锁。规划阶段已终止的流程无需伪造范围文件。
 - `GIT_GUARD_ROUTING_*`：分发路由缺失、损坏、循环或被更高优先级 Git 配置覆盖。保留现场并停止，不将其当作门禁已安装成功。

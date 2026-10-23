@@ -12,6 +12,7 @@ description: 从开发者简要设计开始，执行 UAW SDD2.0 后端功能流�
 1. 每个 assistant 回合先完成 Java 控制器预检，再执行一次 `resume`；首次启动则在 `init` 后立即执行 `resume`。只服从返回的一个 `next_required_action`。预检失败时不得创建 Feature 目录、资产或生产代码。
 2. 生成并记录 `spec.md`、`design.md`、`tasks.md`、`unit-test-summary.md` 或 `archive.md` 后，立即结束当前 assistant 回合。记录 Gate、向用户明确请求当前阶段批准，然后不再调用任何工具。
 3. 用户必须在 Gate 到达后的新消息中明确批准当前阶段。收到批准后只记录该批准，再按新的 `next_required_action` 工作；绝不能在生成 Gate 资产的同一回合代替用户批准。
+   否定、附条件、提问或待确认的文字都不能作为批准、关闭或重试授权；不得改写用户原话以通过校验。控制器不认证聊天平台的消息来源，真实用户消息和回合边界必须由执行工具与人工审核保证。
 4. `capture-scope` 成功返回活动 `implementation_permit` 之前，禁止修改 Feature 目录外的代码、测试、配置、构建文件和 Git 状态。发现提前变更时立即按 `blocked` 停止，不得把它追认为已批准实现。
 5. Feature 目录实行封闭白名单：只能存在九项固定公开资产及规定的 `.sdd2` 控制证据；公开资产只能在当前 `next_required_action` 所属阶段生成。同一 worktree 不得额外生成第二个未受控 Feature 目录。发现额外文件、目录、软链接或提前阶段资产时立即按 `blocked` 停止并列出路径，不得自动删除或追认为流程资产。
 6. 本 Skill 在任何阶段都不得自动执行 `git add`、`git commit` 或 `git push`。Archive 最终批准成功后也必须立即结束回合。Git 提交只能由用户在流程结束后的新消息中另行明确要求。
